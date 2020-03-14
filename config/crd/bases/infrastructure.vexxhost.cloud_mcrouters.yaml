@@ -1,0 +1,75 @@
+
+---
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.2.5
+  creationTimestamp: null
+  name: mcrouters.infrastructure.vexxhost.cloud
+spec:
+  group: infrastructure.vexxhost.cloud
+  names:
+    kind: Mcrouter
+    listKind: McrouterList
+    plural: mcrouters
+    singular: mcrouter
+  scope: Namespaced
+  validation:
+    openAPIV3Schema:
+      description: Mcrouter is the Schema for the mcrouters API
+      properties:
+        apiVersion:
+          description: 'APIVersion defines the versioned schema of this representation
+            of an object. Servers should convert recognized schemas to the latest
+            internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+          type: string
+        kind:
+          description: 'Kind is a string value representing the REST resource this
+            object represents. Servers may infer this from the endpoint the client
+            submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+          type: string
+        metadata:
+          type: object
+        spec:
+          description: McrouterSpec defines the desired state of Mcrouter
+          properties:
+            pools:
+              additionalProperties:
+                description: McrouterPoolSpec defines the desired state of an Mcrouter
+                  pool
+                properties:
+                  servers:
+                    items:
+                      type: string
+                    type: array
+                required:
+                - servers
+                type: object
+              type: object
+            route:
+              type: string
+          required:
+          - pools
+          - route
+          type: object
+        status:
+          description: McrouterStatus defines the observed state of Mcrouter
+          properties:
+            phase:
+              type: string
+          required:
+          - phase
+          type: object
+      type: object
+  version: v1alpha1
+  versions:
+  - name: v1alpha1
+    served: true
+    storage: true
+status:
+  acceptedNames:
+    kind: ""
+    plural: ""
+  conditions: []
+  storedVersions: []

@@ -1,0 +1,10 @@
+domain: vexxhost.cloud
+repo: opendev.org/vexxhost/openstack-operator
+resources:
+- group: infrastructure
+  kind: Mcrouter
+  version: v1alpha1
+- group: infrastructure
+  kind: Memcached
+  version: v1alpha1
+version: "2"

@@ -1,0 +1,39 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: {{ .Release.Namespace }}
+  name: {{ include "openstack-operator.fullname" . }}
+  labels:
+{{ include "openstack-operator.labels" . | indent 4 }}
+spec:
+  selector:
+    matchLabels:
+{{ include "openstack-operator.labels" . | indent 6 }}
+  template:
+    metadata:
+      labels:
+{{ include "openstack-operator.labels" $ | indent 8 }}
+    spec:
+      serviceAccountName: {{ include "openstack-operator.fullname" . }}
+      terminationGracePeriodSeconds: 10
+      containers:
+      - name: operator
+        image: vexxhost/openstack-operator:latest
+        args:
+        - --enable-leader-election
+        resources:
+          limits:
+            cpu: 100m
+            memory: 30Mi
+          requests:
+            cpu: 100m
+            memory: 20Mi
+{{- with .Values.tolerations }}
+      tolerations:
+{{ toYaml . | indent 8 }}
+{{- end }}
+{{- with .Values.nodeSelector }}
+      nodeSelector:
+{{ toYaml . | indent 8 }}
+{{- end }}

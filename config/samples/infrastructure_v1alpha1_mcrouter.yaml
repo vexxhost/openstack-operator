@@ -1,0 +1,9 @@
+apiVersion: infrastructure.vexxhost.cloud/v1alpha1
+kind: Mcrouter
+metadata:
+  name: sample
+spec:
+  route: PoolRoute|default
+  pools:
+    default:
+      servers: ['10.0.0.1:11211', '10.0.0.2:11211']

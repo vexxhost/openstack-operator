@@ -1,0 +1,11 @@
+
+---
+apiVersion: v1
+name: openstack-operator
+version: 0.0.0
+description: Operator for deploying OpenStack
+home: https://opendev.org/vexxhost/openstack-operator
+maintainers:
+- name: Mohammed Naser
+  email: mnaser@vexxhost.com
+  url: https://github.com/mnaser

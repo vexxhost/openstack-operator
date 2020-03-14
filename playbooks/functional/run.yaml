@@ -1,0 +1,9 @@
+- hosts: all
+  roles:
+    - role: helm-template
+      vars:
+        helm_release_name: openstack-operator
+        helm_chart: ./chart
+  tasks:
+    # TODO(mnaser): Generate all manifests and ensure git is not dirty
+    - include_tasks: tests/memcached.yaml

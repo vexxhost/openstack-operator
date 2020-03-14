@@ -1,0 +1,38 @@
+- name: Create Memcached custom resource
+  command: kubectl apply -f {{ zuul.project.src_dir }}/config/samples/infrastructure_v1alpha1_memcached.yaml
+
+- name: Wait for all pods to become Ready
+  include_role:
+    name: wait-for-pods
+
+- name: Get all pod IPs for Memcached
+  command: kubectl get pods -l app.kubernetes.io/name=memcached,app.kubernetes.io/instance=sample -o=jsonpath='{range .items[*]}{.status.podIP}{"\n"}{end}'
+  register: _memcached_ips
+  until: _memcached_ips is success
+  retries: 10
+  delay: 5
+  failed_when: "{{ _memcached_ips.stdout_lines | length == 0 }}"
+
+- name: Send request to Memcached exporter
+  uri:
+    url: "http://{{ item }}:9150/metrics"
+    return_content: yes
+  register: _metrics
+  loop: "{{ _memcached_ips.stdout_lines }}"
+  failed_when: "'memcached_up 1' not in _metrics.content"
+
+- name: Get all pod IPs for Mcrouter
+  command: kubectl get pods -l app.kubernetes.io/name=mcrouter,app.kubernetes.io/instance=memcached-sample -o=jsonpath='{range .items[*]}{.status.podIP}{"\n"}{end}'
+  register: _mcrouter_ips
+  until: _mcrouter_ips is success
+  retries: 10
+  delay: 5
+  failed_when: "{{ _mcrouter_ips.stdout_lines | length == 0 }}"
+
+- name: Send request to Mcrouter exporter
+  uri:
+    url: "http://{{ item }}:9442/metrics"
+    return_content: yes
+  register: _metrics
+  loop: "{{ _mcrouter_ips.stdout_lines }}"
+  failed_when: "'mcrouter_up 1' not in _metrics.content"

@@ -1,0 +1,24 @@
+# permissions for end users to edit mcrouters.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: mcrouter-editor-role
+rules:
+- apiGroups:
+  - infrastructure.vexxhost.cloud
+  resources:
+  - mcrouters
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - infrastructure.vexxhost.cloud
+  resources:
+  - mcrouters/status
+  verbs:
+  - get
