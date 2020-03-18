@@ -7,3 +7,5 @@
   tasks:
     # TODO(mnaser): Generate all manifests and ensure git is not dirty
     - include_tasks: tests/memcached.yaml
+
+- import_playbook: devstack.yaml

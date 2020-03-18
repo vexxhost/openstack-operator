@@ -19,6 +19,9 @@
     return_content: yes
   register: _metrics
   loop: "{{ _memcached_ips.stdout_lines }}"
+  until: _metrics is success
+  retries: 10
+  delay: 5
   failed_when: "'memcached_up 1' not in _metrics.content"
 
 - name: Get all pod IPs for Mcrouter
@@ -35,4 +38,7 @@
     return_content: yes
   register: _metrics
   loop: "{{ _mcrouter_ips.stdout_lines }}"
+  until: _metrics is success
+  retries: 10
+  delay: 5
   failed_when: "'mcrouter_up 1' not in _metrics.content"

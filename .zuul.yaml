@@ -58,11 +58,15 @@
 
 - job:
     name: openstack-operator:functional
-    parent: apply-helm-charts
-    requires: 
+    parent: devstack-tempest
+    requires:
       - openstack-operator:images
+    pre-run: playbooks/functional/pre.yaml
     run: playbooks/functional/run.yaml
+    post-run: playbooks/functional/post.yaml
     vars:
+      devstack_services:
+        etcd3: false
       docker_use_buildset_registry: true
       minikube_dns_resolvers: ['1.1.1.1', '8.8.8.8']
 

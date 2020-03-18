@@ -1,0 +1,6 @@
+---
+- hosts: all
+  roles:
+    - role: clear-firewall
+    - role: install-kubernetes
+    - role: ensure-helm

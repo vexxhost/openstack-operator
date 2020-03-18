@@ -1,0 +1,56 @@
+- hosts: all
+  tasks:
+    - name: Get Memcached IP address
+      command: kubectl get svc/mcrouter-memcached-sample -o=jsonpath='{.spec.clusterIP}'
+      register: _memcached_ip
+    # NOTE(mnaser): We need to rewrite the devstack local.conf because it happens
+    #               inside pre.yaml right now.  This should all be gone once the
+    #               operator can deploy OpenStack entirely by itself.
+    - name: Gather minimum local MTU
+      set_fact:
+        local_mtu: >
+          {% set mtus = [] -%}
+          {% for interface in ansible_interfaces -%}
+            {% set interface_variable = 'ansible_' + interface -%}
+            {% if interface_variable in hostvars[inventory_hostname] -%}
+              {% set _ = mtus.append(hostvars[inventory_hostname][interface_variable]['mtu']|int) -%}
+            {% endif -%}
+          {% endfor -%}
+          {{- mtus|min -}}
+    - name: Calculate external_bridge_mtu
+      # 50 bytes is overhead for vxlan (which is greater than GRE
+      # allowing us to use either overlay option with this MTU.
+      # TODO(andreaf) This should work, but it may have to be reconcilied with
+      # the MTU setting used by the multinode setup roles in multinode pre.yaml
+      set_fact:
+        external_bridge_mtu: "{{ local_mtu | int - 50 }}"
+    - name: Define additional devstack_localrc values
+      set_fact:
+        _devstack_localrc: "{{ devstack_localrc }}"
+        _devstack_localrc_extra:
+          MEMCACHE_SERVERS: "{{ _memcached_ip.stdout }}:11211"
+    - name: Re-write local.conf
+      include_role:
+        name: write-devstack-local-conf
+      vars:
+        devstack_localrc: "{{ _devstack_localrc | combine(_devstack_localrc_extra) }}"
+
+# Changes that run through devstack-tempest are likely to have an impact on
+# the devstack part of the job, so we keep devstack in the main play to
+# avoid zuul retrying on legitimate failures.
+- hosts: all
+  roles:
+    - orchestrate-devstack
+
+# We run tests only on one node, regardless how many nodes are in the system
+- hosts: tempest
+  environment:
+    # This enviroment variable is used by the optional tempest-gabbi
+    # job provided by the gabbi-tempest plugin. It can be safely ignored
+    # if that plugin is not being used.
+    GABBI_TEMPEST_PATH: "{{ gabbi_tempest_path | default('') }}"
+  roles:
+    - setup-tempest-run-dir
+    - setup-tempest-data-dir
+    - acl-devstack-files
+    - run-tempest
