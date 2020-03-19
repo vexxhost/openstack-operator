@@ -21,12 +21,15 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/alecthomas/units"
 	"github.com/go-logr/logr"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/utils/pointer"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -100,6 +103,36 @@ func (r *MemcachedReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 								ContainerPort: int32(11211),
 							},
 						},
+						Resources: v1.ResourceRequirements{
+							Limits: v1.ResourceList{
+								v1.ResourceCPU:              *resource.NewMilliQuantity(1000, resource.DecimalSI),
+								v1.ResourceMemory:           *resource.NewQuantity(int64(size)*int64(units.MiB)+int64(size)*102*int64(units.KiB), resource.BinarySI),
+								v1.ResourceEphemeralStorage: *resource.NewQuantity(int64(units.MB)*1000, resource.DecimalSI),
+							},
+							Requests: v1.ResourceList{
+								v1.ResourceCPU:              *resource.NewMilliQuantity(100, resource.DecimalSI),
+								v1.ResourceMemory:           *resource.NewQuantity(int64(size)*int64(units.MiB), resource.BinarySI),
+								v1.ResourceEphemeralStorage: *resource.NewQuantity(int64(units.MB)*500, resource.DecimalSI),
+							},
+						},
+						StartupProbe: &v1.Probe{},
+						ReadinessProbe: &v1.Probe{
+							Handler: v1.Handler{
+								TCPSocket: &v1.TCPSocketAction{
+									Port: intstr.FromString("memcached"),
+								},
+							},
+							PeriodSeconds: int32(10),
+						},
+						LivenessProbe: &v1.Probe{
+							Handler: v1.Handler{
+								TCPSocket: &v1.TCPSocketAction{
+									Port: intstr.FromString("memcached"),
+								},
+							},
+							InitialDelaySeconds: int32(15),
+							PeriodSeconds:       int32(30),
+						},
 					},
 					{
 						Name:  "exporter",
@@ -109,6 +142,38 @@ func (r *MemcachedReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 								Name:          "metrics",
 								ContainerPort: int32(9150),
 							},
+						},
+						Resources: v1.ResourceRequirements{
+							Limits: v1.ResourceList{
+								v1.ResourceCPU:              *resource.NewMilliQuantity(1000, resource.DecimalSI),
+								v1.ResourceMemory:           *resource.NewQuantity(int64(units.Mebibyte)*256, resource.BinarySI),
+								v1.ResourceEphemeralStorage: *resource.NewQuantity(int64(units.MB)*1000, resource.DecimalSI),
+							},
+							Requests: v1.ResourceList{
+								v1.ResourceCPU:              *resource.NewMilliQuantity(100, resource.DecimalSI),
+								v1.ResourceMemory:           *resource.NewQuantity(int64(units.Mebibyte)*128, resource.BinarySI),
+								v1.ResourceEphemeralStorage: *resource.NewQuantity(int64(units.MB)*500, resource.DecimalSI),
+							},
+						},
+						StartupProbe: &v1.Probe{},
+						ReadinessProbe: &v1.Probe{
+							Handler: v1.Handler{
+								HTTPGet: &v1.HTTPGetAction{
+									Path: string("/metrics"),
+									Port: intstr.FromString("metrics"),
+								},
+							},
+							PeriodSeconds: int32(10),
+						},
+						LivenessProbe: &v1.Probe{
+							Handler: v1.Handler{
+								HTTPGet: &v1.HTTPGetAction{
+									Path: string("/metrics"),
+									Port: intstr.FromString("metrics"),
+								},
+							},
+							InitialDelaySeconds: int32(15),
+							PeriodSeconds:       int32(20),
 						},
 					},
 				},

@@ -5,10 +5,12 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/alecthomas/units"
 	"github.com/go-logr/logr"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/intstr"
@@ -113,6 +115,37 @@ func (r *McrouterReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 								MountPath: "/data",
 							},
 						},
+						Resources: v1.ResourceRequirements{
+							Limits: v1.ResourceList{
+								v1.ResourceCPU:              *resource.NewMilliQuantity(1000, resource.DecimalSI),
+								v1.ResourceMemory:           *resource.NewQuantity(int64(units.Mebibyte)*256, resource.BinarySI),
+								v1.ResourceEphemeralStorage: *resource.NewQuantity(int64(units.MB)*1000, resource.DecimalSI),
+							},
+							Requests: v1.ResourceList{
+								v1.ResourceCPU:              *resource.NewMilliQuantity(100, resource.DecimalSI),
+								v1.ResourceMemory:           *resource.NewQuantity(int64(units.Mebibyte)*128, resource.BinarySI),
+								v1.ResourceEphemeralStorage: *resource.NewQuantity(int64(units.MB)*500, resource.DecimalSI),
+							},
+						},
+
+						StartupProbe: &v1.Probe{},
+						ReadinessProbe: &v1.Probe{
+							Handler: v1.Handler{
+								TCPSocket: &v1.TCPSocketAction{
+									Port: intstr.FromString("mcrouter"),
+								},
+							},
+							PeriodSeconds: int32(10),
+						},
+						LivenessProbe: &v1.Probe{
+							Handler: v1.Handler{
+								TCPSocket: &v1.TCPSocketAction{
+									Port: intstr.FromString("mcrouter"),
+								},
+							},
+							InitialDelaySeconds: int32(15),
+							PeriodSeconds:       int32(30),
+						},
 					},
 					{
 						Name:  "exporter",
@@ -123,6 +156,40 @@ func (r *McrouterReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 								Name:          "metrics",
 								ContainerPort: int32(9442),
 							},
+						},
+						Resources: v1.ResourceRequirements{
+							Limits: v1.ResourceList{
+								v1.ResourceCPU:              *resource.NewMilliQuantity(1000, resource.DecimalSI),
+								v1.ResourceMemory:           *resource.NewQuantity(int64(units.Mebibyte)*256, resource.BinarySI),
+								v1.ResourceEphemeralStorage: *resource.NewQuantity(int64(units.MB)*1000, resource.DecimalSI),
+							},
+							Requests: v1.ResourceList{
+								v1.ResourceCPU:              *resource.NewMilliQuantity(100, resource.DecimalSI),
+								v1.ResourceMemory:           *resource.NewQuantity(int64(units.Mebibyte)*128, resource.BinarySI),
+								v1.ResourceEphemeralStorage: *resource.NewQuantity(int64(units.MB)*500, resource.DecimalSI),
+							},
+						},
+
+						StartupProbe: &v1.Probe{},
+						ReadinessProbe: &v1.Probe{
+							Handler: v1.Handler{
+								HTTPGet: &v1.HTTPGetAction{
+									Path: string("/metrics"),
+									Port: intstr.FromString("metrics"),
+								},
+							},
+							InitialDelaySeconds: int32(5),
+							PeriodSeconds:       int32(10),
+						},
+						LivenessProbe: &v1.Probe{
+							Handler: v1.Handler{
+								HTTPGet: &v1.HTTPGetAction{
+									Path: string("/metrics"),
+									Port: intstr.FromString("metrics"),
+								},
+							},
+							InitialDelaySeconds: int32(15),
+							PeriodSeconds:       int32(30),
 						},
 					},
 				},
