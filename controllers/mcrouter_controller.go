@@ -203,6 +203,8 @@ func (r *McrouterReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 						},
 					},
 				},
+				NodeSelector: mcrouter.Spec.NodeSelector,
+				Tolerations:  mcrouter.Spec.Tolerations,
 			},
 		}
 

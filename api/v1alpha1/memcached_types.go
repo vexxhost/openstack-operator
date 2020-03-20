@@ -1,6 +1,7 @@
 package v1alpha1
 
 import (
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -8,7 +9,9 @@ import (
 type MemcachedSpec struct {
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:Default=64
-	Megabytes int `json:"megabytes"`
+	Megabytes    int               `json:"megabytes"`
+	NodeSelector map[string]string `json:"nodeSelector,omitempty"`
+	Tolerations  []v1.Toleration   `json:"tolerations,omitempty"`
 }
 
 // MemcachedStatus defines the observed state of Memcached

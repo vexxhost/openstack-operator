@@ -220,6 +220,9 @@ func (r *MemcachedReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		},
 	}
 	op, err = controllerutil.CreateOrUpdate(ctx, r, mcrouter, func() error {
+		mcrouter.Spec.NodeSelector = memcached.Spec.NodeSelector
+		mcrouter.Spec.Tolerations = memcached.Spec.Tolerations
+
 		mcrouter.Spec.Route = "PoolRoute|default"
 		mcrouter.Spec.Pools = map[string]infrastructurev1alpha1.McrouterPoolSpec{
 			"default": infrastructurev1alpha1.McrouterPoolSpec{

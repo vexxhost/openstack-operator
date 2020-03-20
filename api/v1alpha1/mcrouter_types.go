@@ -1,6 +1,7 @@
 package v1alpha1
 
 import (
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -11,8 +12,10 @@ type McrouterPoolSpec struct {
 
 // McrouterSpec defines the desired state of Mcrouter
 type McrouterSpec struct {
-	Pools map[string]McrouterPoolSpec `json:"pools"`
-	Route string                      `json:"route"`
+	Pools        map[string]McrouterPoolSpec `json:"pools"`
+	Route        string                      `json:"route"`
+	NodeSelector map[string]string           `json:"nodeSelector,omitempty"`
+	Tolerations  []v1.Toleration             `json:"tolerations,omitempty"`
 }
 
 // McrouterStatus defines the observed state of Mcrouter
