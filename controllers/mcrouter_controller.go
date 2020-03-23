@@ -5,22 +5,17 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/alecthomas/units"
 	"github.com/go-logr/logr"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
-	v1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/util/intstr"
-	"k8s.io/utils/pointer"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	infrastructurev1alpha1 "opendev.org/vexxhost/openstack-operator/api/v1alpha1"
-	"opendev.org/vexxhost/openstack-operator/version"
+	"opendev.org/vexxhost/openstack-operator/builders"
+	"opendev.org/vexxhost/openstack-operator/utils"
 )
 
 // McrouterReconciler reconciles a Mcrouter object
@@ -57,20 +52,17 @@ func (r *McrouterReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: req.Namespace,
 			Name:      fmt.Sprintf("mcrouter-%s", req.Name),
-			Labels:    labels,
 		},
 	}
-	op, err := controllerutil.CreateOrUpdate(ctx, r, configMap, func() error {
+	op, err := utils.CreateOrUpdate(ctx, r, configMap, func() error {
 		b, err := json.Marshal(mcrouter.Spec)
 		if err != nil {
 			return err
 		}
 
-		configMap.Data = map[string]string{
-			"config.json": string(b),
-		}
-
-		return controllerutil.SetControllerReference(&mcrouter, configMap, r.Scheme)
+		return builders.ConfigMap(configMap, &mcrouter, r.Scheme).
+			Data("config.json", string(b)).
+			Build()
 	})
 	if err != nil {
 		return ctrl.Result{}, err
@@ -82,133 +74,44 @@ func (r *McrouterReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: req.Namespace,
 			Name:      fmt.Sprintf("mcrouter-%s", req.Name),
-			Labels:    labels,
 		},
 	}
-	op, err = controllerutil.CreateOrUpdate(ctx, r, deployment, func() error {
-		if deployment.ObjectMeta.CreationTimestamp.IsZero() {
-			deployment.Spec.Selector = &metav1.LabelSelector{
-				MatchLabels: labels,
-			}
-		}
-
-		deployment.Spec.Replicas = pointer.Int32Ptr(2)
-		deployment.Spec.Template = corev1.PodTemplateSpec{
-			ObjectMeta: metav1.ObjectMeta{
-				Labels: labels,
-			},
-			Spec: corev1.PodSpec{
-				Containers: []corev1.Container{
-					{
-						Name:  "mcrouter",
-						Image: fmt.Sprintf("vexxhost/mcrouter:%s", version.Revision),
-						Args:  []string{"-p", "11211", "-f", "/data/config.json"},
-						Ports: []v1.ContainerPort{
-							{
-								Name:          "mcrouter",
-								ContainerPort: int32(11211),
-							},
-						},
-						VolumeMounts: []v1.VolumeMount{
-							{
-								Name:      "config",
-								MountPath: "/data",
-							},
-						},
-						Resources: v1.ResourceRequirements{
-							Limits: v1.ResourceList{
-								v1.ResourceCPU:              *resource.NewMilliQuantity(1000, resource.DecimalSI),
-								v1.ResourceMemory:           *resource.NewQuantity(int64(units.Mebibyte)*256, resource.BinarySI),
-								v1.ResourceEphemeralStorage: *resource.NewQuantity(int64(units.MB)*1000, resource.DecimalSI),
-							},
-							Requests: v1.ResourceList{
-								v1.ResourceCPU:              *resource.NewMilliQuantity(100, resource.DecimalSI),
-								v1.ResourceMemory:           *resource.NewQuantity(int64(units.Mebibyte)*128, resource.BinarySI),
-								v1.ResourceEphemeralStorage: *resource.NewQuantity(int64(units.MB)*500, resource.DecimalSI),
-							},
-						},
-
-						StartupProbe: &v1.Probe{},
-						ReadinessProbe: &v1.Probe{
-							Handler: v1.Handler{
-								TCPSocket: &v1.TCPSocketAction{
-									Port: intstr.FromString("mcrouter"),
-								},
-							},
-							PeriodSeconds: int32(10),
-						},
-						LivenessProbe: &v1.Probe{
-							Handler: v1.Handler{
-								TCPSocket: &v1.TCPSocketAction{
-									Port: intstr.FromString("mcrouter"),
-								},
-							},
-							InitialDelaySeconds: int32(15),
-							PeriodSeconds:       int32(30),
-						},
-					},
-					{
-						Name:  "exporter",
-						Image: fmt.Sprintf("vexxhost/mcrouter_exporter:%s", version.Revision),
-						Args:  []string{"-mcrouter.address", "localhost:11211"},
-						Ports: []v1.ContainerPort{
-							{
-								Name:          "metrics",
-								ContainerPort: int32(9442),
-							},
-						},
-						Resources: v1.ResourceRequirements{
-							Limits: v1.ResourceList{
-								v1.ResourceCPU:              *resource.NewMilliQuantity(1000, resource.DecimalSI),
-								v1.ResourceMemory:           *resource.NewQuantity(int64(units.Mebibyte)*256, resource.BinarySI),
-								v1.ResourceEphemeralStorage: *resource.NewQuantity(int64(units.MB)*1000, resource.DecimalSI),
-							},
-							Requests: v1.ResourceList{
-								v1.ResourceCPU:              *resource.NewMilliQuantity(100, resource.DecimalSI),
-								v1.ResourceMemory:           *resource.NewQuantity(int64(units.Mebibyte)*128, resource.BinarySI),
-								v1.ResourceEphemeralStorage: *resource.NewQuantity(int64(units.MB)*500, resource.DecimalSI),
-							},
-						},
-
-						StartupProbe: &v1.Probe{},
-						ReadinessProbe: &v1.Probe{
-							Handler: v1.Handler{
-								HTTPGet: &v1.HTTPGetAction{
-									Path: string("/metrics"),
-									Port: intstr.FromString("metrics"),
-								},
-							},
-							InitialDelaySeconds: int32(5),
-							PeriodSeconds:       int32(10),
-						},
-						LivenessProbe: &v1.Probe{
-							Handler: v1.Handler{
-								HTTPGet: &v1.HTTPGetAction{
-									Path: string("/metrics"),
-									Port: intstr.FromString("metrics"),
-								},
-							},
-							InitialDelaySeconds: int32(15),
-							PeriodSeconds:       int32(30),
-						},
-					},
-				},
-				Volumes: []corev1.Volume{
-					{
-						Name: "config",
-						VolumeSource: corev1.VolumeSource{
-							ConfigMap: &corev1.ConfigMapVolumeSource{
-								LocalObjectReference: v1.LocalObjectReference{Name: configMap.GetName()},
-							},
-						},
-					},
-				},
-				NodeSelector: mcrouter.Spec.NodeSelector,
-				Tolerations:  mcrouter.Spec.Tolerations,
-			},
-		}
-
-		return controllerutil.SetControllerReference(&mcrouter, deployment, r.Scheme)
+	op, err = utils.CreateOrUpdate(ctx, r, deployment, func() error {
+		return builders.Deployment(deployment, &mcrouter, r.Scheme).
+			Labels(labels).
+			Replicas(2).
+			PodTemplateSpec(
+				builders.PodTemplateSpec().
+					PodSpec(
+						builders.PodSpec().
+							NodeSelector(mcrouter.Spec.NodeSelector).
+							Tolerations(mcrouter.Spec.Tolerations).
+							Containers(
+								builders.Container("mcrouter", "vexxhost/mcrouter:latest").
+									Args("-p", "11211", "-f", "/data/config.json").
+									Port("mcrouter", 11211).PortProbe("mcrouter", 10, 30).
+									Resources(500, 128, 500, 2).
+									Volume("config", "/data").
+									SecurityContext(
+										builders.SecurityContext().
+											RunAsUser(999).
+											RunAsGroup(999),
+									),
+								builders.Container("exporter", "vexxhost/mcrouter_exporter:latest").
+									Args("-mcrouter.address", "localhost:11211").
+									Port("metrics", 9442).HTTPProbe("metrics", "/metrics", 10, 30).
+									Resources(500, 128, 500, 2).
+									SecurityContext(
+										builders.SecurityContext().
+											RunAsUser(1001),
+									),
+							).
+							Volumes(
+								builders.Volume("config").FromConfigMap(configMap.GetName()),
+							),
+					),
+			).
+			Build()
 	})
 	if err != nil {
 		return ctrl.Result{}, err
@@ -220,21 +123,13 @@ func (r *McrouterReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: req.Namespace,
 			Name:      fmt.Sprintf("mcrouter-%s", req.Name),
-			Labels:    labels,
 		},
 	}
-	op, err = controllerutil.CreateOrUpdate(ctx, r, service, func() error {
-		service.Spec.Type = corev1.ServiceTypeClusterIP
-		service.Spec.Ports = []v1.ServicePort{
-			{
-				Name:       "mcrouter",
-				Port:       int32(11211),
-				TargetPort: intstr.FromString("mcrouter"),
-			},
-		}
-		service.Spec.Selector = labels
-
-		return controllerutil.SetControllerReference(&mcrouter, service, r.Scheme)
+	op, err = utils.CreateOrUpdate(ctx, r, service, func() error {
+		return builders.Service(service, &mcrouter, r.Scheme).
+			Port("mcrouter", 11211).
+			Selector(labels).
+			Build()
 	})
 	if err != nil {
 		return ctrl.Result{}, err
