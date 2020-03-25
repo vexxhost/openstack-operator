@@ -32,6 +32,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	infrastructurev1alpha1 "opendev.org/vexxhost/openstack-operator/api/v1alpha1"
+
+	monitoringv1 "opendev.org/vexxhost/openstack-operator/api/monitoring/v1"
 	"opendev.org/vexxhost/openstack-operator/builders"
 	"opendev.org/vexxhost/openstack-operator/utils"
 )
@@ -46,6 +48,7 @@ type MemcachedReconciler struct {
 // +kubebuilder:rbac:groups=infrastructure.vexxhost.cloud,resources=memcacheds,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=infrastructure.vexxhost.cloud,resources=memcacheds/status,verbs=get;update;patch
 
+// +kubebuilder:rbac:groups=monitoring.coreos.com,resources=podmonitors,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=core,resources=pods,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=apps,resources=deployments,verbs=get;list;watch;create;update;patch;delete
 
@@ -76,6 +79,7 @@ func (r *MemcachedReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 			Labels:    labels,
 		},
 	}
+
 	op, err := utils.CreateOrUpdate(ctx, r, deployment, func() error {
 		return builders.Deployment(deployment, &memcached, r.Scheme).
 			Labels(labels).
@@ -112,6 +116,40 @@ func (r *MemcachedReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		return ctrl.Result{}, err
 	}
 	log.WithValues("resource", "Deployment").WithValues("op", op).Info("Reconciled")
+
+	// PodMonitor
+
+	podMonitor := &monitoringv1.PodMonitor{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: "monitoring.coreos.com/v1",
+			Kind:       "PodMonitor",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: req.Namespace,
+			Name:      fmt.Sprintf("memcached-podmonitor"),
+			Labels: map[string]string{
+				"app.kubernetes.io/name": "memcached",
+			},
+		},
+	}
+
+	op, err = utils.CreateOrUpdate(ctx, r, podMonitor, func() error {
+		return builders.PodMonitor(podMonitor, &memcached, r.Scheme).
+			Selector(map[string]string{
+				"app.kubernetes.io/name": "memcached",
+			}).
+			PodMetricsEndpoints(
+				builders.PodMetricsEndpoint().
+					Port("metrics").
+					Path("/metrics").
+					Interval("15s"),
+			).Build()
+
+	})
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+	log.WithValues("resource", "podmonitor").WithValues("op", op).Info("Reconciled")
 
 	// Pods
 	pods := &corev1.PodList{}
@@ -175,5 +213,6 @@ func (r *MemcachedReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		For(&infrastructurev1alpha1.Memcached{}).
 		Owns(&appsv1.Deployment{}).
 		Owns(&infrastructurev1alpha1.Mcrouter{}).
+		Owns(&monitoringv1.PodMonitor{}).
 		Complete(r)
 }

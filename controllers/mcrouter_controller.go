@@ -13,6 +13,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	monitoringv1 "opendev.org/vexxhost/openstack-operator/api/monitoring/v1"
 	infrastructurev1alpha1 "opendev.org/vexxhost/openstack-operator/api/v1alpha1"
 	"opendev.org/vexxhost/openstack-operator/builders"
 	"opendev.org/vexxhost/openstack-operator/utils"
@@ -28,6 +29,7 @@ type McrouterReconciler struct {
 // +kubebuilder:rbac:groups=infrastructure.vexxhost.cloud,resources=mcrouters,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=infrastructure.vexxhost.cloud,resources=mcrouters/status,verbs=get;update;patch
 
+// +kubebuilder:rbac:groups=monitoring.coreos.com,resources=podmonitors,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=core,resources=configmaps;services,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=apps,resources=deployments,verbs=get;list;watch;create;update;patch;delete
 
@@ -118,6 +120,39 @@ func (r *McrouterReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	}
 	log.WithValues("resource", "Deployment").WithValues("op", op).Info("Reconciled")
 
+	// PodMonitor
+	podMonitor := &monitoringv1.PodMonitor{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: "monitoring.coreos.com/v1",
+			Kind:       "PodMonitor",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: req.Namespace,
+			Name:      fmt.Sprintf("mcrouter-podmonitor"),
+			Labels: map[string]string{
+				"app.kubernetes.io/name": "mcrouter",
+			},
+		},
+	}
+
+	op, err = utils.CreateOrUpdate(ctx, r, podMonitor, func() error {
+		return builders.PodMonitor(podMonitor, &mcrouter, r.Scheme).
+			Selector(map[string]string{
+				"app.kubernetes.io/name": "mcrouter",
+			}).
+			PodMetricsEndpoints(
+				builders.PodMetricsEndpoint().
+					Port("metrics").
+					Path("/metrics").
+					Interval("15s"),
+			).Build()
+
+	})
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+	log.WithValues("resource", "podmonitor").WithValues("op", op).Info("Reconciled")
+
 	// Service
 	service := &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
@@ -146,5 +181,6 @@ func (r *McrouterReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Owns(&corev1.ConfigMap{}).
 		Owns(&appsv1.Deployment{}).
 		Owns(&corev1.Service{}).
+		Owns(&monitoringv1.PodMonitor{}).
 		Complete(r)
 }

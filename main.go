@@ -26,6 +26,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
+	monitoringv1 "opendev.org/vexxhost/openstack-operator/api/monitoring/v1"
 	infrastructurev1alpha1 "opendev.org/vexxhost/openstack-operator/api/v1alpha1"
 	"opendev.org/vexxhost/openstack-operator/controllers"
 	"opendev.org/vexxhost/openstack-operator/version"
@@ -41,6 +42,7 @@ func init() {
 	_ = clientgoscheme.AddToScheme(scheme)
 
 	_ = infrastructurev1alpha1.AddToScheme(scheme)
+	_ = monitoringv1.AddToScheme(scheme)
 	// +kubebuilder:scaffold:scheme
 }
 
