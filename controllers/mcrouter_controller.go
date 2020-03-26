@@ -28,7 +28,7 @@ type McrouterReconciler struct {
 
 // +kubebuilder:rbac:groups=infrastructure.vexxhost.cloud,resources=mcrouters,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=infrastructure.vexxhost.cloud,resources=mcrouters/status,verbs=get;update;patch
-
+// +kubebuilder:rbac:groups=monitoring.coreos.com,resources=prometheusrules,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=monitoring.coreos.com,resources=podmonitors,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=core,resources=configmaps;services,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=apps,resources=deployments,verbs=get;list;watch;create;update;patch;delete
@@ -45,8 +45,9 @@ func (r *McrouterReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 
 	// Labels
 	labels := map[string]string{
-		"app.kubernetes.io/name":     "mcrouter",
-		"app.kubernetes.io/instance": req.Name,
+		"app.kubernetes.io/name":       "mcrouter",
+		"app.kubernetes.io/instance":   req.Name,
+		"app.kubernetes.io/managed-by": "openstack-operator",
 	}
 
 	// ConfigMap
@@ -58,6 +59,7 @@ func (r *McrouterReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	}
 	op, err := utils.CreateOrUpdate(ctx, r, configMap, func() error {
 		b, err := json.Marshal(mcrouter.Spec)
+
 		if err != nil {
 			return err
 		}
@@ -130,7 +132,8 @@ func (r *McrouterReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 			Namespace: req.Namespace,
 			Name:      fmt.Sprintf("mcrouter-podmonitor"),
 			Labels: map[string]string{
-				"app.kubernetes.io/name": "mcrouter",
+				"app.kubernetes.io/name":       "mcrouter",
+				"app.kubernetes.io/managed-by": "openstack-operator",
 			},
 		},
 	}
@@ -151,7 +154,40 @@ func (r *McrouterReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	if err != nil {
 		return ctrl.Result{}, err
 	}
-	log.WithValues("resource", "podmonitor").WithValues("op", op).Info("Reconciled")
+	log.WithValues("resource", "mcrouter-podmonitor").WithValues("op", op).Info("Reconciled")
+
+	// Alertrule
+	alertRule := &monitoringv1.PrometheusRule{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: req.Namespace,
+			Name:      fmt.Sprintf("mcrouter-alertrule"),
+		},
+	}
+	op, err = utils.CreateOrUpdate(ctx, r, alertRule, func() error {
+
+		return builders.PrometheusRule(alertRule, &mcrouter, r.Scheme).
+			RuleGroups(builders.RuleGroup().
+				Name("mcrouter-rule").
+				Rules(
+
+					builders.Rule().
+						Alert("McrouterBackendDown").
+						Message("Backend Memcached servers are down.").
+						Priority(1).
+						Expr("mcrouter_servers{state='down'}!=0"),
+					builders.Rule().
+						Alert("McrouterBackendTimeout").
+						Message("Backend Memcached servers are timeout.").
+						Priority(1).
+						Expr("mcrouter_server_memcached_timeout_count>0"),
+				).
+				Interval("1m")).
+			Build()
+	})
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+	log.WithValues("resource", "mcrouter-alertrule").WithValues("op", op).Info("Reconciled")
 
 	// Service
 	service := &corev1.Service{

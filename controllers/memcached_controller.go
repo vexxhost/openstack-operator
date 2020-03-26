@@ -47,7 +47,7 @@ type MemcachedReconciler struct {
 
 // +kubebuilder:rbac:groups=infrastructure.vexxhost.cloud,resources=memcacheds,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=infrastructure.vexxhost.cloud,resources=memcacheds/status,verbs=get;update;patch
-
+// +kubebuilder:rbac:groups=monitoring.coreos.com,resources=prometheusrules,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=monitoring.coreos.com,resources=podmonitors,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=core,resources=pods,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=apps,resources=deployments,verbs=get;list;watch;create;update;patch;delete
@@ -67,8 +67,9 @@ func (r *MemcachedReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 
 	// Labels
 	labels := map[string]string{
-		"app.kubernetes.io/name":     "memcached",
-		"app.kubernetes.io/instance": req.Name,
+		"app.kubernetes.io/name":       "memcached",
+		"app.kubernetes.io/instance":   req.Name,
+		"app.kubernetes.io/managed-by": "openstack-operator",
 	}
 
 	// Deployment
@@ -128,7 +129,8 @@ func (r *MemcachedReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 			Namespace: req.Namespace,
 			Name:      fmt.Sprintf("memcached-podmonitor"),
 			Labels: map[string]string{
-				"app.kubernetes.io/name": "memcached",
+				"app.kubernetes.io/name":       "memcached",
+				"app.kubernetes.io/managed-by": "openstack-operator",
 			},
 		},
 	}
@@ -174,6 +176,34 @@ func (r *MemcachedReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	if len(servers) == 0 {
 		return ctrl.Result{Requeue: true}, nil
 	}
+
+	// Alertrule
+	alertRule := &monitoringv1.PrometheusRule{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: req.Namespace,
+			Name:      fmt.Sprintf("memcached-alertrule"),
+		},
+	}
+	op, err = utils.CreateOrUpdate(ctx, r, alertRule, func() error {
+
+		return builders.PrometheusRule(alertRule, &memcached, r.Scheme).
+			RuleGroups(builders.RuleGroup().
+				Name("memcached-rule").
+				Rules(
+
+					builders.Rule().
+						Alert("MemcachedConnectionLimit").
+						Message("This memcached connection is over max.").
+						Priority(1).
+						Expr("memcached_current_connections/memcached_max_connections*100 >90"),
+				).
+				Interval("1m")).
+			Build()
+	})
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+	log.WithValues("resource", "memcached-alertrule").WithValues("op", op).Info("Reconciled")
 
 	// Make sure that they're sorted so we're idempotent
 	sort.Strings(servers)

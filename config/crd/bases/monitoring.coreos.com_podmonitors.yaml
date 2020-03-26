@@ -17,6 +17,7 @@ spec:
   scope: Namespaced
   validation:
     openAPIV3Schema:
+      description: PodMonitor defines monitoring for a set of pods.
       properties:
         apiVersion:
           description: 'APIVersion defines the versioned schema of this representation
