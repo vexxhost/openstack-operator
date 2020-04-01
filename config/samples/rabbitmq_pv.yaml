@@ -1,0 +1,18 @@
+# When the default StorageClass is "", use this.
+---
+kind: PersistentVolume
+apiVersion: v1
+metadata:
+  name: data
+  labels:
+    app.kubernetes.io/instance: sample
+    app.kubernetes.io/managed-by: openstack-operator
+    app.kubernetes.io/name: rabbitmq
+spec:
+  capacity:
+    storage: 1Gi
+  accessModes:
+    - ReadWriteOnce
+  hostPath:
+    path: "/opt/pv/rabbitmq"
+  persistentVolumeReclaimPolicy: Delete

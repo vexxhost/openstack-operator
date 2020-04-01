@@ -33,6 +33,28 @@ func (v *VolumeBuilder) FromConfigMap(name string) *VolumeBuilder {
 	return v
 }
 
+// FromSecret sets the source of the volume from a Secret
+func (v *VolumeBuilder) FromSecret(name string) *VolumeBuilder {
+	v.obj.VolumeSource = corev1.VolumeSource{
+		Secret: &corev1.SecretVolumeSource{
+			SecretName:  name,
+			DefaultMode: pointer.Int32Ptr(420),
+		},
+	}
+	return v
+}
+
+// FromPersistentVolumeClaim sets the source of the volume from a PVC
+func (v *VolumeBuilder) FromPersistentVolumeClaim(name string) *VolumeBuilder {
+	v.obj.VolumeSource = corev1.VolumeSource{
+		PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
+			ClaimName: name,
+			ReadOnly:  false,
+		},
+	}
+	return v
+}
+
 // Build returns the object after checking assertions
 func (v *VolumeBuilder) Build() corev1.Volume {
 	return *v.obj

@@ -44,6 +44,19 @@ rules:
   - update
   - watch
 - apiGroups:
+  - ""
+  resources:
+  - secrets
+  - services
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
   - infrastructure.vexxhost.cloud
   resources:
   - mcrouters
@@ -79,6 +92,26 @@ rules:
   - infrastructure.vexxhost.cloud
   resources:
   - memcacheds/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - infrastructure.vexxhost.cloud
+  resources:
+  - rabbitmqs
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - infrastructure.vexxhost.cloud
+  resources:
+  - rabbitmqs/status
   verbs:
   - get
   - patch

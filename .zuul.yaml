@@ -12,6 +12,8 @@
           repository: vexxhost/memcached
         - context: images/memcached_exporter
           repository: vexxhost/memcached_exporter
+        - context: images/rabbitmq
+          repository: vexxhost/rabbitmq
         - context: .
           repository: vexxhost/openstack-operator
 

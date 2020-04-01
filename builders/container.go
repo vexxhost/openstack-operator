@@ -133,6 +133,47 @@ func (c *ContainerBuilder) Probe(handler v1.Handler, readyInterval int32, liveIn
 	return c
 }
 
+// EnvVarFromString register one environment variable set from the string pair.
+func (c *ContainerBuilder) EnvVarFromString(name string, value string) *ContainerBuilder {
+	c.obj.Env = append(c.obj.Env, corev1.EnvVar{
+		Name:  name,
+		Value: value,
+	})
+	return c
+}
+
+// EnvVarFromConfigMap register one environment variable set from the configMap.
+func (c *ContainerBuilder) EnvVarFromConfigMap(name string, cfmName string, cfmKey string) *ContainerBuilder {
+	c.obj.Env = append(c.obj.Env, corev1.EnvVar{
+		Name: name,
+		ValueFrom: &corev1.EnvVarSource{
+			ConfigMapKeyRef: &corev1.ConfigMapKeySelector{
+				LocalObjectReference: corev1.LocalObjectReference{
+					Name: cfmName,
+				},
+				Key: cfmKey,
+			},
+		},
+	})
+	return c
+}
+
+// EnvVarFromSecret register one environment variable set from the secret.
+func (c *ContainerBuilder) EnvVarFromSecret(name string, scName string, scKey string) *ContainerBuilder {
+	c.obj.Env = append(c.obj.Env, corev1.EnvVar{
+		Name: name,
+		ValueFrom: &corev1.EnvVarSource{
+			SecretKeyRef: &corev1.SecretKeySelector{
+				LocalObjectReference: corev1.LocalObjectReference{
+					Name: scName,
+				},
+				Key: scKey,
+			},
+		},
+	})
+	return c
+}
+
 // Build returns the object after making certain assertions
 func (c *ContainerBuilder) Build() (corev1.Container, error) {
 	if c.securityContext == nil {

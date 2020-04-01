@@ -87,3 +87,5 @@ images:
 	docker build images/mcrouter_exporter -t vexxhost/mcrouter_exporter:latest
 	docker build images/memcached -t vexxhost/memcached:latest
 	docker build images/memcached_exporter -t vexxhost/memcached_exporter:latest
+	docker build images/rabbitmq -t vexxhost/rabbitmq:latest
+

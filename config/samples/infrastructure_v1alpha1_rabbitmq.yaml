@@ -1,0 +1,15 @@
+apiVersion: infrastructure.vexxhost.cloud/v1alpha1
+kind: Rabbitmq
+metadata:
+  name: sample
+spec:
+  authSecret: rabbitmq-sample
+---
+apiVersion: v1
+metadata:
+  name: rabbitmq-sample
+  namespace: default
+data:
+  password: Y0dGemMzZHZjbVE9
+  username: ZFhObGNnPT0=
+kind: Secret

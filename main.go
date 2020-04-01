@@ -57,6 +57,7 @@ func main() {
 
 	ctrl.SetLogger(zap.New(zap.UseDevMode(true)))
 
+	// Create manager
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
 		Scheme:             scheme,
 		MetricsBindAddress: metricsAddr,
@@ -69,6 +70,7 @@ func main() {
 		os.Exit(1)
 	}
 
+	// Setup controllers with manager
 	if err = (&controllers.McrouterReconciler{
 		Client: mgr.GetClient(),
 		Log:    ctrl.Log.WithName("controllers").WithName("Mcrouter"),
@@ -77,12 +79,22 @@ func main() {
 		setupLog.Error(err, "unable to create controller", "controller", "Mcrouter")
 		os.Exit(1)
 	}
+
 	if err = (&controllers.MemcachedReconciler{
 		Client: mgr.GetClient(),
 		Log:    ctrl.Log.WithName("controllers").WithName("Memcached"),
 		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Memcached")
+		os.Exit(1)
+	}
+
+	if err = (&controllers.RabbitmqReconciler{
+		Client: mgr.GetClient(),
+		Log:    ctrl.Log.WithName("controllers").WithName("Rabbitmq"),
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "Rabbitmq")
 		os.Exit(1)
 	}
 	// +kubebuilder:scaffold:builder

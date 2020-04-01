@@ -4,6 +4,7 @@
 resources:
 - bases/infrastructure.vexxhost.cloud_mcrouters.yaml
 - bases/infrastructure.vexxhost.cloud_memcacheds.yaml
+- bases/infrastructure.vexxhost.cloud_rabbitmqs.yaml
 - bases/monitoring.coreos.com_podmonitors.yaml
 - bases/monitoring.coreos.com_prometheusrules.yaml
 # +kubebuilder:scaffold:crdkustomizeresource
