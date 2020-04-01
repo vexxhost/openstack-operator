@@ -1,22 +1,6 @@
-- secret:
-    name: openstack-operator-dockerhub
-    data:
-      username: vexxhostzuul
-      password: !encrypted/pkcs1-oaep
-        - JgslylmR4+iQxQBEa05Mx7FJjjjeM+Oqu60N7pxGA32vQkTMRHfGgXz9HXz1A8XAEesQM
-          ZPSWhpiEBDhzyugOTJBPl4Ha/4xBVv6fL1ikxOPeVNW4PU9tVbi6MMkdsYkF40lGl5ejz
-          TWprQDWD5ATdwz79IOjgwnEuZFA9Y0+g7jMyGUjg5deoaaubVgtvLHan58LznUZpmGHcM
-          NjRWvNRJBzb2Siwv+B2phFIYy4yXxMC3HSXbspTklX/oQsmdTGgfTZ+rW7/hwyfyuoxfG
-          QBsVU3JCjzlLZaxmy64jYoOna2M33+Vibc2C1WCiYtbBzunvrQxT9cvdNJXySTxeTJ6PL
-          5KGVToep1O5PMuNdk9MonVAmbkWpf/Leg81Az02+9tJUNKOrzUxnf8iwHva2+iPbrNAEe
-          wVKBqvOkBPKZjBJtY73Db2r6if/MGc7H1wkHd5s1UJoHU5soObJAYgksea6sC7OVv3XYp
-          UhSE17snurne0HAZRqhQ/JR6c1ipYMKCfj0D4tyJH9ZBW6faB1P/H2A8f22mRJW576aQI
-          Q9/HpF3PmAJwbmrlZKyE/jBKUlte27JGZZ307i74Yu9pA2/bVKF6ynpT3sRShLLYDpG6A
-          AyoJYUA7yRyHhNRHcOX7ZrvOhMCbTPJOqiMaDamNRkJAJWw6GW25S1n5onXjxc=
-
 - job:
     name: openstack-operator:images:build
-    parent: opendev-build-docker-image
+    parent: vexxhost-build-docker-image
     provides: openstack-operator:image:operator
     vars: &openstack_operator_images
       docker_images:
@@ -33,22 +17,14 @@
 
 - job:
     name: openstack-operator:images:upload
-    parent: opendev-upload-docker-image
+    parent: vexxhost-upload-docker-image
     provides: openstack-operator:image:operator
     vars: *openstack_operator_images
-    secrets:
-      - name: docker_credentials
-        secret: openstack-operator-dockerhub
-        pass-to-parent: true
 
 - job:
     name: openstack-operator:images:promote
-    parent: opendev-promote-docker-image
+    parent: vexxhost-promote-docker-image
     vars: *openstack_operator_images
-    secrets:
-      - name: docker_credentials
-        secret: openstack-operator-dockerhub
-        pass-to-parent: true
 
 - job:
     name: openstack-operator:linters:chart
