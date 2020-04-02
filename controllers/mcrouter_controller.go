@@ -130,7 +130,7 @@ func (r *McrouterReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: req.Namespace,
-			Name:      fmt.Sprintf("mcrouter-podmonitor"),
+			Name:      "mcrouter-podmonitor",
 			Labels: map[string]string{
 				"app.kubernetes.io/name":       "mcrouter",
 				"app.kubernetes.io/managed-by": "openstack-operator",
@@ -160,7 +160,7 @@ func (r *McrouterReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	alertRule := &monitoringv1.PrometheusRule{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: req.Namespace,
-			Name:      fmt.Sprintf("mcrouter-alertrule"),
+			Name:      "mcrouter-alertrule",
 		},
 	}
 	op, err = utils.CreateOrUpdate(ctx, r, alertRule, func() error {

@@ -127,7 +127,7 @@ func (r *MemcachedReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: req.Namespace,
-			Name:      fmt.Sprintf("memcached-podmonitor"),
+			Name:      "memcached-podmonitor",
 			Labels: map[string]string{
 				"app.kubernetes.io/name":       "memcached",
 				"app.kubernetes.io/managed-by": "openstack-operator",
@@ -181,7 +181,7 @@ func (r *MemcachedReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	alertRule := &monitoringv1.PrometheusRule{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: req.Namespace,
-			Name:      fmt.Sprintf("memcached-alertrule"),
+			Name:      "memcached-alertrule",
 		},
 	}
 	op, err = utils.CreateOrUpdate(ctx, r, alertRule, func() error {

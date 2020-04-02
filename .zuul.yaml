@@ -49,6 +49,7 @@
 - project:
     check:
       jobs:
+        - golangci-lint
         - openstack-operator:linters:chart
         - openstack-operator:images:build
         - openstack-operator:functional:
@@ -56,6 +57,7 @@
               - openstack-operator:images:build
     gate:
       jobs:
+        - golangci-lint
         - openstack-operator:linters:chart
         - openstack-operator:images:upload
         - openstack-operator:functional:
