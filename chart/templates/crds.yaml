@@ -7,3 +7,9 @@
     {{ $.Files.Get $path }}
     {{- end }}
 {{- end -}}
+
+{{- if .Values.crd.dns }}
+    {{- range $path, $bytes := .Files.Glob "crds/dns.openstack.org*.yaml" }}
+    {{ $.Files.Get $path }}
+    {{- end }}
+{{- end -}}

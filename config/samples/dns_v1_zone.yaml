@@ -1,0 +1,10 @@
+apiVersion: dns.openstack.org/v1
+kind: Zone
+metadata:
+  name: sample
+  annotations:
+    "dns.openstack.org/designate": "sample"
+spec:
+  domain: example2.com.
+  ttl: 3600
+  email: okozachenko@gmail.com

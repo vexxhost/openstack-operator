@@ -7,6 +7,8 @@ resources:
 - bases/infrastructure.vexxhost.cloud_rabbitmqs.yaml
 - bases/monitoring.coreos.com_podmonitors.yaml
 - bases/monitoring.coreos.com_prometheusrules.yaml
+- bases/dns.openstack.org_zones.yaml
+- bases/dns.openstack.org_designates.yaml
 # +kubebuilder:scaffold:crdkustomizeresource
 
 patchesStrategicMerge:

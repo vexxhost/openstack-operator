@@ -1,6 +1,4 @@
 /*
-
-
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -26,9 +24,11 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
+	dnsv1 "opendev.org/vexxhost/openstack-operator/api/dns/v1"
 	monitoringv1 "opendev.org/vexxhost/openstack-operator/api/monitoring/v1"
 	infrastructurev1alpha1 "opendev.org/vexxhost/openstack-operator/api/v1alpha1"
 	"opendev.org/vexxhost/openstack-operator/controllers"
+	"opendev.org/vexxhost/openstack-operator/utils/openstackutils"
 	"opendev.org/vexxhost/openstack-operator/version"
 	// +kubebuilder:scaffold:imports
 )
@@ -40,9 +40,9 @@ var (
 
 func init() {
 	_ = clientgoscheme.AddToScheme(scheme)
-
 	_ = infrastructurev1alpha1.AddToScheme(scheme)
 	_ = monitoringv1.AddToScheme(scheme)
+	_ = dnsv1.AddToScheme(scheme)
 	// +kubebuilder:scaffold:scheme
 }
 
@@ -54,7 +54,6 @@ func main() {
 		"Enable leader election for controller manager. "+
 			"Enabling this will ensure there is only one active controller manager.")
 	flag.Parse()
-
 	ctrl.SetLogger(zap.New(zap.UseDevMode(true)))
 
 	// Create manager
@@ -70,8 +69,53 @@ func main() {
 		os.Exit(1)
 	}
 
+	// Get Designate client
+	designateClientBuilder := new(openstackutils.DesignateClientBuilder)
+	designateClientBuilder.SetAuthFailed()
+
 	// Setup controllers with manager
-	if err = (&controllers.McrouterReconciler{
+	setupMcrouterReconciler(mgr)
+	setupMemcachedReconciler(mgr)
+	setupZoneReconciler(mgr, designateClientBuilder)
+	setupDesignateReconciler(mgr, designateClientBuilder)
+
+	// +kubebuilder:scaffold:builder
+	setupLog.Info("starting manager", "revision", version.Revision)
+	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
+		setupLog.Error(err, "problem running manager")
+		os.Exit(1)
+	}
+}
+
+// setupZoneReconciler setups the Zone controller with manager
+func setupZoneReconciler(mgr ctrl.Manager, designateClientBuilder *openstackutils.DesignateClientBuilder) {
+	if err := (&controllers.ZoneReconciler{
+		Client:          mgr.GetClient(),
+		Log:             ctrl.Log.WithName("controllers").WithName("Zone"),
+		Scheme:          mgr.GetScheme(),
+		DesignateClient: designateClientBuilder,
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "Zone")
+		os.Exit(1)
+	}
+}
+
+// setupDesignateReconciler setups the Designate controller with manager
+func setupDesignateReconciler(mgr ctrl.Manager, designateClientBuilder *openstackutils.DesignateClientBuilder) {
+	if err := (&controllers.DesignateReconciler{
+		Client:          mgr.GetClient(),
+		Log:             ctrl.Log.WithName("controllers").WithName("Zone"),
+		Scheme:          mgr.GetScheme(),
+		DesignateClient: designateClientBuilder,
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "Designate")
+		os.Exit(1)
+	}
+}
+
+// setupMcrouterReconciler setups the Mcrouter controller with manager
+func setupMcrouterReconciler(mgr ctrl.Manager) {
+	if err := (&controllers.McrouterReconciler{
 		Client: mgr.GetClient(),
 		Log:    ctrl.Log.WithName("controllers").WithName("Mcrouter"),
 		Scheme: mgr.GetScheme(),
@@ -79,29 +123,16 @@ func main() {
 		setupLog.Error(err, "unable to create controller", "controller", "Mcrouter")
 		os.Exit(1)
 	}
+}
 
-	if err = (&controllers.MemcachedReconciler{
+// setupMemcachedReconciler setups the Memcached controller with manager
+func setupMemcachedReconciler(mgr ctrl.Manager) {
+	if err := (&controllers.MemcachedReconciler{
 		Client: mgr.GetClient(),
 		Log:    ctrl.Log.WithName("controllers").WithName("Memcached"),
 		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Memcached")
-		os.Exit(1)
-	}
-
-	if err = (&controllers.RabbitmqReconciler{
-		Client: mgr.GetClient(),
-		Log:    ctrl.Log.WithName("controllers").WithName("Rabbitmq"),
-		Scheme: mgr.GetScheme(),
-	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "Rabbitmq")
-		os.Exit(1)
-	}
-	// +kubebuilder:scaffold:builder
-
-	setupLog.Info("starting manager", "revision", version.Revision)
-	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
-		setupLog.Error(err, "problem running manager")
 		os.Exit(1)
 	}
 }
