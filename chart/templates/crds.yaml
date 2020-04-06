@@ -1,4 +1,9 @@
-{{- range $path, $bytes := .Files.Glob "crds/*.yaml" }}
+{{- range $path, $bytes := .Files.Glob "crds/infrastructure.vexxhost.cloud*.yaml" }}
 {{ $.Files.Get $path }}
----
 {{- end }}
+
+{{- if .Values.crd.monitoring }}
+    {{- range $path, $bytes := .Files.Glob "crds/monitoring.coreos.com*.yaml" }}
+    {{ $.Files.Get $path }}
+    {{- end }}
+{{- end -}}
