@@ -14,15 +14,15 @@ endif
 all: manager
 
 # Run tests
-test: generate fmt vet manifests
+test: generate fmt vet manifests lint
 	go test ./... -coverprofile cover.out
 
 # Build manager binary
-manager: generate fmt vet
+manager: generate fmt vet lint
 	go build -o bin/manager main.go
 
 # Run against the configured Kubernetes cluster in ~/.kube/config
-run: generate fmt vet manifests
+run: generate fmt vet manifests lint
 	go run ./main.go
 
 # Install CRDs into a cluster
@@ -48,6 +48,9 @@ manifests: controller-gen
 fmt:
 	go fmt ./...
 
+# Run golangci-lint code
+lint:
+	golangci-lint run
 # Run go vet against code
 vet:
 	go vet ./...

@@ -24,6 +24,11 @@ func PrometheusRule(existing *monitoringv1.PrometheusRule, owner metav1.Object, 
 	}
 }
 
+func (pm *PrometheusRuleBuilder) Labels(labels map[string]string) *PrometheusRuleBuilder {
+	pm.obj.Labels = labels
+	return pm
+}
+
 // RuleGroups returns the ruleGroups
 func (pm *PrometheusRuleBuilder) RuleGroups(ruleGroups ...*RuleGroupBuilder) *PrometheusRuleBuilder {
 	pm.ruleGroups = ruleGroups

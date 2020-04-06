@@ -35,7 +35,8 @@ import (
 
 	monitoringv1 "opendev.org/vexxhost/openstack-operator/api/monitoring/v1"
 	"opendev.org/vexxhost/openstack-operator/builders"
-	"opendev.org/vexxhost/openstack-operator/utils"
+	"opendev.org/vexxhost/openstack-operator/utils/baseutils"
+	"opendev.org/vexxhost/openstack-operator/utils/k8sutils"
 )
 
 // MemcachedReconciler reconciles a Memcached object
@@ -66,11 +67,21 @@ func (r *MemcachedReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	size := memcached.Spec.Megabytes / 2
 
 	// Labels
+	typeLabels := baseutils.MergeMapsWithoutOverwrite(map[string]string{
+		"app.kubernetes.io/name":       "memcached",
+		"app.kubernetes.io/managed-by": "openstack-operator",
+	}, memcached.Labels)
+
 	labels := map[string]string{
 		"app.kubernetes.io/name":       "memcached",
-		"app.kubernetes.io/instance":   req.Name,
 		"app.kubernetes.io/managed-by": "openstack-operator",
+		"app.kubernetes.io/instance":   req.Name,
 	}
+	mcrouterLabels := baseutils.MergeMapsWithoutOverwrite(map[string]string{
+		"app.kubernetes.io/name":       "memcached",
+		"app.kubernetes.io/managed-by": "openstack-operator",
+		"app.kubernetes.io/instance":   req.Name,
+	}, memcached.Labels)
 
 	// Deployment
 	deployment := &appsv1.Deployment{
@@ -81,7 +92,7 @@ func (r *MemcachedReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		},
 	}
 
-	op, err := utils.CreateOrUpdate(ctx, r, deployment, func() error {
+	op, err := k8sutils.CreateOrUpdate(ctx, r, deployment, func() error {
 		return builders.Deployment(deployment, &memcached, r.Scheme).
 			Labels(labels).
 			Replicas(2).
@@ -119,7 +130,6 @@ func (r *MemcachedReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	log.WithValues("resource", "Deployment").WithValues("op", op).Info("Reconciled")
 
 	// PodMonitor
-
 	podMonitor := &monitoringv1.PodMonitor{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: "monitoring.coreos.com/v1",
@@ -128,15 +138,12 @@ func (r *MemcachedReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: req.Namespace,
 			Name:      "memcached-podmonitor",
-			Labels: map[string]string{
-				"app.kubernetes.io/name":       "memcached",
-				"app.kubernetes.io/managed-by": "openstack-operator",
-			},
 		},
 	}
 
-	op, err = utils.CreateOrUpdate(ctx, r, podMonitor, func() error {
+	op, err = k8sutils.CreateOrUpdate(ctx, r, podMonitor, func() error {
 		return builders.PodMonitor(podMonitor, &memcached, r.Scheme).
+			Labels(typeLabels).
 			Selector(map[string]string{
 				"app.kubernetes.io/name": "memcached",
 			}).
@@ -184,9 +191,10 @@ func (r *MemcachedReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 			Name:      "memcached-alertrule",
 		},
 	}
-	op, err = utils.CreateOrUpdate(ctx, r, alertRule, func() error {
+	op, err = k8sutils.CreateOrUpdate(ctx, r, alertRule, func() error {
 
 		return builders.PrometheusRule(alertRule, &memcached, r.Scheme).
+			Labels(typeLabels).
 			RuleGroups(builders.RuleGroup().
 				Name("memcached-rule").
 				Rules(
@@ -213,7 +221,7 @@ func (r *MemcachedReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: req.Namespace,
 			Name:      fmt.Sprintf("memcached-%s", req.Name),
-			Labels:    labels,
+			Labels:    mcrouterLabels,
 		},
 	}
 	op, err = controllerutil.CreateOrUpdate(ctx, r, mcrouter, func() error {

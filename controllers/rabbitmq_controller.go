@@ -15,7 +15,8 @@ import (
 	monitoringv1 "opendev.org/vexxhost/openstack-operator/api/monitoring/v1"
 	infrastructurev1alpha1 "opendev.org/vexxhost/openstack-operator/api/v1alpha1"
 	"opendev.org/vexxhost/openstack-operator/builders"
-	"opendev.org/vexxhost/openstack-operator/utils"
+	"opendev.org/vexxhost/openstack-operator/utils/baseutils"
+	"opendev.org/vexxhost/openstack-operator/utils/k8sutils"
 )
 
 // RabbitmqReconciler reconciles a Rabbitmq object
@@ -52,10 +53,15 @@ func (r *RabbitmqReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	}
 
 	// Labels
+	typeLabels := baseutils.MergeMapsWithoutOverwrite(map[string]string{
+		"app.kubernetes.io/name":       "rabbitmq",
+		"app.kubernetes.io/managed-by": "openstack-operator",
+	}, Rabbitmq.Labels)
+
 	labels := map[string]string{
 		"app.kubernetes.io/name":       "rabbitmq",
-		"app.kubernetes.io/instance":   req.Name,
 		"app.kubernetes.io/managed-by": "openstack-operator",
+		"app.kubernetes.io/instance":   req.Name,
 	}
 
 	// Deployment
@@ -65,7 +71,7 @@ func (r *RabbitmqReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 			Name:      fmt.Sprintf("rabbitmq-%s", req.Name),
 		},
 	}
-	op, err := utils.CreateOrUpdate(ctx, r, deployment, func() error {
+	op, err := k8sutils.CreateOrUpdate(ctx, r, deployment, func() error {
 		return builders.Deployment(deployment, &Rabbitmq, r.Scheme).
 			Labels(labels).
 			Replicas(1).
@@ -107,15 +113,12 @@ func (r *RabbitmqReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: req.Namespace,
 			Name:      "rabbitmq-podmonitor",
-			Labels: map[string]string{
-				"app.kubernetes.io/name":       "rabbitmq",
-				"app.kubernetes.io/managed-by": "openstack-operator",
-			},
 		},
 	}
 
-	op, err = utils.CreateOrUpdate(ctx, r, podMonitor, func() error {
+	op, err = k8sutils.CreateOrUpdate(ctx, r, podMonitor, func() error {
 		return builders.PodMonitor(podMonitor, &Rabbitmq, r.Scheme).
+			Labels(typeLabels).
 			Selector(map[string]string{
 				"app.kubernetes.io/name": "rabbitmq",
 			}).
@@ -139,8 +142,9 @@ func (r *RabbitmqReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 			Name:      "rabbitmq-alertrule",
 		},
 	}
-	op, err = utils.CreateOrUpdate(ctx, r, alertRule, func() error {
+	op, err = k8sutils.CreateOrUpdate(ctx, r, alertRule, func() error {
 		return builders.PrometheusRule(alertRule, &Rabbitmq, r.Scheme).
+			Labels(typeLabels).
 			RuleGroups(builders.RuleGroup().
 				Name("rabbitmq-rule").
 				Rules(
@@ -180,7 +184,7 @@ func (r *RabbitmqReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 			Name:      fmt.Sprintf("rabbitmq-%s", req.Name),
 		},
 	}
-	op, err = utils.CreateOrUpdate(ctx, r, service, func() error {
+	op, err = k8sutils.CreateOrUpdate(ctx, r, service, func() error {
 		return builders.Service(service, &Rabbitmq, r.Scheme).
 			Port("epmd", 4369).
 			Port("amqp", 5671).

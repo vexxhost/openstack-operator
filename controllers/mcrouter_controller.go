@@ -16,7 +16,8 @@ import (
 	monitoringv1 "opendev.org/vexxhost/openstack-operator/api/monitoring/v1"
 	infrastructurev1alpha1 "opendev.org/vexxhost/openstack-operator/api/v1alpha1"
 	"opendev.org/vexxhost/openstack-operator/builders"
-	"opendev.org/vexxhost/openstack-operator/utils"
+	"opendev.org/vexxhost/openstack-operator/utils/baseutils"
+	"opendev.org/vexxhost/openstack-operator/utils/k8sutils"
 )
 
 // McrouterReconciler reconciles a Mcrouter object
@@ -44,10 +45,15 @@ func (r *McrouterReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	}
 
 	// Labels
+	typeLabels := baseutils.MergeMapsWithoutOverwrite(map[string]string{
+		"app.kubernetes.io/name":       "mcrouter",
+		"app.kubernetes.io/managed-by": "openstack-operator",
+	}, mcrouter.Labels)
+
 	labels := map[string]string{
 		"app.kubernetes.io/name":       "mcrouter",
-		"app.kubernetes.io/instance":   req.Name,
 		"app.kubernetes.io/managed-by": "openstack-operator",
+		"app.kubernetes.io/instance":   req.Name,
 	}
 
 	// ConfigMap
@@ -57,7 +63,7 @@ func (r *McrouterReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 			Name:      fmt.Sprintf("mcrouter-%s", req.Name),
 		},
 	}
-	op, err := utils.CreateOrUpdate(ctx, r, configMap, func() error {
+	op, err := k8sutils.CreateOrUpdate(ctx, r, configMap, func() error {
 		b, err := json.Marshal(mcrouter.Spec)
 
 		if err != nil {
@@ -80,7 +86,7 @@ func (r *McrouterReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 			Name:      fmt.Sprintf("mcrouter-%s", req.Name),
 		},
 	}
-	op, err = utils.CreateOrUpdate(ctx, r, deployment, func() error {
+	op, err = k8sutils.CreateOrUpdate(ctx, r, deployment, func() error {
 		return builders.Deployment(deployment, &mcrouter, r.Scheme).
 			Labels(labels).
 			Replicas(2).
@@ -131,15 +137,12 @@ func (r *McrouterReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: req.Namespace,
 			Name:      "mcrouter-podmonitor",
-			Labels: map[string]string{
-				"app.kubernetes.io/name":       "mcrouter",
-				"app.kubernetes.io/managed-by": "openstack-operator",
-			},
 		},
 	}
 
-	op, err = utils.CreateOrUpdate(ctx, r, podMonitor, func() error {
+	op, err = k8sutils.CreateOrUpdate(ctx, r, podMonitor, func() error {
 		return builders.PodMonitor(podMonitor, &mcrouter, r.Scheme).
+			Labels(typeLabels).
 			Selector(map[string]string{
 				"app.kubernetes.io/name": "mcrouter",
 			}).
@@ -163,13 +166,13 @@ func (r *McrouterReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 			Name:      "mcrouter-alertrule",
 		},
 	}
-	op, err = utils.CreateOrUpdate(ctx, r, alertRule, func() error {
+	op, err = k8sutils.CreateOrUpdate(ctx, r, alertRule, func() error {
 
 		return builders.PrometheusRule(alertRule, &mcrouter, r.Scheme).
+			Labels(typeLabels).
 			RuleGroups(builders.RuleGroup().
 				Name("mcrouter-rule").
 				Rules(
-
 					builders.Rule().
 						Alert("McrouterBackendDown").
 						Message("Backend Memcached servers are down.").
@@ -196,7 +199,7 @@ func (r *McrouterReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 			Name:      fmt.Sprintf("mcrouter-%s", req.Name),
 		},
 	}
-	op, err = utils.CreateOrUpdate(ctx, r, service, func() error {
+	op, err = k8sutils.CreateOrUpdate(ctx, r, service, func() error {
 		return builders.Service(service, &mcrouter, r.Scheme).
 			Port("mcrouter", 11211).
 			Selector(labels).

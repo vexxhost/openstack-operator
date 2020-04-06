@@ -2,6 +2,8 @@ apiVersion: infrastructure.vexxhost.cloud/v1alpha1
 kind: Mcrouter
 metadata:
   name: sample
+  labels:
+    prometheus: helm
 spec:
   route: PoolRoute|default
   pools:

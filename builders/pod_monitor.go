@@ -25,6 +25,11 @@ func PodMonitor(existing *monitoringv1.PodMonitor, owner metav1.Object, scheme *
 	}
 }
 
+func (pm *PodMonitorBuilder) Labels(labels map[string]string) *PodMonitorBuilder {
+	pm.obj.Labels = labels
+	return pm
+}
+
 func (pm *PodMonitorBuilder) Selector(matchLabels map[string]string) *PodMonitorBuilder {
 	pm.obj.Spec.Selector = metav1.LabelSelector{
 		MatchLabels: matchLabels,
