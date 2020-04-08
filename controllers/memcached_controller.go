@@ -29,7 +29,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	infrastructurev1alpha1 "opendev.org/vexxhost/openstack-operator/api/v1alpha1"
 
@@ -221,21 +220,16 @@ func (r *MemcachedReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: req.Namespace,
 			Name:      fmt.Sprintf("memcached-%s", req.Name),
-			Labels:    mcrouterLabels,
 		},
 	}
-	op, err = controllerutil.CreateOrUpdate(ctx, r, mcrouter, func() error {
-		mcrouter.Spec.NodeSelector = memcached.Spec.NodeSelector
-		mcrouter.Spec.Tolerations = memcached.Spec.Tolerations
-
-		mcrouter.Spec.Route = "PoolRoute|default"
-		mcrouter.Spec.Pools = map[string]infrastructurev1alpha1.McrouterPoolSpec{
-			"default": infrastructurev1alpha1.McrouterPoolSpec{
-				Servers: servers,
-			},
-		}
-
-		return controllerutil.SetControllerReference(&memcached, mcrouter, r.Scheme)
+	op, err = k8sutils.CreateOrUpdate(ctx, r, mcrouter, func() error {
+		return builders.Mcrouter(mcrouter, &memcached, r.Scheme).
+			Labels(mcrouterLabels).
+			NodeSelector(memcached.Spec.NodeSelector).
+			Tolerations(memcached.Spec.Tolerations).
+			Route("PoolRoute|default").
+			Pool("default", builders.McrouterPoolSpec().Servers(servers)).
+			Build()
 	})
 	if err != nil {
 		return ctrl.Result{}, err
@@ -252,5 +246,6 @@ func (r *MemcachedReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Owns(&appsv1.Deployment{}).
 		Owns(&infrastructurev1alpha1.Mcrouter{}).
 		Owns(&monitoringv1.PodMonitor{}).
+		Owns(&monitoringv1.PrometheusRule{}).
 		Complete(r)
 }

@@ -221,5 +221,6 @@ func (r *McrouterReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Owns(&appsv1.Deployment{}).
 		Owns(&corev1.Service{}).
 		Owns(&monitoringv1.PodMonitor{}).
+		Owns(&monitoringv1.PrometheusRule{}).
 		Complete(r)
 }
