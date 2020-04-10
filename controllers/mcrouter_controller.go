@@ -27,6 +27,13 @@ type McrouterReconciler struct {
 	Scheme *runtime.Scheme
 }
 
+var (
+	_mcrouterBaseLabel = map[string]string{
+		"app.kubernetes.io/name":       "mcrouter",
+		"app.kubernetes.io/managed-by": "openstack-operator",
+	}
+)
+
 // +kubebuilder:rbac:groups=infrastructure.vexxhost.cloud,resources=mcrouters,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=infrastructure.vexxhost.cloud,resources=mcrouters/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=monitoring.coreos.com,resources=prometheusrules,verbs=get;list;watch;create;update;patch;delete
@@ -37,26 +44,55 @@ type McrouterReconciler struct {
 // Reconcile does the reconcilication of Mcrouter instances
 func (r *McrouterReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	ctx := context.Background()
-	log := r.Log.WithValues("mcrouter", req.NamespacedName)
-
 	var mcrouter infrastructurev1alpha1.Mcrouter
 	if err := r.Get(ctx, req.NamespacedName, &mcrouter); err != nil {
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
-	// Labels
-	typeLabels := baseutils.MergeMapsWithoutOverwrite(map[string]string{
-		"app.kubernetes.io/name":       "mcrouter",
-		"app.kubernetes.io/managed-by": "openstack-operator",
-	}, mcrouter.Labels)
-
-	labels := map[string]string{
-		"app.kubernetes.io/name":       "mcrouter",
-		"app.kubernetes.io/managed-by": "openstack-operator",
-		"app.kubernetes.io/instance":   req.Name,
+	// ConfigMap
+	if err := r.reconcileConfigmap(req, &mcrouter); err != nil {
+		return ctrl.Result{}, err
 	}
 
-	// ConfigMap
+	// Deployment
+	if err := r.reconcileDeployment(req, &mcrouter); err != nil {
+		return ctrl.Result{}, err
+	}
+
+	// PodMonitor
+	if err := r.reconcilePodMonitor(req, &mcrouter); err != nil {
+		return ctrl.Result{}, err
+	}
+
+	// Alertrule
+	if err := r.reconcilePrometheusRule(req, &mcrouter); err != nil {
+		return ctrl.Result{}, err
+	}
+
+	// Service
+	if err := r.reconcileService(req, &mcrouter); err != nil {
+		return ctrl.Result{}, err
+	}
+
+	return ctrl.Result{}, nil
+}
+
+// SetupWithManager initializes the controller with primary manager
+func (r *McrouterReconciler) SetupWithManager(mgr ctrl.Manager) error {
+	return ctrl.NewControllerManagedBy(mgr).
+		For(&infrastructurev1alpha1.Mcrouter{}).
+		Owns(&corev1.ConfigMap{}).
+		Owns(&appsv1.Deployment{}).
+		Owns(&corev1.Service{}).
+		Owns(&monitoringv1.PodMonitor{}).
+		Owns(&monitoringv1.PrometheusRule{}).
+		Complete(r)
+}
+
+func (r *McrouterReconciler) reconcileConfigmap(req ctrl.Request, mcrouter *infrastructurev1alpha1.Mcrouter) error {
+	ctx := context.Background()
+	log := r.Log.WithValues("mcrouter", req.NamespacedName)
+
 	configMap := &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: req.Namespace,
@@ -65,29 +101,36 @@ func (r *McrouterReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	}
 	op, err := k8sutils.CreateOrUpdate(ctx, r, configMap, func() error {
 		b, err := json.Marshal(mcrouter.Spec)
-
 		if err != nil {
 			return err
 		}
-
-		return builders.ConfigMap(configMap, &mcrouter, r.Scheme).
+		return builders.ConfigMap(configMap, mcrouter, r.Scheme).
 			Data("config.json", string(b)).
 			Build()
 	})
 	if err != nil {
-		return ctrl.Result{}, err
+		log.WithValues("resource", "ConfigMap").WithValues("op", op).Error(err, "Reconciled Failed")
+	} else {
+		log.WithValues("resource", "ConfigMap").WithValues("op", op).Info("Reconciled")
 	}
-	log.WithValues("resource", "ConfigMap").WithValues("op", op).Info("Reconciled")
+	return err
+}
 
-	// Deployment
+func (r *McrouterReconciler) reconcileDeployment(req ctrl.Request, mcrouter *infrastructurev1alpha1.Mcrouter) error {
+	ctx := context.Background()
+	log := r.Log.WithValues("mcrouter", req.NamespacedName)
+
+	labels := baseutils.MergeMaps(_mcrouterBaseLabel, map[string]string{
+		"app.kubernetes.io/instance": req.Name,
+	})
 	deployment := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: req.Namespace,
 			Name:      fmt.Sprintf("mcrouter-%s", req.Name),
 		},
 	}
-	op, err = k8sutils.CreateOrUpdate(ctx, r, deployment, func() error {
-		return builders.Deployment(deployment, &mcrouter, r.Scheme).
+	op, err := k8sutils.CreateOrUpdate(ctx, r, deployment, func() error {
+		return builders.Deployment(deployment, mcrouter, r.Scheme).
 			Labels(labels).
 			Replicas(2).
 			PodTemplateSpec(
@@ -117,18 +160,25 @@ func (r *McrouterReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 									),
 							).
 							Volumes(
-								builders.Volume("config").FromConfigMap(configMap.GetName()),
+								builders.Volume("config").FromConfigMap(fmt.Sprintf("mcrouter-%s", req.Name)),
 							),
 					),
 			).
 			Build()
 	})
-	if err != nil {
-		return ctrl.Result{}, err
-	}
-	log.WithValues("resource", "Deployment").WithValues("op", op).Info("Reconciled")
 
-	// PodMonitor
+	if err != nil {
+		log.WithValues("resource", "Deployment").WithValues("op", op).Error(err, "Reconciled Failed")
+	} else {
+		log.WithValues("resource", "Deployment").WithValues("op", op).Info("Reconciled")
+	}
+	return err
+}
+
+func (r *McrouterReconciler) reconcilePodMonitor(req ctrl.Request, mcrouter *infrastructurev1alpha1.Mcrouter) error {
+	ctx := context.Background()
+	log := r.Log.WithValues("mcrouter", req.NamespacedName)
+	labels := baseutils.MergeMapsWithoutOverwrite(_mcrouterBaseLabel, mcrouter.Labels)
 	podMonitor := &monitoringv1.PodMonitor{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: "monitoring.coreos.com/v1",
@@ -140,9 +190,9 @@ func (r *McrouterReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		},
 	}
 
-	op, err = k8sutils.CreateOrUpdate(ctx, r, podMonitor, func() error {
-		return builders.PodMonitor(podMonitor, &mcrouter, r.Scheme).
-			Labels(typeLabels).
+	op, err := k8sutils.CreateOrUpdate(ctx, r, podMonitor, func() error {
+		return builders.PodMonitor(podMonitor, mcrouter, r.Scheme).
+			Labels(labels).
 			Selector(map[string]string{
 				"app.kubernetes.io/name": "mcrouter",
 			}).
@@ -155,21 +205,29 @@ func (r *McrouterReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 
 	})
 	if err != nil {
-		return ctrl.Result{}, err
+		log.WithValues("resource", "PodMonitor").WithValues("op", op).Error(err, "Reconciled Failed")
+	} else {
+		log.WithValues("resource", "PodMonitor").WithValues("op", op).Info("Reconciled")
 	}
-	log.WithValues("resource", "mcrouter-podmonitor").WithValues("op", op).Info("Reconciled")
+	return err
+}
 
-	// Alertrule
+func (r *McrouterReconciler) reconcilePrometheusRule(req ctrl.Request, mcrouter *infrastructurev1alpha1.Mcrouter) error {
+	ctx := context.Background()
+	log := r.Log.WithValues("mcrouter", req.NamespacedName)
+	labels := baseutils.MergeMapsWithoutOverwrite(_mcrouterBaseLabel, mcrouter.Labels)
+
 	alertRule := &monitoringv1.PrometheusRule{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: req.Namespace,
 			Name:      "mcrouter-alertrule",
 		},
 	}
-	op, err = k8sutils.CreateOrUpdate(ctx, r, alertRule, func() error {
 
-		return builders.PrometheusRule(alertRule, &mcrouter, r.Scheme).
-			Labels(typeLabels).
+	op, err := k8sutils.CreateOrUpdate(ctx, r, alertRule, func() error {
+
+		return builders.PrometheusRule(alertRule, mcrouter, r.Scheme).
+			Labels(labels).
 			RuleGroups(builders.RuleGroup().
 				Name("mcrouter-rule").
 				Rules(
@@ -188,39 +246,34 @@ func (r *McrouterReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 			Build()
 	})
 	if err != nil {
-		return ctrl.Result{}, err
+		log.WithValues("resource", "AlertRule").WithValues("op", op).Error(err, "Reconciled Failed")
+	} else {
+		log.WithValues("resource", "AlertRule").WithValues("op", op).Info("Reconciled")
 	}
-	log.WithValues("resource", "mcrouter-alertrule").WithValues("op", op).Info("Reconciled")
+	return err
+}
 
-	// Service
+func (r *McrouterReconciler) reconcileService(req ctrl.Request, mcrouter *infrastructurev1alpha1.Mcrouter) error {
+	ctx := context.Background()
+	log := r.Log.WithValues("mcrouter", req.NamespacedName)
+	labels := baseutils.MergeMapsWithoutOverwrite(_mcrouterBaseLabel, mcrouter.Labels)
+
 	service := &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: req.Namespace,
 			Name:      fmt.Sprintf("mcrouter-%s", req.Name),
 		},
 	}
-	op, err = k8sutils.CreateOrUpdate(ctx, r, service, func() error {
-		return builders.Service(service, &mcrouter, r.Scheme).
+	op, err := k8sutils.CreateOrUpdate(ctx, r, service, func() error {
+		return builders.Service(service, mcrouter, r.Scheme).
 			Port("mcrouter", 11211).
 			Selector(labels).
 			Build()
 	})
 	if err != nil {
-		return ctrl.Result{}, err
+		log.WithValues("resource", "Service").WithValues("op", op).Error(err, "Reconciled Failed")
+	} else {
+		log.WithValues("resource", "Service").WithValues("op", op).Info("Reconciled")
 	}
-	log.WithValues("resource", "Service").WithValues("op", op).Info("Reconciled")
-
-	return ctrl.Result{}, nil
-}
-
-// SetupWithManager initializes the controller with primary manager
-func (r *McrouterReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	return ctrl.NewControllerManagedBy(mgr).
-		For(&infrastructurev1alpha1.Mcrouter{}).
-		Owns(&corev1.ConfigMap{}).
-		Owns(&appsv1.Deployment{}).
-		Owns(&corev1.Service{}).
-		Owns(&monitoringv1.PodMonitor{}).
-		Owns(&monitoringv1.PrometheusRule{}).
-		Complete(r)
+	return err
 }
