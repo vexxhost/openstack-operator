@@ -1,0 +1,25 @@
+- name: Create Rabbitmq custom resource
+  command: kubectl apply -f {{ zuul.project.src_dir }}/config/samples/infrastructure_v1alpha1_rabbitmq.yaml
+
+- name: Wait for all pods to become Ready
+  include_role:
+    name: wait-for-pods
+
+- name: Get all pod IPs for Rabbitmq
+  command: kubectl get pods -l app.kubernetes.io/name=rabbitmq,app.kubernetes.io/instance=sample -o=jsonpath='{range .items[*]}{.status.podIP}{"\n"}{end}'
+  register: _rabbitmq_ips
+  until: _rabbitmq_ips is success
+  retries: 10
+  delay: 5
+  failed_when: "{{ _rabbitmq_ips.stdout_lines | length == 0 }}"
+
+- name: Send request to Rabbitmq exporter
+  uri:
+    url: "http://{{ item }}:15692/metrics"
+    return_content: yes
+  register: _metrics
+  loop: "{{ _rabbitmq_ips.stdout_lines }}"
+  until: _metrics is success
+  retries: 10
+  delay: 5
+  failed_when: "'rabbitmq_erlang_uptime_seconds' not in _metrics.content"

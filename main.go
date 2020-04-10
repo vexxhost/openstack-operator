@@ -76,6 +76,7 @@ func main() {
 	// Setup controllers with manager
 	setupMcrouterReconciler(mgr)
 	setupMemcachedReconciler(mgr)
+	setupRabbitmqReconciler(mgr)
 	setupZoneReconciler(mgr, designateClientBuilder)
 	setupDesignateReconciler(mgr, designateClientBuilder)
 
@@ -133,6 +134,18 @@ func setupMemcachedReconciler(mgr ctrl.Manager) {
 		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Memcached")
+		os.Exit(1)
+	}
+}
+
+// setupRabbitmqReconciler setups the Rabbitmq controller with manager
+func setupRabbitmqReconciler(mgr ctrl.Manager) {
+	if err := (&controllers.RabbitmqReconciler{
+		Client: mgr.GetClient(),
+		Log:    ctrl.Log.WithName("controllers").WithName("Rabbitmq"),
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "Rabbitmq")
 		os.Exit(1)
 	}
 }
