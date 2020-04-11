@@ -1,0 +1,19 @@
+- job:
+    name: openstack-operator:linters:chart
+    parent: chart-testing-lint
+    vars:
+      zuul_work_dir: "{{ zuul.project.src_dir }}/chart"
+
+- project:
+    templates:
+      - publish-opendev-tox-docs
+    check:
+      jobs:
+        - golangci-lint
+        - golang-go-test
+        - openstack-operator:linters:chart
+    gate:
+      jobs:
+        - golangci-lint
+        - golang-go-test
+        - openstack-operator:linters:chart

@@ -61,7 +61,7 @@ generate: controller-gen
 
 # Build the docker image
 docker-build: test
-	docker build . -t ${IMG}
+	docker build . -f images/openstack-operator/Dockerfile -t ${IMG}
 
 # Push the docker image
 docker-push:
@@ -87,8 +87,8 @@ endif
 # run-time images
 images:
 	docker build images/mcrouter -t vexxhost/mcrouter:latest
-	docker build images/mcrouter_exporter -t vexxhost/mcrouter_exporter:latest
+	docker build images/mcrouter-exporter -t vexxhost/mcrouter-exporter:latest
 	docker build images/memcached -t vexxhost/memcached:latest
-	docker build images/memcached_exporter -t vexxhost/memcached_exporter:latest
+	docker build images/memcached-exporter -t vexxhost/memcached-exporter:latest
 	docker build images/rabbitmq -t vexxhost/rabbitmq:latest
 

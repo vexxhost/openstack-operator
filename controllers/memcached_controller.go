@@ -111,7 +111,7 @@ func (r *MemcachedReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 										builders.SecurityContext().
 											RunAsUser(1001),
 									),
-								builders.Container("exporter", "vexxhost/memcached_exporter:latest").
+								builders.Container("exporter", "vexxhost/memcached-exporter:latest").
 									Port("metrics", 9150).HTTPProbe("metrics", "/metrics", 10, 30).
 									Resources(500, 128, 500, 2).
 									SecurityContext(

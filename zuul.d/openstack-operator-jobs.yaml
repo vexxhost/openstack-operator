@@ -1,0 +1,31 @@
+- job:
+    name: openstack-operator:images:build:openstack-operator
+    parent: vexxhost-build-docker-image
+    provides: openstack-operator:image:openstack-operator
+    dependencies: &id001
+    - opendev-buildset-registry
+    vars: &id002
+      docker_images:
+      - context: .
+        repository: vexxhost/openstack-operator
+        dockerfile: images/openstack-operator/Dockerfile
+- job:
+    name: openstack-operator:images:upload:openstack-operator
+    parent: vexxhost-upload-docker-image
+    provides: openstack-operator:image:openstack-operator
+    dependencies: *id001
+    vars: *id002
+- job:
+    name: openstack-operator:images:promote:openstack-operator
+    parent: vexxhost-promote-docker-image
+    vars: *id002
+- project:
+    check:
+      jobs:
+      - openstack-operator:images:build:openstack-operator
+    gate:
+      jobs:
+      - openstack-operator:images:upload:openstack-operator
+    promote:
+      jobs:
+      - openstack-operator:images:promote:openstack-operator

@@ -1,0 +1,34 @@
+- job:
+    name: openstack-operator:images:build:memcached-exporter
+    parent: vexxhost-build-docker-image
+    provides: openstack-operator:image:memcached-exporter
+    dependencies: &id001
+    - opendev-buildset-registry
+    vars: &id002
+      docker_images:
+      - context: images/memcached-exporter
+        repository: vexxhost/memcached-exporter
+    files: &id003
+    - ^images/memcached-exporter/.*
+- job:
+    name: openstack-operator:images:upload:memcached-exporter
+    parent: vexxhost-upload-docker-image
+    provides: openstack-operator:image:memcached-exporter
+    dependencies: *id001
+    vars: *id002
+    files: *id003
+- job:
+    name: openstack-operator:images:promote:memcached-exporter
+    parent: vexxhost-promote-docker-image
+    vars: *id002
+    files: *id003
+- project:
+    check:
+      jobs:
+      - openstack-operator:images:build:memcached-exporter
+    gate:
+      jobs:
+      - openstack-operator:images:upload:memcached-exporter
+    promote:
+      jobs:
+      - openstack-operator:images:promote:memcached-exporter

@@ -107,7 +107,7 @@ func (r *McrouterReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 											RunAsUser(999).
 											RunAsGroup(999),
 									),
-								builders.Container("exporter", "vexxhost/mcrouter_exporter:latest").
+								builders.Container("exporter", "vexxhost/mcrouter-exporter:latest").
 									Args("-mcrouter.address", "localhost:11211").
 									Port("metrics", 9442).HTTPProbe("metrics", "/metrics", 10, 30).
 									Resources(500, 128, 500, 2).

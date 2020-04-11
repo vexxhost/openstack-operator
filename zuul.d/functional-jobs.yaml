@@ -1,0 +1,47 @@
+- job:
+    name: openstack-operator:functional
+    parent: devstack-tempest
+    requires:
+    - openstack-operator:images
+    pre-run: playbooks/functional/pre.yaml
+    run: playbooks/functional/run.yaml
+    post-run: playbooks/functional/post.yaml
+    vars:
+      devstack_services:
+        etcd3: false
+      docker_use_buildset_registry: true
+      minikube_dns_resolvers: [1.1.1.1, 8.8.8.8]
+
+- project:
+    check:
+      jobs:
+      - opendev-buildset-registry
+      - openstack-operator:functional:
+          dependencies:
+          - name: openstack-operator:images:build:rabbitmq
+            soft: true
+          - name: openstack-operator:images:build:memcached
+            soft: true
+          - name: openstack-operator:images:build:mcrouter
+            soft: true
+          - openstack-operator:images:build:openstack-operator
+          - name: openstack-operator:images:build:mcrouter-exporter
+            soft: true
+          - name: openstack-operator:images:build:memcached-exporter
+            soft: true
+    gate:
+      jobs:
+      - opendev-buildset-registry
+      - openstack-operator:functional:
+          dependencies:
+          - name: openstack-operator:images:upload:rabbitmq
+            soft: true
+          - name: openstack-operator:images:upload:memcached
+            soft: true
+          - name: openstack-operator:images:upload:mcrouter
+            soft: true
+          - openstack-operator:images:upload:openstack-operator
+          - name: openstack-operator:images:upload:mcrouter-exporter
+            soft: true
+          - name: openstack-operator:images:upload:memcached-exporter
+            soft: true
