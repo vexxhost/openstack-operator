@@ -22,3 +22,6 @@ bin
 *.swp
 *.swo
 *~
+
+doc/build
+.tox
