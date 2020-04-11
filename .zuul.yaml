@@ -61,6 +61,7 @@
     gate:
       jobs:
         - golangci-lint
+        - golang-go-test
         - openstack-operator:linters:chart
         - openstack-operator:images:upload
         - openstack-operator:functional:
