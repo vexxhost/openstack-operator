@@ -26,13 +26,6 @@ type RabbitmqReconciler struct {
 	Scheme *runtime.Scheme
 }
 
-var (
-	_rabbitmqBaseLabel = map[string]string{
-		"app.kubernetes.io/name":       "rabbitmq",
-		"app.kubernetes.io/managed-by": "openstack-operator",
-	}
-)
-
 const (
 	_rabbitmqDefaultUsernameCfgKey = "username"
 	_rabbitmqDefaultPasswordCfgKey = "password"
@@ -52,52 +45,26 @@ const (
 // Reconcile does the reconcilication of Rabbitmq instances
 func (r *RabbitmqReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	ctx := context.Background()
+	log := r.Log.WithValues("rabbitmq", req.NamespacedName)
 
 	var Rabbitmq infrastructurev1alpha1.Rabbitmq
 	if err := r.Get(ctx, req.NamespacedName, &Rabbitmq); err != nil {
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
+	// Labels
+	typeLabels := baseutils.MergeMapsWithoutOverwrite(map[string]string{
+		"app.kubernetes.io/name":       "rabbitmq",
+		"app.kubernetes.io/managed-by": "openstack-operator",
+	}, Rabbitmq.Labels)
+
+	labels := map[string]string{
+		"app.kubernetes.io/name":       "rabbitmq",
+		"app.kubernetes.io/managed-by": "openstack-operator",
+		"app.kubernetes.io/instance":   req.Name,
+	}
+
 	// Deployment
-	if err := r.reconcileDeployment(req, &Rabbitmq); err != nil {
-		return ctrl.Result{}, err
-	}
-
-	// PodMonitor
-	if err := r.reconcilePodMonitor(req, &Rabbitmq); err != nil {
-		return ctrl.Result{}, err
-	}
-
-	// Alertrule
-	if err := r.reconcilePrometheusRule(req, &Rabbitmq); err != nil {
-		return ctrl.Result{}, err
-	}
-
-	// Service
-	if err := r.reconcileService(req, &Rabbitmq); err != nil {
-		return ctrl.Result{}, err
-	}
-
-	return ctrl.Result{}, nil
-}
-
-// SetupWithManager initializes the controller with primary manager
-func (r *RabbitmqReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	return ctrl.NewControllerManagedBy(mgr).
-		For(&infrastructurev1alpha1.Rabbitmq{}).
-		Owns(&appsv1.Deployment{}).
-		Owns(&corev1.Service{}).
-		Owns(&monitoringv1.PodMonitor{}).
-		Owns(&monitoringv1.PrometheusRule{}).
-		Complete(r)
-}
-
-func (r *RabbitmqReconciler) reconcileDeployment(req ctrl.Request, rabbitmq *infrastructurev1alpha1.Rabbitmq) error {
-	ctx := context.Background()
-	log := r.Log.WithValues("rabbitmq", req.NamespacedName)
-	labels := baseutils.MergeMaps(_rabbitmqBaseLabel, map[string]string{
-		"app.kubernetes.io/instance": req.Name,
-	})
 	deployment := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: req.Namespace,
@@ -105,19 +72,19 @@ func (r *RabbitmqReconciler) reconcileDeployment(req ctrl.Request, rabbitmq *inf
 		},
 	}
 	op, err := k8sutils.CreateOrUpdate(ctx, r, deployment, func() error {
-		return builders.Deployment(deployment, rabbitmq, r.Scheme).
+		return builders.Deployment(deployment, &Rabbitmq, r.Scheme).
 			Labels(labels).
 			Replicas(1).
 			PodTemplateSpec(
 				builders.PodTemplateSpec().
 					PodSpec(
 						builders.PodSpec().
-							NodeSelector(rabbitmq.Spec.NodeSelector).
-							Tolerations(rabbitmq.Spec.Tolerations).
+							NodeSelector(Rabbitmq.Spec.NodeSelector).
+							Tolerations(Rabbitmq.Spec.Tolerations).
 							Containers(
 								builders.Container("rabbitmq", "vexxhost/rabbitmq:latest").
-									EnvVarFromSecret("RABBITMQ_DEFAULT_USER", rabbitmq.Spec.AuthSecret, _rabbitmqDefaultUsernameCfgKey).
-									EnvVarFromSecret("RABBITMQ_DEFAULT_PASS", rabbitmq.Spec.AuthSecret, _rabbitmqDefaultPasswordCfgKey).
+									EnvVarFromSecret("RABBITMQ_DEFAULT_USER", Rabbitmq.Spec.AuthSecret, _rabbitmqDefaultUsernameCfgKey).
+									EnvVarFromSecret("RABBITMQ_DEFAULT_PASS", Rabbitmq.Spec.AuthSecret, _rabbitmqDefaultPasswordCfgKey).
 									Port("rabbitmq", _rabbitmqPort).
 									Port("metrics", _rabbitmqBuiltinMetricPort).
 									PortProbe("rabbitmq", 15, 30).
@@ -133,17 +100,11 @@ func (r *RabbitmqReconciler) reconcileDeployment(req ctrl.Request, rabbitmq *inf
 			Build()
 	})
 	if err != nil {
-		log.WithValues("resource", "Deployment").WithValues("op", op).Error(err, "Reconciled Failed")
-	} else {
-		log.WithValues("resource", "Deployment").WithValues("op", op).Info("Reconciled")
+		return ctrl.Result{}, err
 	}
-	return err
-}
+	log.WithValues("resource", "Deployment").WithValues("op", op).Info("Reconciled")
 
-func (r *RabbitmqReconciler) reconcilePodMonitor(req ctrl.Request, rabbitmq *infrastructurev1alpha1.Rabbitmq) error {
-	ctx := context.Background()
-	log := r.Log.WithValues("rabbitmq", req.NamespacedName)
-	labels := baseutils.MergeMapsWithoutOverwrite(_rabbitmqBaseLabel, rabbitmq.Labels)
+	// PodMonitor
 	podMonitor := &monitoringv1.PodMonitor{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: "monitoring.coreos.com/v1",
@@ -155,9 +116,9 @@ func (r *RabbitmqReconciler) reconcilePodMonitor(req ctrl.Request, rabbitmq *inf
 		},
 	}
 
-	op, err := k8sutils.CreateOrUpdate(ctx, r, podMonitor, func() error {
-		return builders.PodMonitor(podMonitor, rabbitmq, r.Scheme).
-			Labels(labels).
+	op, err = k8sutils.CreateOrUpdate(ctx, r, podMonitor, func() error {
+		return builders.PodMonitor(podMonitor, &Rabbitmq, r.Scheme).
+			Labels(typeLabels).
 			Selector(map[string]string{
 				"app.kubernetes.io/name": "rabbitmq",
 			}).
@@ -170,27 +131,20 @@ func (r *RabbitmqReconciler) reconcilePodMonitor(req ctrl.Request, rabbitmq *inf
 
 	})
 	if err != nil {
-		log.WithValues("resource", "PodMonitor").WithValues("op", op).Error(err, "Reconciled Failed")
-	} else {
-		log.WithValues("resource", "PodMonitor").WithValues("op", op).Info("Reconciled")
+		return ctrl.Result{}, err
 	}
-	return err
-}
+	log.WithValues("resource", "rabbitmq-podmonitor").WithValues("op", op).Info("Reconciled")
 
-func (r *RabbitmqReconciler) reconcilePrometheusRule(req ctrl.Request, rabbitmq *infrastructurev1alpha1.Rabbitmq) error {
-	ctx := context.Background()
-	log := r.Log.WithValues("rabbitmq", req.NamespacedName)
-	labels := baseutils.MergeMapsWithoutOverwrite(_rabbitmqBaseLabel, rabbitmq.Labels)
-
+	// Alertrule
 	alertRule := &monitoringv1.PrometheusRule{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: req.Namespace,
 			Name:      "rabbitmq-alertrule",
 		},
 	}
-	op, err := k8sutils.CreateOrUpdate(ctx, r, alertRule, func() error {
-		return builders.PrometheusRule(alertRule, rabbitmq, r.Scheme).
-			Labels(labels).
+	op, err = k8sutils.CreateOrUpdate(ctx, r, alertRule, func() error {
+		return builders.PrometheusRule(alertRule, &Rabbitmq, r.Scheme).
+			Labels(typeLabels).
 			RuleGroups(builders.RuleGroup().
 				Name("rabbitmq-rule").
 				Rules(
@@ -219,28 +173,19 @@ func (r *RabbitmqReconciler) reconcilePrometheusRule(req ctrl.Request, rabbitmq 
 			Build()
 	})
 	if err != nil {
-		log.WithValues("resource", "AlertRule").WithValues("op", op).Error(err, "Reconciled Failed")
-	} else {
-		log.WithValues("resource", "AlertRule").WithValues("op", op).Info("Reconciled")
+		return ctrl.Result{}, err
 	}
-	return err
-}
+	log.WithValues("resource", "rabbitmq-alertrule").WithValues("op", op).Info("Reconciled")
 
-func (r *RabbitmqReconciler) reconcileService(req ctrl.Request, rabbitmq *infrastructurev1alpha1.Rabbitmq) error {
-	ctx := context.Background()
-	log := r.Log.WithValues("rabbitmq", req.NamespacedName)
-	labels := baseutils.MergeMapsWithoutOverwrite(_rabbitmqBaseLabel, map[string]string{
-		"app.kubernetes.io/instance": req.Name,
-	})
-
+	// Service
 	service := &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: req.Namespace,
 			Name:      fmt.Sprintf("rabbitmq-%s", req.Name),
 		},
 	}
-	op, err := k8sutils.CreateOrUpdate(ctx, r, service, func() error {
-		return builders.Service(service, rabbitmq, r.Scheme).
+	op, err = k8sutils.CreateOrUpdate(ctx, r, service, func() error {
+		return builders.Service(service, &Rabbitmq, r.Scheme).
 			Port("epmd", 4369).
 			Port("amqp", 5671).
 			Port("distport", 25672).
@@ -248,9 +193,20 @@ func (r *RabbitmqReconciler) reconcileService(req ctrl.Request, rabbitmq *infras
 			Build()
 	})
 	if err != nil {
-		log.WithValues("resource", "Service").WithValues("op", op).Error(err, "Reconciled Failed")
-	} else {
-		log.WithValues("resource", "Service").WithValues("op", op).Info("Reconciled")
+		return ctrl.Result{}, err
 	}
-	return err
+	log.WithValues("resource", "Service").WithValues("op", op).Info("Reconciled")
+
+	return ctrl.Result{}, nil
+}
+
+// SetupWithManager initializes the controller with primary manager
+func (r *RabbitmqReconciler) SetupWithManager(mgr ctrl.Manager) error {
+	return ctrl.NewControllerManagedBy(mgr).
+		For(&infrastructurev1alpha1.Rabbitmq{}).
+		Owns(&appsv1.Deployment{}).
+		Owns(&corev1.Service{}).
+		Owns(&monitoringv1.PodMonitor{}).
+		Owns(&monitoringv1.PrometheusRule{}).
+		Complete(r)
 }

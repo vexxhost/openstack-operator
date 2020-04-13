@@ -45,13 +45,6 @@ type MemcachedReconciler struct {
 	Scheme *runtime.Scheme
 }
 
-var (
-	_memcachedBaseLabel = map[string]string{
-		"app.kubernetes.io/name":       "memcached",
-		"app.kubernetes.io/managed-by": "openstack-operator",
-	}
-)
-
 // +kubebuilder:rbac:groups=infrastructure.vexxhost.cloud,resources=memcacheds,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=infrastructure.vexxhost.cloud,resources=memcacheds/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=monitoring.coreos.com,resources=prometheusrules,verbs=get;list;watch;create;update;patch;delete
@@ -62,50 +55,33 @@ var (
 // Reconcile does the reconcilication of Memcached instances
 func (r *MemcachedReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	ctx := context.Background()
+	log := r.Log.WithValues("memcached", req.NamespacedName)
 
 	var memcached infrastructurev1alpha1.Memcached
 	if err := r.Get(ctx, req.NamespacedName, &memcached); err != nil {
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
-	// Deployment
-	if err := r.reconcileDeployment(req, &memcached); err != nil {
-		return ctrl.Result{}, err
-	}
-
-	// PodMonitor
-	if err := r.reconcilePodMonitor(req, &memcached); err != nil {
-		return ctrl.Result{}, err
-	}
-
-	// Alertrule
-	if err := r.reconcilePrometheusRule(req, &memcached); err != nil {
-		return ctrl.Result{}, err
-	}
-
-	// Mcrouter
-	return r.reconcileMcrouter(req, &memcached)
-}
-
-// SetupWithManager initializes the controller with primary manager
-func (r *MemcachedReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	return ctrl.NewControllerManagedBy(mgr).
-		For(&infrastructurev1alpha1.Memcached{}).
-		Owns(&appsv1.Deployment{}).
-		Owns(&infrastructurev1alpha1.Mcrouter{}).
-		Owns(&monitoringv1.PodMonitor{}).
-		Owns(&monitoringv1.PrometheusRule{}).
-		Complete(r)
-}
-
-func (r *MemcachedReconciler) reconcileDeployment(req ctrl.Request, memcached *infrastructurev1alpha1.Memcached) error {
-
-	ctx := context.Background()
-	log := r.Log.WithValues("memcached", req.NamespacedName)
+	// Calculate size per shared
 	size := memcached.Spec.Megabytes / 2
-	labels := baseutils.MergeMaps(_memcachedBaseLabel, map[string]string{
-		"app.kubernetes.io/instance": req.Name,
-	})
+
+	// Labels
+	typeLabels := baseutils.MergeMapsWithoutOverwrite(map[string]string{
+		"app.kubernetes.io/name":       "memcached",
+		"app.kubernetes.io/managed-by": "openstack-operator",
+	}, memcached.Labels)
+
+	labels := map[string]string{
+		"app.kubernetes.io/name":       "memcached",
+		"app.kubernetes.io/managed-by": "openstack-operator",
+		"app.kubernetes.io/instance":   req.Name,
+	}
+	mcrouterLabels := baseutils.MergeMapsWithoutOverwrite(map[string]string{
+		"app.kubernetes.io/name":       "memcached",
+		"app.kubernetes.io/managed-by": "openstack-operator",
+		"app.kubernetes.io/instance":   req.Name,
+	}, memcached.Labels)
+
 	// Deployment
 	deployment := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
@@ -116,7 +92,7 @@ func (r *MemcachedReconciler) reconcileDeployment(req ctrl.Request, memcached *i
 	}
 
 	op, err := k8sutils.CreateOrUpdate(ctx, r, deployment, func() error {
-		return builders.Deployment(deployment, memcached, r.Scheme).
+		return builders.Deployment(deployment, &memcached, r.Scheme).
 			Labels(labels).
 			Replicas(2).
 			PodTemplateSpec(
@@ -148,17 +124,11 @@ func (r *MemcachedReconciler) reconcileDeployment(req ctrl.Request, memcached *i
 			Build()
 	})
 	if err != nil {
-		log.WithValues("resource", "Deployment").WithValues("op", op).Error(err, "Reconciled Failed")
-	} else {
-		log.WithValues("resource", "Deployment").WithValues("op", op).Info("Reconciled")
+		return ctrl.Result{}, err
 	}
-	return err
-}
+	log.WithValues("resource", "Deployment").WithValues("op", op).Info("Reconciled")
 
-func (r *MemcachedReconciler) reconcilePodMonitor(req ctrl.Request, memcached *infrastructurev1alpha1.Memcached) error {
-	ctx := context.Background()
-	log := r.Log.WithValues("memcached", req.NamespacedName)
-	labels := baseutils.MergeMapsWithoutOverwrite(_memcachedBaseLabel, memcached.Labels)
+	// PodMonitor
 	podMonitor := &monitoringv1.PodMonitor{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: "monitoring.coreos.com/v1",
@@ -170,9 +140,9 @@ func (r *MemcachedReconciler) reconcilePodMonitor(req ctrl.Request, memcached *i
 		},
 	}
 
-	op, err := k8sutils.CreateOrUpdate(ctx, r, podMonitor, func() error {
-		return builders.PodMonitor(podMonitor, memcached, r.Scheme).
-			Labels(labels).
+	op, err = k8sutils.CreateOrUpdate(ctx, r, podMonitor, func() error {
+		return builders.PodMonitor(podMonitor, &memcached, r.Scheme).
+			Labels(typeLabels).
 			Selector(map[string]string{
 				"app.kubernetes.io/name": "memcached",
 			}).
@@ -185,29 +155,45 @@ func (r *MemcachedReconciler) reconcilePodMonitor(req ctrl.Request, memcached *i
 
 	})
 	if err != nil {
-		log.WithValues("resource", "PodMonitor").WithValues("op", op).Error(err, "Reconciled Failed")
-	} else {
-		log.WithValues("resource", "PodMonitor").WithValues("op", op).Info("Reconciled")
+		return ctrl.Result{}, err
 	}
-	return err
-}
+	log.WithValues("resource", "podmonitor").WithValues("op", op).Info("Reconciled")
 
-func (r *MemcachedReconciler) reconcilePrometheusRule(req ctrl.Request, memcached *infrastructurev1alpha1.Memcached) error {
-	ctx := context.Background()
-	log := r.Log.WithValues("memcached", req.NamespacedName)
-	labels := baseutils.MergeMapsWithoutOverwrite(_memcachedBaseLabel, memcached.Labels)
+	// Pods
+	pods := &corev1.PodList{}
+	err = r.List(ctx, pods, client.InNamespace(req.Namespace), client.MatchingLabels(labels))
+	if err != nil {
+		return ctrl.Result{}, err
+	}
 
+	// Generate list of pod IP addresses
+	servers := []string{}
+	for _, pod := range pods.Items {
+		// NOTE(mnaser): It's not possible that there is no pod IP assiged yet
+		if len(pod.Status.PodIP) == 0 {
+			continue
+		}
+
+		server := fmt.Sprintf("%s:11211", pod.Status.PodIP)
+		servers = append(servers, server)
+	}
+
+	// If we don't have any servers, requeue.
+	if len(servers) == 0 {
+		return ctrl.Result{Requeue: true}, nil
+	}
+
+	// Alertrule
 	alertRule := &monitoringv1.PrometheusRule{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: req.Namespace,
 			Name:      "memcached-alertrule",
 		},
 	}
+	op, err = k8sutils.CreateOrUpdate(ctx, r, alertRule, func() error {
 
-	op, err := k8sutils.CreateOrUpdate(ctx, r, alertRule, func() error {
-
-		return builders.PrometheusRule(alertRule, memcached, r.Scheme).
-			Labels(labels).
+		return builders.PrometheusRule(alertRule, &memcached, r.Scheme).
+			Labels(typeLabels).
 			RuleGroups(builders.RuleGroup().
 				Name("memcached-rule").
 				Rules(
@@ -222,43 +208,9 @@ func (r *MemcachedReconciler) reconcilePrometheusRule(req ctrl.Request, memcache
 			Build()
 	})
 	if err != nil {
-		log.WithValues("resource", "AlertRule").WithValues("op", op).Error(err, "Reconciled Failed")
-	} else {
-		log.WithValues("resource", "AlertRule").WithValues("op", op).Info("Reconciled")
-	}
-	return err
-}
-
-func (r *MemcachedReconciler) reconcileMcrouter(req ctrl.Request, memcached *infrastructurev1alpha1.Memcached) (ctrl.Result, error) {
-
-	labels := baseutils.MergeMaps(_memcachedBaseLabel, map[string]string{
-		"app.kubernetes.io/instance": req.Name,
-	})
-	mcrouterLabels := baseutils.MergeMapsWithoutOverwrite(_memcachedBaseLabel, memcached.Labels)
-
-	ctx := context.Background()
-	log := r.Log.WithValues("memcached", req.NamespacedName)
-	// Pods
-	pods := &corev1.PodList{}
-	if err := r.List(ctx, pods, client.InNamespace(req.Namespace), client.MatchingLabels(labels)); err != nil {
 		return ctrl.Result{}, err
 	}
-
-	// Generate list of pod IP addresses
-	servers := []string{}
-	for _, pod := range pods.Items {
-		// NOTE(mnaser): It's not possible that there is no pod IP assiged yet
-		if len(pod.Status.PodIP) == 0 {
-			continue
-		}
-		server := fmt.Sprintf("%s:11211", pod.Status.PodIP)
-		servers = append(servers, server)
-	}
-
-	// If we don't have any servers, requeue.
-	if len(servers) == 0 {
-		return ctrl.Result{Requeue: true}, nil
-	}
+	log.WithValues("resource", "memcached-alertrule").WithValues("op", op).Info("Reconciled")
 
 	// Make sure that they're sorted so we're idempotent
 	sort.Strings(servers)
@@ -270,8 +222,8 @@ func (r *MemcachedReconciler) reconcileMcrouter(req ctrl.Request, memcached *inf
 			Name:      fmt.Sprintf("memcached-%s", req.Name),
 		},
 	}
-	op, err := k8sutils.CreateOrUpdate(ctx, r, mcrouter, func() error {
-		return builders.Mcrouter(mcrouter, memcached, r.Scheme).
+	op, err = k8sutils.CreateOrUpdate(ctx, r, mcrouter, func() error {
+		return builders.Mcrouter(mcrouter, &memcached, r.Scheme).
 			Labels(mcrouterLabels).
 			NodeSelector(memcached.Spec.NodeSelector).
 			Tolerations(memcached.Spec.Tolerations).
@@ -279,11 +231,21 @@ func (r *MemcachedReconciler) reconcileMcrouter(req ctrl.Request, memcached *inf
 			Pool("default", builders.McrouterPoolSpec().Servers(servers)).
 			Build()
 	})
-
 	if err != nil {
-		log.WithValues("resource", "Mcrouter").WithValues("op", op).Error(err, "Reconciled Failed")
-	} else {
-		log.WithValues("resource", "Mcrouter").WithValues("op", op).Info("Reconciled")
+		return ctrl.Result{}, err
 	}
-	return ctrl.Result{}, err
+	log.WithValues("resource", "Mcrouter").WithValues("op", op).Info("Reconciled")
+
+	return ctrl.Result{}, nil
+}
+
+// SetupWithManager initializes the controller with primary manager
+func (r *MemcachedReconciler) SetupWithManager(mgr ctrl.Manager) error {
+	return ctrl.NewControllerManagedBy(mgr).
+		For(&infrastructurev1alpha1.Memcached{}).
+		Owns(&appsv1.Deployment{}).
+		Owns(&infrastructurev1alpha1.Mcrouter{}).
+		Owns(&monitoringv1.PodMonitor{}).
+		Owns(&monitoringv1.PrometheusRule{}).
+		Complete(r)
 }
