@@ -9,6 +9,7 @@
     vars:
       devstack_services:
         etcd3: false
+        rabbit: false
       docker_use_buildset_registry: true
       minikube_dns_resolvers: [1.1.1.1, 8.8.8.8]
 
