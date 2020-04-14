@@ -62,9 +62,6 @@ func (r *MemcachedReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
-	// Calculate size per shared
-	size := memcached.Spec.Megabytes / 2
-
 	// Labels
 	typeLabels := baseutils.MergeMapsWithoutOverwrite(map[string]string{
 		"app.kubernetes.io/name":       "memcached",
@@ -83,50 +80,9 @@ func (r *MemcachedReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	}, memcached.Labels)
 
 	// Deployment
-	deployment := &appsv1.Deployment{
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace: req.Namespace,
-			Name:      fmt.Sprintf("memcached-%s", req.Name),
-			Labels:    labels,
-		},
+	if res, err := r.ReconcileDeployment(ctx, req, &memcached, log, labels); err != nil || res != (ctrl.Result{}) {
+		return res, err
 	}
-
-	op, err := k8sutils.CreateOrUpdate(ctx, r, deployment, func() error {
-		return builders.Deployment(deployment, &memcached, r.Scheme).
-			Labels(labels).
-			Replicas(2).
-			PodTemplateSpec(
-				builders.PodTemplateSpec().
-					Labels(labels).
-					PodSpec(
-						builders.PodSpec().
-							NodeSelector(memcached.Spec.NodeSelector).
-							Tolerations(memcached.Spec.Tolerations).
-							Containers(
-								builders.Container("memcached", "vexxhost/memcached:latest").
-									Args("-m", strconv.Itoa(size)).
-									Port("memcached", 11211).PortProbe("memcached", 10, 30).
-									Resources(1000, int64(size), 500, 1.10).
-									SecurityContext(
-										builders.SecurityContext().
-											RunAsUser(1001),
-									),
-								builders.Container("exporter", "vexxhost/memcached-exporter:latest").
-									Port("metrics", 9150).HTTPProbe("metrics", "/metrics", 10, 30).
-									Resources(500, 128, 500, 2).
-									SecurityContext(
-										builders.SecurityContext().
-											RunAsUser(1001),
-									),
-							),
-					),
-			).
-			Build()
-	})
-	if err != nil {
-		return ctrl.Result{}, err
-	}
-	log.WithValues("resource", "Deployment").WithValues("op", op).Info("Reconciled")
 
 	// PodMonitor
 	if res, err := r.ReconcilePodMonitor(ctx, req, &memcached, log, typeLabels); err != nil || res != (ctrl.Result{}) {
@@ -264,5 +220,55 @@ func (r *MemcachedReconciler) ReconcileMcrouter(ctx context.Context, req ctrl.Re
 		return ctrl.Result{}, err
 	}
 	log.WithValues("resource", "Mcrouter").WithValues("op", op).Info("Reconciled")
+	return ctrl.Result{}, nil
+}
+
+// ReconcileDeployment reconciles the deployment
+func (r *MemcachedReconciler) ReconcileDeployment(ctx context.Context, req ctrl.Request, memcached *infrastructurev1alpha1.Memcached, log logr.Logger, labels map[string]string) (ctrl.Result, error) {
+	// Calculate size per shared
+	size := memcached.Spec.Megabytes / 2
+	deployment := &appsv1.Deployment{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: req.Namespace,
+			Name:      fmt.Sprintf("memcached-%s", req.Name),
+			Labels:    labels,
+		},
+	}
+	op, err := k8sutils.CreateOrUpdate(ctx, r, deployment, func() error {
+		return builders.Deployment(deployment, memcached, r.Scheme).
+			Labels(labels).
+			Replicas(2).
+			PodTemplateSpec(
+				builders.PodTemplateSpec().
+					Labels(labels).
+					PodSpec(
+						builders.PodSpec().
+							NodeSelector(memcached.Spec.NodeSelector).
+							Tolerations(memcached.Spec.Tolerations).
+							Containers(
+								builders.Container("memcached", "vexxhost/memcached:latest").
+									Args("-m", strconv.Itoa(size)).
+									Port("memcached", 11211).PortProbe("memcached", 10, 30).
+									Resources(1000, int64(size), 500, 1.10).
+									SecurityContext(
+										builders.SecurityContext().
+											RunAsUser(1001),
+									),
+								builders.Container("exporter", "vexxhost/memcached-exporter:latest").
+									Port("metrics", 9150).HTTPProbe("metrics", "/metrics", 10, 30).
+									Resources(500, 128, 500, 2).
+									SecurityContext(
+										builders.SecurityContext().
+											RunAsUser(1001),
+									),
+							),
+					),
+			).
+			Build()
+	})
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+	log.WithValues("resource", "Deployment").WithValues("op", op).Info("Reconciled")
 	return ctrl.Result{}, nil
 }

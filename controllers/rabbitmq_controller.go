@@ -65,44 +65,9 @@ func (r *RabbitmqReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	}
 
 	// Deployment
-	deployment := &appsv1.Deployment{
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace: req.Namespace,
-			Name:      fmt.Sprintf("rabbitmq-%s", req.Name),
-		},
+	if res, err := r.ReconcileDeployment(ctx, req, &Rabbitmq, log, labels); err != nil || res != (ctrl.Result{}) {
+		return res, err
 	}
-	op, err := k8sutils.CreateOrUpdate(ctx, r, deployment, func() error {
-		return builders.Deployment(deployment, &Rabbitmq, r.Scheme).
-			Labels(labels).
-			Replicas(1).
-			PodTemplateSpec(
-				builders.PodTemplateSpec().
-					PodSpec(
-						builders.PodSpec().
-							NodeSelector(Rabbitmq.Spec.NodeSelector).
-							Tolerations(Rabbitmq.Spec.Tolerations).
-							Containers(
-								builders.Container("rabbitmq", "vexxhost/rabbitmq:latest").
-									EnvVarFromSecret("RABBITMQ_DEFAULT_USER", Rabbitmq.Spec.AuthSecret, _rabbitmqDefaultUsernameCfgKey).
-									EnvVarFromSecret("RABBITMQ_DEFAULT_PASS", Rabbitmq.Spec.AuthSecret, _rabbitmqDefaultPasswordCfgKey).
-									Port("rabbitmq", _rabbitmqPort).
-									Port("metrics", _rabbitmqBuiltinMetricPort).
-									PortProbe("rabbitmq", 15, 30).
-									Resources(500, 512, 500, 2).
-									SecurityContext(
-										builders.SecurityContext().
-											RunAsUser(_rabbitmqRunAsUser).
-											RunAsGroup(_rabbitmqRunAsGroup),
-									),
-							),
-					),
-			).
-			Build()
-	})
-	if err != nil {
-		return ctrl.Result{}, err
-	}
-	log.WithValues("resource", "Deployment").WithValues("op", op).Info("Reconciled")
 
 	// PodMonitor
 	if res, err := r.ReconcilePodMonitor(ctx, req, &Rabbitmq, log, typeLabels); err != nil || res != (ctrl.Result{}) {
@@ -227,5 +192,48 @@ func (r *RabbitmqReconciler) ReconcilePrometheusRule(ctx context.Context, req ct
 		return ctrl.Result{}, err
 	}
 	log.WithValues("resource", "rabbitmq-alertrule").WithValues("op", op).Info("Reconciled")
+	return ctrl.Result{}, nil
+}
+
+// ReconcileDeployment reconciles the deployment
+func (r *RabbitmqReconciler) ReconcileDeployment(ctx context.Context, req ctrl.Request, rabbitmq *infrastructurev1alpha1.Rabbitmq, log logr.Logger, labels map[string]string) (ctrl.Result, error) {
+	deployment := &appsv1.Deployment{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: req.Namespace,
+			Name:      fmt.Sprintf("rabbitmq-%s", req.Name),
+		},
+	}
+	op, err := k8sutils.CreateOrUpdate(ctx, r, deployment, func() error {
+		return builders.Deployment(deployment, rabbitmq, r.Scheme).
+			Labels(labels).
+			Replicas(1).
+			PodTemplateSpec(
+				builders.PodTemplateSpec().
+					PodSpec(
+						builders.PodSpec().
+							NodeSelector(rabbitmq.Spec.NodeSelector).
+							Tolerations(rabbitmq.Spec.Tolerations).
+							Containers(
+								builders.Container("rabbitmq", "vexxhost/rabbitmq:latest").
+									EnvVarFromSecret("RABBITMQ_DEFAULT_USER", rabbitmq.Spec.AuthSecret, _rabbitmqDefaultUsernameCfgKey).
+									EnvVarFromSecret("RABBITMQ_DEFAULT_PASS", rabbitmq.Spec.AuthSecret, _rabbitmqDefaultPasswordCfgKey).
+									Port("rabbitmq", _rabbitmqPort).
+									Port("metrics", _rabbitmqBuiltinMetricPort).
+									PortProbe("rabbitmq", 15, 30).
+									Resources(500, 512, 500, 2).
+									SecurityContext(
+										builders.SecurityContext().
+											RunAsUser(_rabbitmqRunAsUser).
+											RunAsGroup(_rabbitmqRunAsGroup),
+									),
+							),
+					),
+			).
+			Build()
+	})
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+	log.WithValues("resource", "Deployment").WithValues("op", op).Info("Reconciled")
 	return ctrl.Result{}, nil
 }

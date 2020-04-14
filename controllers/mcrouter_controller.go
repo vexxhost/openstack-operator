@@ -80,53 +80,9 @@ func (r *McrouterReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	log.WithValues("resource", "ConfigMap").WithValues("op", op).Info("Reconciled")
 
 	// Deployment
-	deployment := &appsv1.Deployment{
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace: req.Namespace,
-			Name:      fmt.Sprintf("mcrouter-%s", req.Name),
-		},
+	if res, err := r.ReconcileDeployment(ctx, req, &mcrouter, log, labels); err != nil || res != (ctrl.Result{}) {
+		return res, err
 	}
-	op, err = k8sutils.CreateOrUpdate(ctx, r, deployment, func() error {
-		return builders.Deployment(deployment, &mcrouter, r.Scheme).
-			Labels(labels).
-			Replicas(2).
-			PodTemplateSpec(
-				builders.PodTemplateSpec().
-					PodSpec(
-						builders.PodSpec().
-							NodeSelector(mcrouter.Spec.NodeSelector).
-							Tolerations(mcrouter.Spec.Tolerations).
-							Containers(
-								builders.Container("mcrouter", "vexxhost/mcrouter:latest").
-									Args("-p", "11211", "-f", "/data/config.json").
-									Port("mcrouter", 11211).PortProbe("mcrouter", 10, 30).
-									Resources(500, 128, 500, 2).
-									Volume("config", "/data").
-									SecurityContext(
-										builders.SecurityContext().
-											RunAsUser(999).
-											RunAsGroup(999),
-									),
-								builders.Container("exporter", "vexxhost/mcrouter-exporter:latest").
-									Args("-mcrouter.address", "localhost:11211").
-									Port("metrics", 9442).HTTPProbe("metrics", "/metrics", 10, 30).
-									Resources(500, 128, 500, 2).
-									SecurityContext(
-										builders.SecurityContext().
-											RunAsUser(1001),
-									),
-							).
-							Volumes(
-								builders.Volume("config").FromConfigMap(configMap.GetName()),
-							),
-					),
-			).
-			Build()
-	})
-	if err != nil {
-		return ctrl.Result{}, err
-	}
-	log.WithValues("resource", "Deployment").WithValues("op", op).Info("Reconciled")
 
 	// PodMonitor
 	if res, err := r.ReconcilePodMonitor(ctx, req, &mcrouter, log, typeLabels); err != nil || res != (ctrl.Result{}) {
@@ -244,5 +200,57 @@ func (r *McrouterReconciler) ReconcilePrometheusRule(ctx context.Context, req ct
 		return ctrl.Result{}, err
 	}
 	log.WithValues("resource", "mcrouter-alertrule").WithValues("op", op).Info("Reconciled")
+	return ctrl.Result{}, nil
+}
+
+// ReconcileDeployment reconciles the deployment
+func (r *McrouterReconciler) ReconcileDeployment(ctx context.Context, req ctrl.Request, mcrouter *infrastructurev1alpha1.Mcrouter, log logr.Logger, labels map[string]string) (ctrl.Result, error) {
+	deployment := &appsv1.Deployment{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: req.Namespace,
+			Name:      fmt.Sprintf("mcrouter-%s", req.Name),
+		},
+	}
+	op, err := k8sutils.CreateOrUpdate(ctx, r, deployment, func() error {
+		return builders.Deployment(deployment, mcrouter, r.Scheme).
+			Labels(labels).
+			Replicas(2).
+			PodTemplateSpec(
+				builders.PodTemplateSpec().
+					PodSpec(
+						builders.PodSpec().
+							NodeSelector(mcrouter.Spec.NodeSelector).
+							Tolerations(mcrouter.Spec.Tolerations).
+							Containers(
+								builders.Container("mcrouter", "vexxhost/mcrouter:latest").
+									Args("-p", "11211", "-f", "/data/config.json").
+									Port("mcrouter", 11211).PortProbe("mcrouter", 10, 30).
+									Resources(500, 128, 500, 2).
+									Volume("config", "/data").
+									SecurityContext(
+										builders.SecurityContext().
+											RunAsUser(999).
+											RunAsGroup(999),
+									),
+								builders.Container("exporter", "vexxhost/mcrouter-exporter:latest").
+									Args("-mcrouter.address", "localhost:11211").
+									Port("metrics", 9442).HTTPProbe("metrics", "/metrics", 10, 30).
+									Resources(500, 128, 500, 2).
+									SecurityContext(
+										builders.SecurityContext().
+											RunAsUser(1001),
+									),
+							).
+							Volumes(
+								builders.Volume("config").FromConfigMap(fmt.Sprintf("mcrouter-%s", req.Name)),
+							),
+					),
+			).
+			Build()
+	})
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+	log.WithValues("resource", "Deployment").WithValues("op", op).Info("Reconciled")
 	return ctrl.Result{}, nil
 }
