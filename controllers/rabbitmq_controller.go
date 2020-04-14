@@ -178,23 +178,9 @@ func (r *RabbitmqReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	log.WithValues("resource", "rabbitmq-alertrule").WithValues("op", op).Info("Reconciled")
 
 	// Service
-	service := &corev1.Service{
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace: req.Namespace,
-			Name:      fmt.Sprintf("rabbitmq-%s", req.Name),
-		},
+	if res, err := r.ReconcileService(ctx, req, &Rabbitmq, log, labels); err != nil || res != (ctrl.Result{}) {
+		return res, err
 	}
-	op, err = k8sutils.CreateOrUpdate(ctx, r, service, func() error {
-		return builders.Service(service, &Rabbitmq, r.Scheme).
-			Port("rabbitmq", 5672).
-			Selector(labels).
-			Build()
-	})
-	if err != nil {
-		return ctrl.Result{}, err
-	}
-	log.WithValues("resource", "Service").WithValues("op", op).Info("Reconciled")
-
 	return ctrl.Result{}, nil
 }
 
@@ -207,4 +193,25 @@ func (r *RabbitmqReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Owns(&monitoringv1.PodMonitor{}).
 		Owns(&monitoringv1.PrometheusRule{}).
 		Complete(r)
+}
+
+// ReconcileService reconciles the service
+func (r *RabbitmqReconciler) ReconcileService(ctx context.Context, req ctrl.Request, rabbitmq *infrastructurev1alpha1.Rabbitmq, log logr.Logger, labels map[string]string) (ctrl.Result, error) {
+	service := &corev1.Service{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: req.Namespace,
+			Name:      fmt.Sprintf("rabbitmq-%s", req.Name),
+		},
+	}
+	op, err := k8sutils.CreateOrUpdate(ctx, r, service, func() error {
+		return builders.Service(service, rabbitmq, r.Scheme).
+			Port("rabbitmq", 5672).
+			Selector(labels).
+			Build()
+	})
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+	log.WithValues("resource", "Service").WithValues("op", op).Info("Reconciled")
+	return ctrl.Result{}, nil
 }

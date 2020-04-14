@@ -193,24 +193,11 @@ func (r *McrouterReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	log.WithValues("resource", "mcrouter-alertrule").WithValues("op", op).Info("Reconciled")
 
 	// Service
-	service := &corev1.Service{
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace: req.Namespace,
-			Name:      fmt.Sprintf("mcrouter-%s", req.Name),
-		},
+	if res, err := r.ReconcileService(ctx, req, &mcrouter, log, labels); err != nil || res != (ctrl.Result{}) {
+		return res, err
 	}
-	op, err = k8sutils.CreateOrUpdate(ctx, r, service, func() error {
-		return builders.Service(service, &mcrouter, r.Scheme).
-			Port("mcrouter", 11211).
-			Selector(labels).
-			Build()
-	})
-	if err != nil {
-		return ctrl.Result{}, err
-	}
-	log.WithValues("resource", "Service").WithValues("op", op).Info("Reconciled")
-
 	return ctrl.Result{}, nil
+
 }
 
 // SetupWithManager initializes the controller with primary manager
@@ -223,4 +210,25 @@ func (r *McrouterReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Owns(&monitoringv1.PodMonitor{}).
 		Owns(&monitoringv1.PrometheusRule{}).
 		Complete(r)
+}
+
+// ReconcileService reconciles the service
+func (r *McrouterReconciler) ReconcileService(ctx context.Context, req ctrl.Request, mcrouter *infrastructurev1alpha1.Mcrouter, log logr.Logger, labels map[string]string) (ctrl.Result, error) {
+	service := &corev1.Service{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: req.Namespace,
+			Name:      fmt.Sprintf("mcrouter-%s", req.Name),
+		},
+	}
+	op, err := k8sutils.CreateOrUpdate(ctx, r, service, func() error {
+		return builders.Service(service, mcrouter, r.Scheme).
+			Port("mcrouter", 11211).
+			Selector(labels).
+			Build()
+	})
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+	log.WithValues("resource", "Service").WithValues("op", op).Info("Reconciled")
+	return ctrl.Result{}, nil
 }
