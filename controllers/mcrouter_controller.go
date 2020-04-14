@@ -129,35 +129,9 @@ func (r *McrouterReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	log.WithValues("resource", "Deployment").WithValues("op", op).Info("Reconciled")
 
 	// PodMonitor
-	podMonitor := &monitoringv1.PodMonitor{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: "monitoring.coreos.com/v1",
-			Kind:       "PodMonitor",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace: req.Namespace,
-			Name:      "mcrouter-podmonitor",
-		},
+	if res, err := r.ReconcilePodMonitor(ctx, req, &mcrouter, log, typeLabels); err != nil || res != (ctrl.Result{}) {
+		return res, err
 	}
-
-	op, err = k8sutils.CreateOrUpdate(ctx, r, podMonitor, func() error {
-		return builders.PodMonitor(podMonitor, &mcrouter, r.Scheme).
-			Labels(typeLabels).
-			Selector(map[string]string{
-				"app.kubernetes.io/name": "mcrouter",
-			}).
-			PodMetricsEndpoints(
-				builders.PodMetricsEndpoint().
-					Port("metrics").
-					Path("/metrics").
-					Interval("15s"),
-			).Build()
-
-	})
-	if err != nil {
-		return ctrl.Result{}, err
-	}
-	log.WithValues("resource", "mcrouter-podmonitor").WithValues("op", op).Info("Reconciled")
 
 	// Alertrule
 	alertRule := &monitoringv1.PrometheusRule{
@@ -230,5 +204,38 @@ func (r *McrouterReconciler) ReconcileService(ctx context.Context, req ctrl.Requ
 		return ctrl.Result{}, err
 	}
 	log.WithValues("resource", "Service").WithValues("op", op).Info("Reconciled")
+	return ctrl.Result{}, nil
+}
+
+// ReconcilePodMonitor reconciles the podMonitor
+func (r *McrouterReconciler) ReconcilePodMonitor(ctx context.Context, req ctrl.Request, mcrouter *infrastructurev1alpha1.Mcrouter, log logr.Logger, labels map[string]string) (ctrl.Result, error) {
+	podMonitor := &monitoringv1.PodMonitor{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: "monitoring.coreos.com/v1",
+			Kind:       "PodMonitor",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: req.Namespace,
+			Name:      "mcrouter-podmonitor",
+		},
+	}
+	op, err := k8sutils.CreateOrUpdate(ctx, r, podMonitor, func() error {
+		return builders.PodMonitor(podMonitor, mcrouter, r.Scheme).
+			Labels(labels).
+			Selector(map[string]string{
+				"app.kubernetes.io/name": "mcrouter",
+			}).
+			PodMetricsEndpoints(
+				builders.PodMetricsEndpoint().
+					Port("metrics").
+					Path("/metrics").
+					Interval("15s"),
+			).Build()
+
+	})
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+	log.WithValues("resource", "mcrouter-podmonitor").WithValues("op", op).Info("Reconciled")
 	return ctrl.Result{}, nil
 }

@@ -129,35 +129,9 @@ func (r *MemcachedReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	log.WithValues("resource", "Deployment").WithValues("op", op).Info("Reconciled")
 
 	// PodMonitor
-	podMonitor := &monitoringv1.PodMonitor{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: "monitoring.coreos.com/v1",
-			Kind:       "PodMonitor",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace: req.Namespace,
-			Name:      "memcached-podmonitor",
-		},
+	if res, err := r.ReconcilePodMonitor(ctx, req, &memcached, log, typeLabels); err != nil || res != (ctrl.Result{}) {
+		return res, err
 	}
-
-	op, err = k8sutils.CreateOrUpdate(ctx, r, podMonitor, func() error {
-		return builders.PodMonitor(podMonitor, &memcached, r.Scheme).
-			Labels(typeLabels).
-			Selector(map[string]string{
-				"app.kubernetes.io/name": "memcached",
-			}).
-			PodMetricsEndpoints(
-				builders.PodMetricsEndpoint().
-					Port("metrics").
-					Path("/metrics").
-					Interval("15s"),
-			).Build()
-
-	})
-	if err != nil {
-		return ctrl.Result{}, err
-	}
-	log.WithValues("resource", "podmonitor").WithValues("op", op).Info("Reconciled")
 
 	// Pods
 	pods := &corev1.PodList{}
@@ -248,4 +222,37 @@ func (r *MemcachedReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Owns(&monitoringv1.PodMonitor{}).
 		Owns(&monitoringv1.PrometheusRule{}).
 		Complete(r)
+}
+
+// ReconcilePodMonitor reconciles the podMonitor
+func (r *MemcachedReconciler) ReconcilePodMonitor(ctx context.Context, req ctrl.Request, memcached *infrastructurev1alpha1.Memcached, log logr.Logger, labels map[string]string) (ctrl.Result, error) {
+	podMonitor := &monitoringv1.PodMonitor{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: "monitoring.coreos.com/v1",
+			Kind:       "PodMonitor",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: req.Namespace,
+			Name:      "memcached-podmonitor",
+		},
+	}
+	op, err := k8sutils.CreateOrUpdate(ctx, r, podMonitor, func() error {
+		return builders.PodMonitor(podMonitor, memcached, r.Scheme).
+			Labels(labels).
+			Selector(map[string]string{
+				"app.kubernetes.io/name": "memcached",
+			}).
+			PodMetricsEndpoints(
+				builders.PodMetricsEndpoint().
+					Port("metrics").
+					Path("/metrics").
+					Interval("15s"),
+			).Build()
+
+	})
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+	log.WithValues("resource", "podmonitor").WithValues("op", op).Info("Reconciled")
+	return ctrl.Result{}, nil
 }
