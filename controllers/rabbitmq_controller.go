@@ -110,46 +110,9 @@ func (r *RabbitmqReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	}
 
 	// Alertrule
-	alertRule := &monitoringv1.PrometheusRule{
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace: req.Namespace,
-			Name:      "rabbitmq-alertrule",
-		},
+	if res, err := r.ReconcilePrometheusRule(ctx, req, &Rabbitmq, log, typeLabels); err != nil || res != (ctrl.Result{}) {
+		return res, err
 	}
-	op, err = k8sutils.CreateOrUpdate(ctx, r, alertRule, func() error {
-		return builders.PrometheusRule(alertRule, &Rabbitmq, r.Scheme).
-			Labels(typeLabels).
-			RuleGroups(builders.RuleGroup().
-				Name("rabbitmq-rule").
-				Rules(
-					builders.Rule().
-						Alert("RabbitmqDown").
-						Message("Rabbitmq node down.").
-						Priority(1).
-						Expr("rabbitmq_up == 0"),
-					builders.Rule().
-						Alert("RabbitmqTooManyConnections").
-						Message("RabbitMQ instance has too many connections.").
-						Priority(1).
-						Expr("rabbitmq_connectionsTotal > 1000"),
-					builders.Rule().
-						Alert("RabbitmqTooManyMessagesInQueue").
-						Message("Queue is filling up.").
-						Priority(1).
-						Expr("rabbitmq_queue_messages_ready > 1000"),
-					builders.Rule().
-						Alert("RabbitmqSlowQueueConsuming").
-						Message("Queue messages are consumed slowly.").
-						Priority(1).
-						Expr("time() - rabbitmq_queue_head_message_timestamp > 60"),
-				).
-				Interval("1m")).
-			Build()
-	})
-	if err != nil {
-		return ctrl.Result{}, err
-	}
-	log.WithValues("resource", "rabbitmq-alertrule").WithValues("op", op).Info("Reconciled")
 
 	// Service
 	if res, err := r.ReconcileService(ctx, req, &Rabbitmq, log, labels); err != nil || res != (ctrl.Result{}) {
@@ -219,5 +182,50 @@ func (r *RabbitmqReconciler) ReconcilePodMonitor(ctx context.Context, req ctrl.R
 		return ctrl.Result{}, err
 	}
 	log.WithValues("resource", "rabbitmq-podmonitor").WithValues("op", op).Info("Reconciled")
+	return ctrl.Result{}, nil
+}
+
+// ReconcilePrometheusRule reconciles the prometheusRule
+func (r *RabbitmqReconciler) ReconcilePrometheusRule(ctx context.Context, req ctrl.Request, rabbitmq *infrastructurev1alpha1.Rabbitmq, log logr.Logger, labels map[string]string) (ctrl.Result, error) {
+	alertRule := &monitoringv1.PrometheusRule{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: req.Namespace,
+			Name:      "rabbitmq-alertrule",
+		},
+	}
+	op, err := k8sutils.CreateOrUpdate(ctx, r, alertRule, func() error {
+		return builders.PrometheusRule(alertRule, rabbitmq, r.Scheme).
+			Labels(labels).
+			RuleGroups(builders.RuleGroup().
+				Name("rabbitmq-rule").
+				Rules(
+					builders.Rule().
+						Alert("RabbitmqDown").
+						Message("Rabbitmq node down.").
+						Priority(1).
+						Expr("rabbitmq_up == 0"),
+					builders.Rule().
+						Alert("RabbitmqTooManyConnections").
+						Message("RabbitMQ instance has too many connections.").
+						Priority(1).
+						Expr("rabbitmq_connectionsTotal > 1000"),
+					builders.Rule().
+						Alert("RabbitmqTooManyMessagesInQueue").
+						Message("Queue is filling up.").
+						Priority(1).
+						Expr("rabbitmq_queue_messages_ready > 1000"),
+					builders.Rule().
+						Alert("RabbitmqSlowQueueConsuming").
+						Message("Queue messages are consumed slowly.").
+						Priority(1).
+						Expr("time() - rabbitmq_queue_head_message_timestamp > 60"),
+				).
+				Interval("1m")).
+			Build()
+	})
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+	log.WithValues("resource", "rabbitmq-alertrule").WithValues("op", op).Info("Reconciled")
 	return ctrl.Result{}, nil
 }

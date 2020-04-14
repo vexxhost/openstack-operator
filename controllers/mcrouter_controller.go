@@ -134,37 +134,9 @@ func (r *McrouterReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	}
 
 	// Alertrule
-	alertRule := &monitoringv1.PrometheusRule{
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace: req.Namespace,
-			Name:      "mcrouter-alertrule",
-		},
+	if res, err := r.ReconcilePrometheusRule(ctx, req, &mcrouter, log, typeLabels); err != nil || res != (ctrl.Result{}) {
+		return res, err
 	}
-	op, err = k8sutils.CreateOrUpdate(ctx, r, alertRule, func() error {
-
-		return builders.PrometheusRule(alertRule, &mcrouter, r.Scheme).
-			Labels(typeLabels).
-			RuleGroups(builders.RuleGroup().
-				Name("mcrouter-rule").
-				Rules(
-					builders.Rule().
-						Alert("McrouterBackendDown").
-						Message("Backend Memcached servers are down.").
-						Priority(1).
-						Expr("mcrouter_servers{state='down'}!=0"),
-					builders.Rule().
-						Alert("McrouterBackendTimeout").
-						Message("Backend Memcached servers are timeout.").
-						Priority(1).
-						Expr("mcrouter_server_memcached_timeout_count>0"),
-				).
-				Interval("1m")).
-			Build()
-	})
-	if err != nil {
-		return ctrl.Result{}, err
-	}
-	log.WithValues("resource", "mcrouter-alertrule").WithValues("op", op).Info("Reconciled")
 
 	// Service
 	if res, err := r.ReconcileService(ctx, req, &mcrouter, log, labels); err != nil || res != (ctrl.Result{}) {
@@ -237,5 +209,40 @@ func (r *McrouterReconciler) ReconcilePodMonitor(ctx context.Context, req ctrl.R
 		return ctrl.Result{}, err
 	}
 	log.WithValues("resource", "mcrouter-podmonitor").WithValues("op", op).Info("Reconciled")
+	return ctrl.Result{}, nil
+}
+
+// ReconcilePrometheusRule reconciles the prometheusRule
+func (r *McrouterReconciler) ReconcilePrometheusRule(ctx context.Context, req ctrl.Request, mcrouter *infrastructurev1alpha1.Mcrouter, log logr.Logger, labels map[string]string) (ctrl.Result, error) {
+	alertRule := &monitoringv1.PrometheusRule{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: req.Namespace,
+			Name:      "mcrouter-alertrule",
+		},
+	}
+	op, err := k8sutils.CreateOrUpdate(ctx, r, alertRule, func() error {
+		return builders.PrometheusRule(alertRule, mcrouter, r.Scheme).
+			Labels(labels).
+			RuleGroups(builders.RuleGroup().
+				Name("mcrouter-rule").
+				Rules(
+					builders.Rule().
+						Alert("McrouterBackendDown").
+						Message("Backend Memcached servers are down.").
+						Priority(1).
+						Expr("mcrouter_servers{state='down'}!=0"),
+					builders.Rule().
+						Alert("McrouterBackendTimeout").
+						Message("Backend Memcached servers are timeout.").
+						Priority(1).
+						Expr("mcrouter_server_memcached_timeout_count>0"),
+				).
+				Interval("1m")).
+			Build()
+	})
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+	log.WithValues("resource", "mcrouter-alertrule").WithValues("op", op).Info("Reconciled")
 	return ctrl.Result{}, nil
 }

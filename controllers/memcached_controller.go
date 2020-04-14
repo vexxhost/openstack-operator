@@ -158,33 +158,9 @@ func (r *MemcachedReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	}
 
 	// Alertrule
-	alertRule := &monitoringv1.PrometheusRule{
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace: req.Namespace,
-			Name:      "memcached-alertrule",
-		},
+	if res, err := r.ReconcilePrometheusRule(ctx, req, &memcached, log, typeLabels); err != nil || res != (ctrl.Result{}) {
+		return res, err
 	}
-	op, err = k8sutils.CreateOrUpdate(ctx, r, alertRule, func() error {
-
-		return builders.PrometheusRule(alertRule, &memcached, r.Scheme).
-			Labels(typeLabels).
-			RuleGroups(builders.RuleGroup().
-				Name("memcached-rule").
-				Rules(
-
-					builders.Rule().
-						Alert("MemcachedConnectionLimit").
-						Message("This memcached connection is over max.").
-						Priority(1).
-						Expr("memcached_current_connections/memcached_max_connections*100 >90"),
-				).
-				Interval("1m")).
-			Build()
-	})
-	if err != nil {
-		return ctrl.Result{}, err
-	}
-	log.WithValues("resource", "memcached-alertrule").WithValues("op", op).Info("Reconciled")
 
 	// Make sure that they're sorted so we're idempotent
 	sort.Strings(servers)
@@ -254,5 +230,37 @@ func (r *MemcachedReconciler) ReconcilePodMonitor(ctx context.Context, req ctrl.
 		return ctrl.Result{}, err
 	}
 	log.WithValues("resource", "podmonitor").WithValues("op", op).Info("Reconciled")
+	return ctrl.Result{}, nil
+}
+
+// ReconcilePrometheusRule reconciles the prometheusRule
+func (r *MemcachedReconciler) ReconcilePrometheusRule(ctx context.Context, req ctrl.Request, memcached *infrastructurev1alpha1.Memcached, log logr.Logger, labels map[string]string) (ctrl.Result, error) {
+	alertRule := &monitoringv1.PrometheusRule{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: req.Namespace,
+			Name:      "memcached-alertrule",
+		},
+	}
+	op, err := k8sutils.CreateOrUpdate(ctx, r, alertRule, func() error {
+
+		return builders.PrometheusRule(alertRule, memcached, r.Scheme).
+			Labels(labels).
+			RuleGroups(builders.RuleGroup().
+				Name("memcached-rule").
+				Rules(
+
+					builders.Rule().
+						Alert("MemcachedConnectionLimit").
+						Message("This memcached connection is over max.").
+						Priority(1).
+						Expr("memcached_current_connections/memcached_max_connections*100 >90"),
+				).
+				Interval("1m")).
+			Build()
+	})
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+	log.WithValues("resource", "memcached-alertrule").WithValues("op", op).Info("Reconciled")
 	return ctrl.Result{}, nil
 }
