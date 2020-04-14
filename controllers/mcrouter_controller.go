@@ -57,27 +57,9 @@ func (r *McrouterReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	}
 
 	// ConfigMap
-	configMap := &corev1.ConfigMap{
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace: req.Namespace,
-			Name:      fmt.Sprintf("mcrouter-%s", req.Name),
-		},
+	if res, err := r.ReconcileConfigMap(ctx, req, &mcrouter, log); err != nil || res != (ctrl.Result{}) {
+		return res, err
 	}
-	op, err := k8sutils.CreateOrUpdate(ctx, r, configMap, func() error {
-		b, err := json.Marshal(mcrouter.Spec)
-
-		if err != nil {
-			return err
-		}
-
-		return builders.ConfigMap(configMap, &mcrouter, r.Scheme).
-			Data("config.json", string(b)).
-			Build()
-	})
-	if err != nil {
-		return ctrl.Result{}, err
-	}
-	log.WithValues("resource", "ConfigMap").WithValues("op", op).Info("Reconciled")
 
 	// Deployment
 	if res, err := r.ReconcileDeployment(ctx, req, &mcrouter, log, labels); err != nil || res != (ctrl.Result{}) {
@@ -252,5 +234,29 @@ func (r *McrouterReconciler) ReconcileDeployment(ctx context.Context, req ctrl.R
 		return ctrl.Result{}, err
 	}
 	log.WithValues("resource", "Deployment").WithValues("op", op).Info("Reconciled")
+	return ctrl.Result{}, nil
+}
+
+// ReconcileConfigMap reconciles the configMap
+func (r *McrouterReconciler) ReconcileConfigMap(ctx context.Context, req ctrl.Request, mcrouter *infrastructurev1alpha1.Mcrouter, log logr.Logger) (ctrl.Result, error) {
+	configMap := &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: req.Namespace,
+			Name:      fmt.Sprintf("mcrouter-%s", req.Name),
+		},
+	}
+	op, err := k8sutils.CreateOrUpdate(ctx, r, configMap, func() error {
+		b, err := json.Marshal(mcrouter.Spec)
+		if err != nil {
+			return err
+		}
+		return builders.ConfigMap(configMap, mcrouter, r.Scheme).
+			Data("config.json", string(b)).
+			Build()
+	})
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+	log.WithValues("resource", "ConfigMap").WithValues("op", op).Info("Reconciled")
 	return ctrl.Result{}, nil
 }
