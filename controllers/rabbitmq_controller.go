@@ -186,9 +186,7 @@ func (r *RabbitmqReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	}
 	op, err = k8sutils.CreateOrUpdate(ctx, r, service, func() error {
 		return builders.Service(service, &Rabbitmq, r.Scheme).
-			Port("epmd", 4369).
-			Port("amqp", 5671).
-			Port("distport", 25672).
+			Port("rabbitmq", 5672).
 			Selector(labels).
 			Build()
 	})
