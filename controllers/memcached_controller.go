@@ -133,58 +133,15 @@ func (r *MemcachedReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		return res, err
 	}
 
-	// Pods
-	pods := &corev1.PodList{}
-	err = r.List(ctx, pods, client.InNamespace(req.Namespace), client.MatchingLabels(labels))
-	if err != nil {
-		return ctrl.Result{}, err
-	}
-
-	// Generate list of pod IP addresses
-	servers := []string{}
-	for _, pod := range pods.Items {
-		// NOTE(mnaser): It's not possible that there is no pod IP assiged yet
-		if len(pod.Status.PodIP) == 0 {
-			continue
-		}
-
-		server := fmt.Sprintf("%s:11211", pod.Status.PodIP)
-		servers = append(servers, server)
-	}
-
-	// If we don't have any servers, requeue.
-	if len(servers) == 0 {
-		return ctrl.Result{Requeue: true}, nil
-	}
-
 	// Alertrule
 	if res, err := r.ReconcilePrometheusRule(ctx, req, &memcached, log, typeLabels); err != nil || res != (ctrl.Result{}) {
 		return res, err
 	}
 
-	// Make sure that they're sorted so we're idempotent
-	sort.Strings(servers)
-
 	// Mcrouter
-	mcrouter := &infrastructurev1alpha1.Mcrouter{
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace: req.Namespace,
-			Name:      fmt.Sprintf("memcached-%s", req.Name),
-		},
+	if res, err := r.ReconcileMcrouter(ctx, req, &memcached, log, labels, mcrouterLabels); err != nil || res != (ctrl.Result{}) {
+		return res, err
 	}
-	op, err = k8sutils.CreateOrUpdate(ctx, r, mcrouter, func() error {
-		return builders.Mcrouter(mcrouter, &memcached, r.Scheme).
-			Labels(mcrouterLabels).
-			NodeSelector(memcached.Spec.NodeSelector).
-			Tolerations(memcached.Spec.Tolerations).
-			Route("PoolRoute|default").
-			Pool("default", builders.McrouterPoolSpec().Servers(servers)).
-			Build()
-	})
-	if err != nil {
-		return ctrl.Result{}, err
-	}
-	log.WithValues("resource", "Mcrouter").WithValues("op", op).Info("Reconciled")
 
 	return ctrl.Result{}, nil
 }
@@ -262,5 +219,50 @@ func (r *MemcachedReconciler) ReconcilePrometheusRule(ctx context.Context, req c
 		return ctrl.Result{}, err
 	}
 	log.WithValues("resource", "memcached-alertrule").WithValues("op", op).Info("Reconciled")
+	return ctrl.Result{}, nil
+}
+
+// ReconcileMcrouter reconciles the mcrouter
+func (r *MemcachedReconciler) ReconcileMcrouter(ctx context.Context, req ctrl.Request, memcached *infrastructurev1alpha1.Memcached, log logr.Logger, labels map[string]string, mcrouterLabels map[string]string) (ctrl.Result, error) {
+	// Get the memcached pod list
+	pods := &corev1.PodList{}
+	if err := r.List(ctx, pods, client.InNamespace(req.Namespace), client.MatchingLabels(labels)); err != nil {
+		return ctrl.Result{}, err
+	}
+	// Generate list of pod IP addresses
+	servers := []string{}
+	for _, pod := range pods.Items {
+		// NOTE(mnaser): It's not possible that there is no pod IP assiged yet
+		if len(pod.Status.PodIP) == 0 {
+			continue
+		}
+		server := fmt.Sprintf("%s:11211", pod.Status.PodIP)
+		servers = append(servers, server)
+	}
+	// If we don't have any servers, requeue.
+	if len(servers) == 0 {
+		return ctrl.Result{Requeue: true}, nil
+	}
+	// Make sure that they're sorted so we're idempotent
+	sort.Strings(servers)
+	mcrouter := &infrastructurev1alpha1.Mcrouter{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: req.Namespace,
+			Name:      fmt.Sprintf("memcached-%s", req.Name),
+		},
+	}
+	op, err := k8sutils.CreateOrUpdate(ctx, r, mcrouter, func() error {
+		return builders.Mcrouter(mcrouter, memcached, r.Scheme).
+			Labels(mcrouterLabels).
+			NodeSelector(memcached.Spec.NodeSelector).
+			Tolerations(memcached.Spec.Tolerations).
+			Route("PoolRoute|default").
+			Pool("default", builders.McrouterPoolSpec().Servers(servers)).
+			Build()
+	})
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+	log.WithValues("resource", "Mcrouter").WithValues("op", op).Info("Reconciled")
 	return ctrl.Result{}, nil
 }
