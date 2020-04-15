@@ -86,6 +86,7 @@ endif
 
 # run-time images
 images:
+	docker build images/ceilometer --target ceilometer-agent-notification -t vexxhost/ceilometer-agent-notification:latest
 	docker build images/mcrouter -t vexxhost/mcrouter:latest
 	docker build images/mcrouter-exporter -t vexxhost/mcrouter-exporter:latest
 	docker build images/memcached -t vexxhost/memcached:latest

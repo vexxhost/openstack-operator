@@ -18,6 +18,7 @@ import copy
 import os
 import sys
 
+import dockerfile
 from ruamel import yaml
 
 
@@ -41,6 +42,28 @@ for image in images:
             }
         ]
     }
+
+    # Parse the Docker file to see if we have multiple targets
+    targets = []
+    for line in dockerfile.parse_file('images/%s/Dockerfile' % image):
+        if line.cmd != 'from':
+            continue
+        if len(line.value) >= 3 and line.value[1].lower() != 'as':
+            continue
+        if line.value[0] != image:
+            continue
+        targets.append(line.value[2])
+
+    # Update images if we have more than 1 target
+    if targets:
+        job_vars['docker_images'] = [
+            {
+                'context': 'images/%s' % image,
+                'repository': 'vexxhost/%s' % target,
+                'target': target,
+            } for target in targets
+        ]
+
     if image == 'openstack-operator':
         job_vars['docker_images'][0]['context'] = '.'
         job_vars['docker_images'][0]['dockerfile'] = 'images/openstack-operator/Dockerfile'

@@ -1,0 +1,35 @@
+- job:
+    name: openstack-operator:images:build:ceilometer
+    parent: vexxhost-build-docker-image
+    provides: openstack-operator:image:ceilometer
+    dependencies: &id001
+    - opendev-buildset-registry
+    vars: &id002
+      docker_images:
+      - context: images/ceilometer
+        repository: vexxhost/ceilometer-agent-notification
+        target: ceilometer-agent-notification
+    files: &id003
+    - ^images/ceilometer/.*
+- job:
+    name: openstack-operator:images:upload:ceilometer
+    parent: vexxhost-upload-docker-image
+    provides: openstack-operator:image:ceilometer
+    dependencies: *id001
+    vars: *id002
+    files: *id003
+- job:
+    name: openstack-operator:images:promote:ceilometer
+    parent: vexxhost-promote-docker-image
+    vars: *id002
+    files: *id003
+- project:
+    check:
+      jobs:
+      - openstack-operator:images:build:ceilometer
+    gate:
+      jobs:
+      - openstack-operator:images:upload:ceilometer
+    promote:
+      jobs:
+      - openstack-operator:images:promote:ceilometer

@@ -19,6 +19,8 @@
       - opendev-buildset-registry
       - openstack-operator:functional:
           dependencies:
+          - name: openstack-operator:images:build:ceilometer
+            soft: true
           - name: openstack-operator:images:build:rabbitmq
             soft: true
           - name: openstack-operator:images:build:memcached
@@ -35,6 +37,8 @@
       - opendev-buildset-registry
       - openstack-operator:functional:
           dependencies:
+          - name: openstack-operator:images:upload:ceilometer
+            soft: true
           - name: openstack-operator:images:upload:rabbitmq
             soft: true
           - name: openstack-operator:images:upload:memcached
