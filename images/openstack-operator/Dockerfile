@@ -38,11 +38,14 @@ COPY version/ version/
 # Build
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 GO111MODULE=on go build -ldflags "-X version.Revision=${REV}" -a -o manager main.go
 
-# Use distroless as minimal base image to package the manager binary
-# Refer to https://github.com/GoogleContainerTools/distroless for more details
-FROM gcr.io/distroless/static:nonroot
-WORKDIR /
-COPY --from=builder /workspace/manager .
-USER nonroot:nonroot
+# NOTE(mnaser): Rename python-builder to builder
+FROM docker.io/opendevorg/python-builder as python-builder
+COPY . /tmp/src
+RUN assemble
 
-ENTRYPOINT ["/manager"]
+FROM docker.io/opendevorg/python-base
+COPY --from=python-builder /output/ /output
+RUN /output/install-from-bindep
+
+# TODO(mnaser): Drop this
+COPY --from=builder /workspace/manager /manager

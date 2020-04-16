@@ -25,3 +25,5 @@ bin
 
 doc/build
 .tox
+__pycache__
+*.egg*

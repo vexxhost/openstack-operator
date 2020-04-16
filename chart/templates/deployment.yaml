@@ -20,6 +20,21 @@ spec:
       containers:
       - name: operator
         image: vexxhost/openstack-operator:latest
+        command: ["/usr/local/bin/kopf"]
+        args:
+        - run
+        - -m
+        - openstack_operator.memcached
+        resources:
+          limits:
+            cpu: 100m
+            memory: 30Mi
+          requests:
+            cpu: 100m
+            memory: 20Mi
+      - name: go-operator
+        image: vexxhost/openstack-operator:latest
+        command: ["/manager"]
         args:
         - --enable-leader-election
         resources:

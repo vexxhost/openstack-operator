@@ -4,16 +4,22 @@
     vars:
       zuul_work_dir: "{{ zuul.project.src_dir }}/chart"
 
+- job:
+    name: openstack-operator:linters:tox
+    parent: tox-linters
+    vars:
+      python_version: 3.7
+
 - project:
     templates:
       - publish-opendev-tox-docs
     check:
       jobs:
-        - golangci-lint
         - golang-go-test
         - openstack-operator:linters:chart
+        - openstack-operator:linters:tox
     gate:
       jobs:
-        - golangci-lint
         - golang-go-test
         - openstack-operator:linters:chart
+        - openstack-operator:linters:tox
