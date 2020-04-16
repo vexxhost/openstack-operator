@@ -179,15 +179,18 @@ func (r *McrouterReconciler) ReconcilePrometheusRule(ctx context.Context, req ct
 				Name("mcrouter-rule").
 				Rules(
 					builders.Rule().
-						Alert("McrouterBackendDown").
-						Message("Backend Memcached servers are down.").
-						Priority(1).
-						Expr("mcrouter_servers{state='down'}!=0"),
+						Alert("McrouterDown").
+						Priority(2).
+						Expr("mcrouter_up != 1"),
+
 					builders.Rule().
-						Alert("McrouterBackendTimeout").
-						Message("Backend Memcached servers are timeout.").
-						Priority(1).
-						Expr("mcrouter_server_memcached_timeout_count>0"),
+						Alert("McrouterAllBackendsDown").
+						Priority(2).
+						Expr("mcrouter_servers{state='up'} / mcrouter_servers == 0"),
+					builders.Rule().
+						Alert("McrouterBackendDown").
+						Priority(3).
+						Expr("mcrouter_servers{state='down'} != 0"),
 				).
 				Interval("1m")).
 			Build()

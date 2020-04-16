@@ -159,12 +159,19 @@ func (r *MemcachedReconciler) ReconcilePrometheusRule(ctx context.Context, req c
 			RuleGroups(builders.RuleGroup().
 				Name("memcached-rule").
 				Rules(
+					builders.Rule().
+						Alert("MemcachedDown").
+						Priority(3).
+						Expr("memcached_up == 0"),
 
 					builders.Rule().
-						Alert("MemcachedConnectionLimit").
-						Message("This memcached connection is over max.").
-						Priority(1).
-						Expr("memcached_current_connections/memcached_max_connections*100 >90"),
+						Alert("MemcachedMaxConnections").
+						Priority(3).
+						Expr("memcached_current_connections/memcached_max_connections * 100 > 95"),
+					builders.Rule().
+						Alert("MemcachedMaxConnections").
+						Priority(4).
+						Expr("memcached_current_connections/memcached_max_connections * 100 > 90"),
 				).
 				Interval("1m")).
 			Build()
