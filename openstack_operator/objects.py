@@ -22,9 +22,11 @@ It also inclues a ``dict`` with mappings which allows doing reverse-lookups
 from combinations of apiVersion and kind to the exact model.
 """
 
+from pykube.objects import ConfigMap
 from pykube.objects import Deployment
 from pykube.objects import NamespacedAPIObject
 from pykube.objects import Pod
+from pykube.objects import Service
 
 
 class Mcrouter(NamespacedAPIObject):
@@ -53,7 +55,9 @@ class PrometheusRule(NamespacedAPIObject):
 
 MAPPING = {
     "v1": {
+        "ConfigMap": ConfigMap,
         "Pod": Pod,
+        "Service": Service,
     },
     "apps/v1": {
         "Deployment": Deployment,

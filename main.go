@@ -74,7 +74,6 @@ func main() {
 	designateClientBuilder.SetAuthFailed()
 
 	// Setup controllers with manager
-	setupMcrouterReconciler(mgr)
 	setupRabbitmqReconciler(mgr)
 	setupZoneReconciler(mgr, designateClientBuilder)
 	setupDesignateReconciler(mgr, designateClientBuilder)
@@ -109,18 +108,6 @@ func setupDesignateReconciler(mgr ctrl.Manager, designateClientBuilder *openstac
 		DesignateClient: designateClientBuilder,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Designate")
-		os.Exit(1)
-	}
-}
-
-// setupMcrouterReconciler setups the Mcrouter controller with manager
-func setupMcrouterReconciler(mgr ctrl.Manager) {
-	if err := (&controllers.McrouterReconciler{
-		Client: mgr.GetClient(),
-		Log:    ctrl.Log.WithName("controllers").WithName("Mcrouter"),
-		Scheme: mgr.GetScheme(),
-	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "Mcrouter")
 		os.Exit(1)
 	}
 }

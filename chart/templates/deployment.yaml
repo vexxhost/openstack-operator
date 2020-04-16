@@ -24,6 +24,8 @@ spec:
         args:
         - run
         - -m
+        - openstack_operator.mcrouter
+        - -m
         - openstack_operator.memcached
         resources:
           limits:
