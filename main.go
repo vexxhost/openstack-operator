@@ -26,7 +26,6 @@ import (
 
 	dnsv1 "opendev.org/vexxhost/openstack-operator/api/dns/v1"
 	monitoringv1 "opendev.org/vexxhost/openstack-operator/api/monitoring/v1"
-	infrastructurev1alpha1 "opendev.org/vexxhost/openstack-operator/api/v1alpha1"
 	"opendev.org/vexxhost/openstack-operator/controllers"
 	"opendev.org/vexxhost/openstack-operator/utils/openstackutils"
 	"opendev.org/vexxhost/openstack-operator/version"
@@ -40,7 +39,6 @@ var (
 
 func init() {
 	_ = clientgoscheme.AddToScheme(scheme)
-	_ = infrastructurev1alpha1.AddToScheme(scheme)
 	_ = monitoringv1.AddToScheme(scheme)
 	_ = dnsv1.AddToScheme(scheme)
 	// +kubebuilder:scaffold:scheme
@@ -74,7 +72,6 @@ func main() {
 	designateClientBuilder.SetAuthFailed()
 
 	// Setup controllers with manager
-	setupRabbitmqReconciler(mgr)
 	setupZoneReconciler(mgr, designateClientBuilder)
 	setupDesignateReconciler(mgr, designateClientBuilder)
 
@@ -108,18 +105,6 @@ func setupDesignateReconciler(mgr ctrl.Manager, designateClientBuilder *openstac
 		DesignateClient: designateClientBuilder,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Designate")
-		os.Exit(1)
-	}
-}
-
-// setupRabbitmqReconciler setups the Rabbitmq controller with manager
-func setupRabbitmqReconciler(mgr ctrl.Manager) {
-	if err := (&controllers.RabbitmqReconciler{
-		Client: mgr.GetClient(),
-		Log:    ctrl.Log.WithName("controllers").WithName("Rabbitmq"),
-		Scheme: mgr.GetScheme(),
-	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "Rabbitmq")
 		os.Exit(1)
 	}
 }

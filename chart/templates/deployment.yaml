@@ -27,6 +27,8 @@ spec:
         - openstack_operator.mcrouter
         - -m
         - openstack_operator.memcached
+        - -m
+        - openstack_operator.rabbitmq
         resources:
           limits:
             cpu: 100m
