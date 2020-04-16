@@ -66,7 +66,8 @@ def deployment_event(namespace, meta, spec, **_):
     name = meta['labels']['app.kubernetes.io/instance']
     selector = spec['selector']['matchLabels']
     servers = utils.get_ready_pod_ips(namespace, selector)
+    memcacheds = ["%s:11211" for s in servers]
 
     utils.create_or_update('memcached/mcrouter.yml.j2',
-                           name=name, servers=servers,
+                           name=name, servers=memcacheds,
                            spec=spec['template']['spec'])
