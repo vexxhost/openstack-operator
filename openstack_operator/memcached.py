@@ -63,11 +63,11 @@ def deployment_event(namespace, meta, spec, **_):
     Deployments for Memcached to both update and synchronize the Mcrouter.
     """
 
-    name = meta['labels']['app.kubernetes.io/instance']
-    selector = spec['selector']['matchLabels']
+    name = meta.get('labels', {}).get('app.kubernetes.io/instance')
+    selector = spec.get('selector', {}).get('matchLabels', {})
     servers = utils.get_ready_pod_ips(namespace, selector)
     memcacheds = ["%s:11211" % s for s in servers]
 
     utils.create_or_update('memcached/mcrouter.yml.j2',
                            name=name, servers=memcacheds,
-                           spec=spec['template']['spec'])
+                           spec=spec.get('template', {}).get('spec', {}))
