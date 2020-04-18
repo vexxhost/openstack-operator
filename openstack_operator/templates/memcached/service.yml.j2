@@ -13,22 +13,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-apiVersion: infrastructure.vexxhost.cloud/v1alpha1
-kind: Mcrouter
+apiVersion: v1
+kind: Service
 metadata:
   name: memcached-{{ name }}
 spec:
-  pools:
-    default:
-      servers:
-        - memcached-{{ name }}-0.memcached-{{ name }}:11211
-        - memcached-{{ name }}-1.memcached-{{ name }}:11211
-  route: PoolRoute|default
-{% if 'nodeSelector' in spec %}
-  nodeSelector:
-    {{ spec.nodeSelector | to_yaml | indent(4) }}
-{% endif %}
-{% if 'tolerations' in spec %}
-  tolerations:
-    {{ spec.tolerations | to_yaml | indent(4) }}
-{% endif %}
+  clusterIP: None
+  ports:
+  - name: memcached
+    port: 11211
+    targetPort: memcached
+  selector:
+    {{ labels("memcached", name) | indent(4) }}

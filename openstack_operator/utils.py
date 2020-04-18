@@ -77,6 +77,17 @@ def create_or_update(template, **kwargs):
         resource.create()
 
 
+def ensure_absent(template, **kwargs):
+    """Ensure a Kubernetes resource bound to a template is deleted
+
+    This function gets a template and makes sure that the object doesn't
+    exist on the remote cluster.
+    """
+
+    resource = generate_object(template, **kwargs)
+    resource.delete()
+
+
 def generate_yaml(template, **kwargs):
     """Generate dictionary from YAML template.
 

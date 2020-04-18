@@ -32,12 +32,21 @@ def create_or_resume(name, spec, **_):
     start the service up for the first time.
     """
 
-    utils.create_or_update('memcached/deployment.yml.j2',
+    utils.create_or_update('memcached/statefulset.yml.j2',
+                           name=name, spec=spec)
+    utils.create_or_update('memcached/service.yml.j2',
+                           name=name, spec=spec)
+    utils.create_or_update('memcached/mcrouter.yml.j2',
                            name=name, spec=spec)
     utils.create_or_update('memcached/podmonitor.yml.j2',
                            name=name, spec=spec)
     utils.create_or_update('memcached/prometheusrule.yml.j2',
                            name=name, spec=spec)
+
+    # NOTE(mnaser): We should remove this once all deployments are no longer
+    #               using Deployment for Memcached.
+    utils.ensure_absent('memcached/deployment.yml.j2',
+                        name=name, spec=spec)
 
 
 @kopf.on.update('infrastructure.vexxhost.cloud', 'v1alpha1', 'memcacheds')
@@ -48,26 +57,5 @@ def update(name, spec, **_):
     changes that happen within it.
     """
 
-    utils.create_or_update('memcached/deployment.yml.j2',
+    utils.create_or_update('memcached/statefulset.yml.j2',
                            name=name, spec=spec)
-
-
-@kopf.on.event('apps', 'v1', 'deployments', labels={
-    'app.kubernetes.io/managed-by': 'openstack-operator',
-    'app.kubernetes.io/name': 'memcached',
-})
-def deployment_event(namespace, meta, spec, **_):
-    """Create and re-sync Mcrouter instances
-
-    This function takes care of watching for the readyReplicas on the
-    Deployments for Memcached to both update and synchronize the Mcrouter.
-    """
-
-    name = meta.get('labels', {}).get('app.kubernetes.io/instance')
-    selector = spec.get('selector', {}).get('matchLabels', {})
-    servers = utils.get_ready_pod_ips(namespace, selector)
-    memcacheds = ["%s:11211" % s for s in servers]
-
-    utils.create_or_update('memcached/mcrouter.yml.j2',
-                           name=name, servers=memcacheds,
-                           spec=spec.get('template', {}).get('spec', {}))

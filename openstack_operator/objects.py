@@ -27,6 +27,7 @@ from pykube.objects import Deployment
 from pykube.objects import NamespacedAPIObject
 from pykube.objects import Pod
 from pykube.objects import Service
+from pykube.objects import StatefulSet
 
 
 class Mcrouter(NamespacedAPIObject):
@@ -61,6 +62,7 @@ MAPPING = {
     },
     "apps/v1": {
         "Deployment": Deployment,
+        "StatefulSet": StatefulSet,
     },
     "infrastructure.vexxhost.cloud/v1alpha1": {
         "Mcrouter": Mcrouter,
