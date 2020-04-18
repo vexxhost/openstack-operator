@@ -13,9 +13,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Build-time arguments
-ARG REV=latest
-
 # Build the manager binary
 FROM golang:1.13 as builder
 
@@ -33,10 +30,9 @@ COPY api/ api/
 COPY builders/ builders/
 COPY controllers/ controllers/
 COPY utils/ utils/
-COPY version/ version/
 
 # Build
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 GO111MODULE=on go build -ldflags "-X version.Revision=${REV}" -a -o manager main.go
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 GO111MODULE=on go build -a -o manager main.go
 
 # NOTE(mnaser): Rename python-builder to builder
 FROM docker.io/opendevorg/python-builder as python-builder

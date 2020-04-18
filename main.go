@@ -25,10 +25,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
 	dnsv1 "opendev.org/vexxhost/openstack-operator/api/dns/v1"
-	monitoringv1 "opendev.org/vexxhost/openstack-operator/api/monitoring/v1"
 	"opendev.org/vexxhost/openstack-operator/controllers"
 	"opendev.org/vexxhost/openstack-operator/utils/openstackutils"
-	"opendev.org/vexxhost/openstack-operator/version"
 	// +kubebuilder:scaffold:imports
 )
 
@@ -39,7 +37,6 @@ var (
 
 func init() {
 	_ = clientgoscheme.AddToScheme(scheme)
-	_ = monitoringv1.AddToScheme(scheme)
 	_ = dnsv1.AddToScheme(scheme)
 	// +kubebuilder:scaffold:scheme
 }
@@ -76,7 +73,7 @@ func main() {
 	setupDesignateReconciler(mgr, designateClientBuilder)
 
 	// +kubebuilder:scaffold:builder
-	setupLog.Info("starting manager", "revision", version.Revision)
+	setupLog.Info("starting manager")
 	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
 		setupLog.Error(err, "problem running manager")
 		os.Exit(1)
