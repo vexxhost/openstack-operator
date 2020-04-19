@@ -88,6 +88,17 @@ def ensure_absent(template, **kwargs):
     resource.delete()
 
 
+def render_template(template, **kwargs):
+    """Render template from YAML files.
+
+    This function renders a template based on provided keyword arguments.
+    """
+
+    template = ENV.get_template(template)
+    yamldoc = template.render(**kwargs)
+    return yaml.safe_load(yamldoc)
+
+
 def generate_yaml(template, **kwargs):
     """Generate dictionary from YAML template.
 
@@ -96,9 +107,7 @@ def generate_yaml(template, **kwargs):
     cluster.
     """
 
-    template = ENV.get_template(template)
-    yamldoc = template.render(**kwargs)
-    doc = yaml.safe_load(yamldoc)
+    doc = render_template(template, **kwargs)
     kopf.adopt(doc)
 
     return doc

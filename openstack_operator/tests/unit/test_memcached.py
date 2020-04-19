@@ -20,11 +20,10 @@ This module contains all the tests for the Memcached operator.
 # Disable no-self-use
 # pylint: disable=R0201
 
-import mock
-
-from oslotest import base
+from unittest import mock
 
 from openstack_operator import memcached
+from openstack_operator.tests.unit import base
 
 
 class MemcachedOperatorTestCase(base.BaseTestCase):
@@ -37,3 +36,10 @@ class MemcachedOperatorTestCase(base.BaseTestCase):
         memcached.create_or_resume("foo", {})
         mock_ensure_absent.assert_called_once_with(
             'memcached/deployment.yml.j2', name="foo", spec={})
+
+
+class MemcachedStatefulSetTestCase(base.StatefulSetTestCase):
+    """Basic tests for the StatefulSet."""
+
+    SAMPLE_FILE = 'infrastructure_v1alpha1_memcached.yaml'
+    TEMPLATE_FILE = 'memcached/statefulset.yml.j2'
