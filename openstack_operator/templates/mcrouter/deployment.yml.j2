@@ -53,7 +53,8 @@ spec:
             ephemeral-storage: 50M
             memory: 64M
         securityContext:
-          runAsUser: 1001
+          runAsUser: 999
+          runAsGroup: 999
         volumeMounts:
         - mountPath: /data
           name: config
