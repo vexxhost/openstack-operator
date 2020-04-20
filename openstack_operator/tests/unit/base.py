@@ -63,6 +63,21 @@ class KubernetesAppTestCaseMixin:
         for container in self.object['spec']['template']['spec']['containers']:
             self.assertIn('resources', container)
 
+    def test_container_http_probes_have_no_metrics_path(self):
+        """Ensure that http probes (liveness/rediness) of all containers
+         don't have metrics path"""
+        for container in self.object['spec']['template']['spec']['containers']:
+            if 'httpGet' in container['readinessProbe']:
+                self.assertNotEqual(
+                    container['readinessProbe']['httpGet']['path'],
+                    '/metrics'
+                )
+            if 'httpGet' in container['livenessProbe']:
+                self.assertNotEqual(
+                    container['livenessProbe']['httpGet']['path'],
+                    '/metrics'
+                )
+
 
 class DeploymentTestCase(KubernetesObjectTestCase,
                          KubernetesAppTestCaseMixin):

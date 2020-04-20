@@ -63,11 +63,11 @@ spec:
           containerPort: 9150
         livenessProbe:
           httpGet:
-            path: /metrics
+            path: /
             port: metrics
         readinessProbe:
           httpGet:
-            path: /metrics
+            path: /
             port: metrics
         resources:
           limits:
