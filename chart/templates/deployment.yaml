@@ -29,6 +29,8 @@ spec:
         args:
         - run
         - -m
+        - openstack_operator.horizon
+        - -m
         - openstack_operator.mcrouter
         - -m
         - openstack_operator.memcached

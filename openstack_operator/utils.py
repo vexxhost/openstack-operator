@@ -17,17 +17,19 @@
 The module contains a few useful utilities which we refactor out in order
 to be able to use them across all different operators.
 """
-
+import base64
 import copy
 import operator
 import os
+import secrets
+import string
 
 import jinja2
-import openstack
 import kopf
 from pbr import version
 import pykube
 import yaml
+import openstack
 
 from openstack_operator import objects
 
@@ -39,6 +41,11 @@ VERSION = version.VersionInfo('openstack_operator').version_string()
 def to_yaml(value):
     """Return a YAML string from a dictionary."""
     return yaml.safe_dump(value)
+
+
+def to_dict(value):
+    """Return a dictionary from a YAML string"""
+    return yaml.safe_load(value)
 
 
 def labels(app, instance, component=None):
@@ -81,6 +88,8 @@ def create_or_update(template, **kwargs):
         if exc.code != 404:
             raise
         resource.create()
+
+    return resource
 
 
 def ensure_absent(template, **kwargs):
@@ -156,3 +165,37 @@ def get_openstack_connection():
     """Get an instance of OpenStack SDK."""
     return openstack.connect(cloud="envvars", app_name='openstack-operator',
                              app_version=VERSION)
+
+
+def generate_password(length=20):
+    """Generate a random password."""
+
+    alphabet = string.ascii_letters + string.digits
+    return ''.join(secrets.choice(alphabet) for i in range(length))
+
+
+def get_secret(namespace, name):
+    """Retrieve a secret from Kubernetes.
+
+    This function retrieves a Secret from Kubernetes, decodes it and passes
+    the value of the data
+    """
+
+    api = pykube.HTTPClient(pykube.KubeConfig.from_env())
+    secret = objects.Secret.objects(api).get(
+        namespace=namespace,
+        name=name
+    )
+
+    return {
+        k: base64.b64decode(v).decode('utf-8')
+        for k, v in secret.obj['data'].items()
+    }
+
+
+def generate_hash(dictionary):
+    """Generate a has from a dictionary, return None if dictionary is empty"""
+
+    if not dictionary:
+        return None
+    return hash(frozenset(dictionary.items()))

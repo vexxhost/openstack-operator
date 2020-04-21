@@ -1,0 +1,31 @@
+- job:
+    name: openstack-operator:images:build:horizon
+    parent: vexxhost-build-docker-image
+    provides: openstack-operator:image:horizon
+    vars: &id001
+      docker_images:
+      - context: images/horizon
+        repository: vexxhost/horizon
+    files: &id002
+    - ^images/horizon/.*
+- job:
+    name: openstack-operator:images:upload:horizon
+    parent: vexxhost-upload-docker-image
+    provides: openstack-operator:image:horizon
+    vars: *id001
+    files: *id002
+- job:
+    name: openstack-operator:images:promote:horizon
+    parent: vexxhost-promote-docker-image
+    vars: *id001
+    files: *id002
+- project:
+    check:
+      jobs:
+      - openstack-operator:images:build:horizon
+    gate:
+      jobs:
+      - openstack-operator:images:upload:horizon
+    promote:
+      jobs:
+      - openstack-operator:images:promote:horizon

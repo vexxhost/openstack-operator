@@ -1,0 +1,9 @@
+apiVersion: dashboard.openstack.org/v1alpha1
+kind: Horizon
+metadata:
+  name: sample
+  labels:
+    prometheus: helm
+spec:
+  ingress:
+    host: "horizon.vexxhost.com"

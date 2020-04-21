@@ -24,8 +24,10 @@ from combinations of apiVersion and kind to the exact model.
 
 from pykube.objects import ConfigMap
 from pykube.objects import Deployment
+from pykube.objects import Ingress
 from pykube.objects import NamespacedAPIObject
 from pykube.objects import Pod
+from pykube.objects import Secret
 from pykube.objects import Service
 from pykube.objects import StatefulSet
 
@@ -36,6 +38,14 @@ class Mcrouter(NamespacedAPIObject):
     version = "infrastructure.vexxhost.cloud/v1alpha1"
     endpoint = "mcrouters"
     kind = "Mcrouter"
+
+
+class Memcached(NamespacedAPIObject):
+    """Memcached Kubernetes object"""
+
+    version = "infrastructure.vexxhost.cloud/v1alpha1"
+    endpoint = "memcacheds"
+    kind = "Memcached"
 
 
 class PodMonitor(NamespacedAPIObject):
@@ -58,14 +68,19 @@ MAPPING = {
     "v1": {
         "ConfigMap": ConfigMap,
         "Pod": Pod,
+        "Secret": Secret,
         "Service": Service,
     },
     "apps/v1": {
         "Deployment": Deployment,
         "StatefulSet": StatefulSet,
     },
+    "extensions/v1beta1": {
+        "Ingress": Ingress
+    },
     "infrastructure.vexxhost.cloud/v1alpha1": {
         "Mcrouter": Mcrouter,
+        "Memcached": Memcached
     },
     "monitoring.coreos.com/v1": {
         "PodMonitor": PodMonitor,
