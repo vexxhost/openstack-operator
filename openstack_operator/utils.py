@@ -38,13 +38,16 @@ def to_yaml(value):
     return yaml.safe_dump(value)
 
 
-def labels(app, instance):
+def labels(app, instance, component=None):
     """Return standard labels for the operator."""
-    return yaml.safe_dump({
+    metadata = {
         'app.kubernetes.io/managed-by': 'openstack-operator',
         'app.kubernetes.io/name': app,
         'app.kubernetes.io/instance': instance,
-    }).strip()
+    }
+    if component:
+        metadata['app.kubernetes.io/component'] = component
+    return yaml.safe_dump(metadata).strip()
 
 
 ENV = jinja2.Environment(
