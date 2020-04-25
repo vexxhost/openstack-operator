@@ -20,41 +20,45 @@
       jobs:
       - openstack-operator:functional:
           dependencies:
-          - name: openstack-operator:images:build:ceilometer
-            soft: true
-          - name: openstack-operator:images:build:rabbitmq
-            soft: true
-          - name: openstack-operator:images:build:keystone
+          - name: openstack-operator:images:build:mcrouter-exporter
             soft: true
           - name: openstack-operator:images:build:horizon
             soft: true
+          - name: openstack-operator:images:build:rabbitmq
+            soft: true
+          - name: openstack-operator:images:build:ceilometer
+            soft: true
+          - name: openstack-operator:images:build:memcached-exporter
+            soft: true
           - name: openstack-operator:images:build:memcached
+            soft: true
+          - name: openstack-operator:images:build:keystone
             soft: true
           - name: openstack-operator:images:build:mcrouter
             soft: true
           - openstack-operator:images:build:openstack-operator
-          - name: openstack-operator:images:build:mcrouter-exporter
-            soft: true
-          - name: openstack-operator:images:build:memcached-exporter
+          - name: openstack-operator:images:build:heat
             soft: true
     gate:
       jobs:
       - openstack-operator:functional:
           dependencies:
-          - name: openstack-operator:images:upload:ceilometer
-            soft: true
-          - name: openstack-operator:images:upload:rabbitmq
-            soft: true
-          - name: openstack-operator:images:upload:keystone
+          - name: openstack-operator:images:upload:mcrouter-exporter
             soft: true
           - name: openstack-operator:images:upload:horizon
             soft: true
+          - name: openstack-operator:images:upload:rabbitmq
+            soft: true
+          - name: openstack-operator:images:upload:ceilometer
+            soft: true
+          - name: openstack-operator:images:upload:memcached-exporter
+            soft: true
           - name: openstack-operator:images:upload:memcached
+            soft: true
+          - name: openstack-operator:images:upload:keystone
             soft: true
           - name: openstack-operator:images:upload:mcrouter
             soft: true
           - openstack-operator:images:upload:openstack-operator
-          - name: openstack-operator:images:upload:mcrouter-exporter
-            soft: true
-          - name: openstack-operator:images:upload:memcached-exporter
+          - name: openstack-operator:images:upload:heat
             soft: true

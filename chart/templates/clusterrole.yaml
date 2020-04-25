@@ -132,6 +132,26 @@ rules:
   - patch
   - update
 - apiGroups:
+  - orchestration.openstack.org
+  resources:
+  - heats
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - orchestration.openstack.org
+  resources:
+  - heats/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
   - dashboard.openstack.org
   resources:
   - horizons

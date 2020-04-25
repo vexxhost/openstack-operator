@@ -1,0 +1,2 @@
+gcc [compile]
+libc-dev [compile]

@@ -51,9 +51,8 @@ for image in images:
             continue
         if len(line.value) >= 3 and line.value[1].lower() != 'as':
             continue
-        if line.value[0] != image:
-            continue
-        targets.append(line.value[2])
+        if len(line.value) >= 3 and image in line.value[2]:
+            targets.append(line.value[2])
 
     # Update images if we have more than 1 target
     if targets:
