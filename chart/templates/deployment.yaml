@@ -21,12 +21,19 @@ spec:
       - name: operator
         image: vexxhost/openstack-operator:latest
         command: ["/usr/local/bin/kopf"]
+{{- with .Values.secretName }}
+        envFrom:
+        - secretRef:
+            name: {{ . }}
+{{- end }}
         args:
         - run
         - -m
         - openstack_operator.mcrouter
         - -m
         - openstack_operator.memcached
+        - -m
+        - openstack_operator.openstack.identity.services
         - -m
         - openstack_operator.rabbitmq
         resources:

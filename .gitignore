@@ -28,3 +28,4 @@ doc/build
 __pycache__
 *.egg*
 .stestr
+openrc

@@ -110,6 +110,26 @@ rules:
   - patch
   - update
 - apiGroups:
+  - identity.openstack.org
+  resources:
+  - services
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - identity.openstack.org
+  resources:
+  - services/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
   - infrastructure.vexxhost.cloud
   resources:
   - mcrouters

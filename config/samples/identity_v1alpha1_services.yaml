@@ -1,0 +1,8 @@
+---
+apiVersion: identity.openstack.org/v1alpha1
+kind: Service
+metadata:
+  name: heat
+spec:
+  type: orchestration
+  description: Heat Orchestration Service

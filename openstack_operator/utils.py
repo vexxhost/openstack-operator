@@ -23,7 +23,9 @@ import operator
 import os
 
 import jinja2
+import openstack
 import kopf
+from pbr import version
 import pykube
 import yaml
 
@@ -31,6 +33,7 @@ from openstack_operator import objects
 
 
 DIR_PATH = os.path.dirname(os.path.realpath(__file__))
+VERSION = version.VersionInfo('openstack_operator').version_string()
 
 
 def to_yaml(value):
@@ -147,3 +150,9 @@ def get_ready_pod_ips(namespace, selector):
     servers = sorted([p.obj["status"]["podIP"] for p in ready_pods])
 
     return servers
+
+
+def get_openstack_connection():
+    """Get an instance of OpenStack SDK."""
+    return openstack.connect(cloud="envvars", app_name='openstack-operator',
+                             app_version=VERSION)
