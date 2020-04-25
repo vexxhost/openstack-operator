@@ -48,6 +48,11 @@ class KubernetesObjectTestCase(testtools.TestCase):
 class KubernetesAppTestCaseMixin:
     """Mix-in to be used for tests that involve apps and containers."""
 
+    def test_containers_use_always_image_pull_policy(self):
+        """Ensure that all containers use 'Always' as imagePullPolicy."""
+        for container in self.object['spec']['template']['spec']['containers']:
+            self.assertEqual("Always", container.get('imagePullPolicy'))
+
     def test_containers_have_liveness_probe(self):
         """Ensure that all containers have liveness probes."""
         for container in self.object['spec']['template']['spec']['containers']:
