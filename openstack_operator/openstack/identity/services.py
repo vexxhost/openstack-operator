@@ -51,7 +51,6 @@ def create_or_resume(name, spec, **_):
 
     conn = utils.get_openstack_connection()
     service = _get_service(conn, name, spec["type"])
-
     if service:
         service = conn.update_service(service.id, name=name,
                                       type=spec["type"],

@@ -114,6 +114,7 @@ rules:
   resources:
   - services
   - keystones
+  - endpoints
   verbs:
   - create
   - delete
@@ -127,6 +128,7 @@ rules:
   resources:
   - services/status
   - keystones/status
+  - endpoints/status
   verbs:
   - get
   - patch

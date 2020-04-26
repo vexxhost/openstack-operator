@@ -32,6 +32,7 @@
           OS_USER_DOMAIN_ID: default
           OS_USERNAME: admin
           OS_PASSWORD: secretadmin
+          OS_REGION_NAME: RegionOne
         EOF
   roles:
     - role: helm-template

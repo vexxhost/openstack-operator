@@ -1,0 +1,9 @@
+---
+apiVersion: identity.openstack.org/v1alpha1
+kind: Endpoint
+metadata:
+  name: heat-public
+spec:
+  service: orchestration
+  interface: public
+  url: https://orchestration.sjc1.vexxhost.net
