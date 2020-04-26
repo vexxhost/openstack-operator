@@ -1,9 +1,0 @@
-apiVersion: dns.openstack.org/v1
-kind: Designate
-metadata:
-  name: sample
-  annotations:
-    "dns.openstack.org/is-default-designate": "true"
-spec:
-  credentials: rc-secret-sample
-  cloudname: devstack

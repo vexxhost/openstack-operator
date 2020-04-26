@@ -36,18 +36,6 @@ spec:
           requests:
             cpu: 100m
             memory: 128Mi
-      - name: go-operator
-        image: vexxhost/openstack-operator:latest
-        command: ["/manager"]
-        args:
-        - --enable-leader-election
-        resources:
-          limits:
-            cpu: 100m
-            memory: 30Mi
-          requests:
-            cpu: 100m
-            memory: 20Mi
 {{- with .Values.tolerations }}
       tolerations:
 {{ toYaml . | indent 8 }}

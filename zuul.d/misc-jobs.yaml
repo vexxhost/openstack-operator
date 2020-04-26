@@ -15,13 +15,11 @@
       - publish-opendev-tox-docs
     check:
       jobs:
-        - golang-go-test
         - openstack-operator:linters:chart
         - openstack-operator:linters:tox
         - tox-py37
     gate:
       jobs:
-        - golang-go-test
         - openstack-operator:linters:chart
         - openstack-operator:linters:tox
         - tox-py37
