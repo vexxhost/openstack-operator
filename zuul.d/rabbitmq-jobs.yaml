@@ -2,26 +2,27 @@
     name: openstack-operator:images:build:rabbitmq
     parent: vexxhost-build-docker-image
     provides: openstack-operator:image:rabbitmq
-    dependencies: &id001
-    - opendev-buildset-registry
-    vars: &id002
+    vars: &id001
       docker_images:
       - context: images/rabbitmq
         repository: vexxhost/rabbitmq
-    files: &id003
+    dependencies:
+    - openstack-operator:images:build:openstack-operator
+    files: &id002
     - ^images/rabbitmq/.*
 - job:
     name: openstack-operator:images:upload:rabbitmq
     parent: vexxhost-upload-docker-image
     provides: openstack-operator:image:rabbitmq
-    dependencies: *id001
-    vars: *id002
-    files: *id003
+    vars: *id001
+    dependencies:
+    - openstack-operator:images:upload:openstack-operator
+    files: *id002
 - job:
     name: openstack-operator:images:promote:rabbitmq
     parent: vexxhost-promote-docker-image
-    vars: *id002
-    files: *id003
+    vars: *id001
+    files: *id002
 - project:
     check:
       jobs:

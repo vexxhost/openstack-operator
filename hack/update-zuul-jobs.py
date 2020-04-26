@@ -32,7 +32,8 @@ for image in images:
     files = []
     if image != 'openstack-operator':
         files = ['^images/%s/.*' % image]
-    deps = ['opendev-buildset-registry']
+    build_deps = ['openstack-operator:images:build:openstack-operator']
+    upload_deps = ['openstack-operator:images:upload:openstack-operator']
 
     job_vars = {
         'docker_images': [
@@ -73,7 +74,6 @@ for image in images:
             'name': 'openstack-operator:images:build:%s' % image,
             'parent': 'vexxhost-build-docker-image',
             'provides': 'openstack-operator:image:%s' % image,
-            'dependencies': deps,
             'vars': job_vars,
         }
     }
@@ -83,10 +83,13 @@ for image in images:
             'name': 'openstack-operator:images:upload:%s' % image,
             'parent': 'vexxhost-upload-docker-image',
             'provides': 'openstack-operator:image:%s' % image,
-            'dependencies': deps,
             'vars': job_vars,
         }
     }
+
+    if image != 'openstack-operator':
+        build_job['job']['dependencies'] = build_deps
+        upload_job['job']['dependencies'] = upload_deps
 
     promote_job = {
         'job': {

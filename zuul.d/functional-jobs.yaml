@@ -16,7 +16,6 @@
 - project:
     check:
       jobs:
-      - opendev-buildset-registry
       - openstack-operator:functional:
           dependencies:
           - name: openstack-operator:images:build:ceilometer
@@ -34,7 +33,6 @@
             soft: true
     gate:
       jobs:
-      - opendev-buildset-registry
       - openstack-operator:functional:
           dependencies:
           - name: openstack-operator:images:upload:ceilometer
