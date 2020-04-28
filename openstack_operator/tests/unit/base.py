@@ -32,6 +32,8 @@ class KubernetesObjectTestCase(testtools.TestCase):
     """Base class for Kubernetes object tests."""
 
     SAMPLES_PATH = 'config/samples'
+    SAMPLE_FILE = ''
+    TEMPLATE_FILE = ''
 
     @classmethod
     def setUpClass(cls):

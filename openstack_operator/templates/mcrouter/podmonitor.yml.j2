@@ -21,7 +21,7 @@ metadata:
     {{ labels("mcrouter", name) | indent(4) }}
 spec:
   podMetricsEndpoints:
-  - interval: 15s
+  - interval: 30s
     path: /metrics
     port: metrics
   selector:
