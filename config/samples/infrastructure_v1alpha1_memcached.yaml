@@ -1,7 +1,7 @@
 apiVersion: infrastructure.vexxhost.cloud/v1alpha1
 kind: Memcached
 metadata:
-  name: sample
+  name: devstack
   labels:
     monitoring: haha
 spec:

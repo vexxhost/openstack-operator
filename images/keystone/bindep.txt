@@ -1,0 +1,3 @@
+gcc [compile]
+libc-dev [compile]
+libssl-dev [compile]

@@ -22,7 +22,7 @@
     name: wait-for-pods
 
 - name: Get all pod IPs for Memcached
-  command: kubectl get pods -l app.kubernetes.io/name=memcached,app.kubernetes.io/instance=sample -o=jsonpath='{range .items[*]}{.status.podIP}{"\n"}{end}'
+  command: kubectl get pods -l app.kubernetes.io/name=memcached,app.kubernetes.io/instance=devstack -o=jsonpath='{range .items[*]}{.status.podIP}{"\n"}{end}'
   register: _memcached_ips
   until: _memcached_ips is success
   retries: 10
@@ -41,7 +41,7 @@
   failed_when: "'memcached_up 1' not in _metrics.content"
 
 - name: Get all pod IPs for Mcrouter
-  command: kubectl get pods -l app.kubernetes.io/name=mcrouter,app.kubernetes.io/instance=memcached-sample -o=jsonpath='{range .items[*]}{.status.podIP}{"\n"}{end}'
+  command: kubectl get pods -l app.kubernetes.io/name=mcrouter,app.kubernetes.io/instance=memcached-devstack -o=jsonpath='{range .items[*]}{.status.podIP}{"\n"}{end}'
   register: _mcrouter_ips
   until: _mcrouter_ips is success
   retries: 10

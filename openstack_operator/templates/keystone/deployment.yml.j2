@@ -1,0 +1,74 @@
+---
+# Copyright 2020 VEXXHOST, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: keystone-{{ name }}
+  labels:
+    {{ labels("keystone", name) | indent(4) }}
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      {{ labels("keystone", name) | indent(6) }}
+  template:
+    metadata:
+      labels:
+        {{ labels("keystone", name) | indent(8) }}
+    spec:
+      containers:
+      - name: keystone
+        image: vexxhost/keystone:latest
+        imagePullPolicy: Always
+        ports:
+        - name: keystone
+          containerPort: 5000
+        livenessProbe:
+          httpGet:
+            path: /
+            port: keystone
+        readinessProbe:
+          httpGet:
+            path: /
+            port: keystone
+        resources:
+          limits:
+            cpu: 1000m
+            ephemeral-storage: 500M
+            memory: 256M
+          requests:
+            cpu: 500m
+            ephemeral-storage: 500M
+            memory: 128M
+        securityContext:
+          runAsUser: 65534
+          runAsGroup: 65534
+        volumeMounts:
+        - mountPath: /etc/keystone
+          name: config
+      volumes:
+      - name: config
+        hostPath:
+          path: {{ spec['configDir'] }}
+          type: Directory
+{% if 'nodeSelector' in spec %}
+      nodeSelector:
+        {{ spec.nodeSelector | to_yaml | indent(8) }}
+{% endif %}
+{% if 'tolerations' in spec %}
+      tolerations:
+        {{ spec.tolerations | to_yaml | indent(8) }}
+{% endif %}

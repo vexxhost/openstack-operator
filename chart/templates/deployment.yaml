@@ -31,6 +31,8 @@ spec:
         - -m
         - openstack_operator.horizon
         - -m
+        - openstack_operator.keystone
+        - -m
         - openstack_operator.mcrouter
         - -m
         - openstack_operator.memcached

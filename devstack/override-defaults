@@ -14,6 +14,29 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+function get_kubernetes_service_ip {
+	local svc="$1"
+
+	for i in {1..30}; do
+		ip=$(kubectl get svc/$svc -ojsonpath='{.spec.clusterIP}') && break || sleep 1;
+	done
+
+	return $ip
+}
+
+function proxy_pass_to_kubernetes {
+	local url=$1
+	local svc=$2
+
+	local ip=$(get_kubernetes_service_ip $svc)
+	local apache_conf=$(apache_site_config_for $name)
+
+	echo "ProxyPass \"${url}\" \"http://${ip}/\"" | sudo tee -a $apache_conf
+
+	enable_apache_site $name
+	restart_apache_server
+}
+
 # Gets or creates service
 # Usage: get_or_create_service <name> <type> <description>
 function get_or_create_service {
@@ -29,3 +52,86 @@ spec:
 EOF
 }
 export -f get_or_create_service
+
+# install_keystone() - Collect source and prepare
+function install_keystone {
+	cat <<EOF | kubectl apply -f-
+---
+apiVersion: identity.openstack.org/v1alpha1
+kind: Keystone
+metadata:
+  name: devstack
+spec:
+  configDir: ${KEYSTONE_CONF_DIR}
+EOF
+}
+export -f install_keystone
+
+# init_keystone() - Initialize databases, etc.
+function init_keystone {
+	if [[ "$RECREATE_KEYSTONE_DB" == True ]]; then
+		# (Re)create keystone database
+		recreate_database keystone
+	fi
+
+	time_start "dbsync"
+	kubectl exec deploy/keystone-devstack -- keystone-manage --config-file $KEYSTONE_CONF db_sync
+	time_stop "dbsync"
+
+	if [[ "$KEYSTONE_TOKEN_FORMAT" == "fernet" ]]; then
+		rm -rf "$KEYSTONE_CONF_DIR/fernet-keys/"
+		kubectl exec deploy/keystone-devstack keystone-manage --config-file $KEYSTONE_CONF fernet_setup
+	fi
+
+	rm -rf "$KEYSTONE_CONF_DIR/credential-keys/"
+	kubectl exec deploy/keystone-devstack -- keystone-manage --config-file $KEYSTONE_CONF credential_setup
+}
+export -f init_keystone
+
+# start_keystone() - Start running processes
+function start_keystone {
+	# Get right service port for testing
+	local service_port=$KEYSTONE_SERVICE_PORT
+	local auth_protocol=$KEYSTONE_AUTH_PROTOCOL
+	if is_service_enabled tls-proxy; then
+		service_port=$KEYSTONE_SERVICE_PORT_INT
+		auth_protocol="http"
+	fi
+
+	proxy_pass_to_kubernetes /identity keystone-devstack
+
+	echo "Waiting for keystone to start..."
+	# Check that the keystone service is running. Even if the tls tunnel
+	# should be enabled, make sure the internal port is checked using
+	# unencryted traffic at this point.
+	# If running in Apache, use the path rather than port.
+
+	local service_uri=$auth_protocol://$KEYSTONE_SERVICE_HOST/identity/v$IDENTITY_API_VERSION/
+
+	if ! wait_for_service $SERVICE_TIMEOUT $service_uri; then
+		die $LINENO "keystone did not start"
+	fi
+
+	# Start proxies if enabled
+	if is_service_enabled tls-proxy; then
+		start_tls_proxy keystone-service '*' $KEYSTONE_SERVICE_PORT $KEYSTONE_SERVICE_HOST $KEYSTONE_SERVICE_PORT_INT
+		start_tls_proxy keystone-auth '*' $KEYSTONE_AUTH_PORT $KEYSTONE_AUTH_HOST $KEYSTONE_AUTH_PORT_INT
+	fi
+
+	# (re)start memcached to make sure we have a clean memcache.
+	kubectl rollout restart statefulset/memcached-devstack
+}
+export -f start_keystone
+
+function bootstrap_keystone {
+	kubectl exec deploy/keystone-devstack -- keystone-manage bootstrap \
+		--bootstrap-username admin \
+		--bootstrap-password "$ADMIN_PASSWORD" \
+		--bootstrap-project-name admin \
+		--bootstrap-role-name admin \
+		--bootstrap-service-name keystone \
+		--bootstrap-region-id "$REGION_NAME" \
+		--bootstrap-admin-url "$KEYSTONE_AUTH_URI" \
+		--bootstrap-public-url "$KEYSTONE_SERVICE_URI"
+}
+export -f bootstrap_keystone

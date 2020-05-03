@@ -1,0 +1,7 @@
+---
+apiVersion: identity.openstack.org/v1alpha1
+kind: Keystone
+metadata:
+  name: sample
+spec:
+  configDir: /etc/keystone
