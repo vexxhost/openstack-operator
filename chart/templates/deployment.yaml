@@ -37,6 +37,8 @@ spec:
         - -m
         - openstack_operator.memcached
         - -m
+        - openstack_operator.openstack.identity.endpoints
+        - -m
         - openstack_operator.openstack.identity.services
         - -m
         - openstack_operator.rabbitmq

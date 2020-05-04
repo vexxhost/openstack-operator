@@ -135,3 +135,19 @@ function bootstrap_keystone {
 		--bootstrap-public-url "$KEYSTONE_SERVICE_URI"
 }
 export -f bootstrap_keystone
+# Create an endpoint with a specific interface
+# Usage: _get_or_create_endpoint_with_interface <service> <interface> <url> <region>
+function _get_or_create_endpoint_with_interface {
+	cat <<EOF | kubectl apply -f-
+---
+apiVersion: identity.openstack.org/v1alpha1
+kind: Endpoint
+metadata:
+  name: ${1//_/-}-$2
+spec:
+  service: $1
+  interface: $2
+  url: $3
+EOF
+}
+export -f _get_or_create_endpoint_with_interface

@@ -16,5 +16,6 @@
 
 - hosts: all
   roles:
-    - collect-container-logs
-    - collect-kubernetes-logs
+  - collect-container-logs
+  - collect-kubernetes-logs
+  
