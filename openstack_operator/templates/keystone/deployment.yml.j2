@@ -38,11 +38,11 @@ spec:
           containerPort: 5000
         livenessProbe:
           httpGet:
-            path: /
+            path: /v3
             port: keystone
         readinessProbe:
           httpGet:
-            path: /
+            path: /v3
             port: keystone
         resources:
           limits:
