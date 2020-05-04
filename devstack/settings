@@ -18,3 +18,6 @@ define_plugin openstack-operator
 
 disable_service etcd3
 disable_service rabbit
+
+source $DEST/openstack-operator/devstack/lib/common
+source $DEST/openstack-operator/devstack/lib/keystone

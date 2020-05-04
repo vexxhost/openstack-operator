@@ -26,6 +26,8 @@ COPY --from=builder /output/ /output
 RUN apt update && apt -y install git && \
     /output/install-from-bindep && \
     apt -y purge git && apt clean all
+RUN mkdir /var/log/keystone && \
+    chmod 777 -R /var/log/keystone
 EXPOSE 5000
 ENV UWSGI_HTTP_SOCKET=:5000 \
     UWSGI_WSGI_FILE=/usr/local/bin/keystone-wsgi-public

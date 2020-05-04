@@ -1,0 +1,81 @@
+#!/bin/bash
+#
+# Copyright 2020 VEXXHOST, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may
+# not use this file except in compliance with the License. You may obtain
+# a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations
+# under the License.
+
+function get_kubernetes_service_ip {
+	local svc="$1"
+
+	for i in {1..30}; do
+		ip=$(kubectl get svc/$svc -ojsonpath='{.spec.clusterIP}') && break || sleep 1;
+	done
+
+	echo "$ip"
+}
+
+function kubernetes_rollout_status {
+	local deployment="$1"
+
+	for i in {1..30}; do
+		kubectl get deploy/$deployment && break || sleep 1;
+	done
+
+	kubectl rollout status deploy/$deployment
+}
+
+function proxy_pass_to_kubernetes {
+	local url=$1
+	local svc=$2
+
+	local ip=$(get_kubernetes_service_ip $svc)
+	local apache_conf=$(apache_site_config_for $svc)
+
+	echo "ProxyPass \"${url}\" \"http://${ip}/\"" | sudo tee -a $apache_conf
+
+	enable_apache_site $svc
+	restart_apache_server
+}
+
+# Gets or creates service
+# Usage: get_or_create_service <name> <type> <description>
+function get_or_create_service {
+	cat <<EOF | kubectl apply -f-
+---
+apiVersion: identity.openstack.org/v1alpha1
+kind: Service
+metadata:
+  name: ${1//_/-}
+spec:
+  type: $2
+  description: $3
+EOF
+}
+export -f get_or_create_service
+
+# Create an endpoint with a specific interface
+# Usage: _get_or_create_endpoint_with_interface <service> <interface> <url> <region>
+function _get_or_create_endpoint_with_interface {
+	cat <<EOF | kubectl apply -f-
+---
+apiVersion: identity.openstack.org/v1alpha1
+kind: Endpoint
+metadata:
+  name: ${1//_/-}-$2
+spec:
+  service: $1
+  interface: $2
+  url: $3
+EOF
+}
+export -f _get_or_create_endpoint_with_interface

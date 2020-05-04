@@ -14,47 +14,47 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-function get_kubernetes_service_ip {
-	local svc="$1"
-
-	for i in {1..30}; do
-		ip=$(kubectl get svc/$svc -ojsonpath='{.spec.clusterIP}') && break || sleep 1;
-	done
-
-	return $ip
-}
-
-function proxy_pass_to_kubernetes {
-	local url=$1
-	local svc=$2
-
-	local ip=$(get_kubernetes_service_ip $svc)
-	local apache_conf=$(apache_site_config_for $name)
-
-	echo "ProxyPass \"${url}\" \"http://${ip}/\"" | sudo tee -a $apache_conf
-
-	enable_apache_site $name
-	restart_apache_server
-}
-
-# Gets or creates service
-# Usage: get_or_create_service <name> <type> <description>
-function get_or_create_service {
-	cat <<EOF | kubectl apply -f-
----
-apiVersion: identity.openstack.org/v1alpha1
-kind: Service
-metadata:
-  name: ${1//_/-}
-spec:
-  type: $2
-  description: $3
-EOF
-}
-export -f get_or_create_service
-
 # install_keystone() - Collect source and prepare
 function install_keystone {
+	echo "Both installation and startup are included in the deployment of keystone crd."
+}
+export -f install_keystone
+
+# init_keystone() - Initialize databases, etc.
+function init_keystone {
+
+	# NOTE(mnaser): Permissions here are bad but it's temporary so we don't care as much.
+	sudo chmod -Rv 777 /etc/keystone
+
+	if [[ "$RECREATE_KEYSTONE_DB" == True ]]; then
+		# (Re)create keystone database
+		recreate_database keystone
+	fi
+
+	# DB sync
+	time_start "dbsync"
+	sudo docker run -v /etc/keystone:/etc/keystone vexxhost/keystone:latest keystone-manage --config-file $KEYSTONE_CONF db_sync
+	time_stop "dbsync"
+
+	# Get fernet keys
+	if [[ "$KEYSTONE_TOKEN_FORMAT" == "fernet" ]]; then
+		rm -rf "$KEYSTONE_CONF_DIR/fernet-keys/"
+		mkdir "$KEYSTONE_CONF_DIR/fernet-keys/"
+		sudo chmod -Rv 777 "$KEYSTONE_CONF_DIR/fernet-keys/"
+		sudo docker run -v /etc/keystone:/etc/keystone vexxhost/keystone:latest keystone-manage --config-file $KEYSTONE_CONF fernet_setup --keystone-user 65534 --keystone-group 65534
+	fi
+
+	# Get credential keys
+	rm -rf "$KEYSTONE_CONF_DIR/credential-keys/"
+	sudo docker run -v /etc/keystone:/etc/keystone vexxhost/keystone:latest keystone-manage --config-file $KEYSTONE_CONF credential_setup --keystone-user 65534 --keystone-group 65534
+
+}
+export -f init_keystone
+
+# start_keystone() - Start running processes
+function start_keystone {
+
+	# install keystone
 	cat <<EOF | kubectl apply -f-
 ---
 apiVersion: identity.openstack.org/v1alpha1
@@ -64,32 +64,9 @@ metadata:
 spec:
   configDir: ${KEYSTONE_CONF_DIR}
 EOF
-}
-export -f install_keystone
+	# rollout keystone
+	kubernetes_rollout_status keystone-devstack
 
-# init_keystone() - Initialize databases, etc.
-function init_keystone {
-	if [[ "$RECREATE_KEYSTONE_DB" == True ]]; then
-		# (Re)create keystone database
-		recreate_database keystone
-	fi
-
-	time_start "dbsync"
-	kubectl exec deploy/keystone-devstack -- keystone-manage --config-file $KEYSTONE_CONF db_sync
-	time_stop "dbsync"
-
-	if [[ "$KEYSTONE_TOKEN_FORMAT" == "fernet" ]]; then
-		rm -rf "$KEYSTONE_CONF_DIR/fernet-keys/"
-		kubectl exec deploy/keystone-devstack keystone-manage --config-file $KEYSTONE_CONF fernet_setup
-	fi
-
-	rm -rf "$KEYSTONE_CONF_DIR/credential-keys/"
-	kubectl exec deploy/keystone-devstack -- keystone-manage --config-file $KEYSTONE_CONF credential_setup
-}
-export -f init_keystone
-
-# start_keystone() - Start running processes
-function start_keystone {
 	# Get right service port for testing
 	local service_port=$KEYSTONE_SERVICE_PORT
 	local auth_protocol=$KEYSTONE_AUTH_PROTOCOL
@@ -123,6 +100,16 @@ function start_keystone {
 }
 export -f start_keystone
 
+# bootstrap_keystone() - Initialize user, role and project
+# This function uses the following GLOBAL variables:
+# - ``KEYSTONE_BIN_DIR``
+# - ``ADMIN_PASSWORD``
+# - ``IDENTITY_API_VERSION``
+# - ``KEYSTONE_AUTH_URI``
+# - ``REGION_NAME``
+# - ``KEYSTONE_SERVICE_PROTOCOL``
+# - ``KEYSTONE_SERVICE_HOST``
+# - ``KEYSTONE_SERVICE_PORT``
 function bootstrap_keystone {
 	kubectl exec deploy/keystone-devstack -- keystone-manage bootstrap \
 		--bootstrap-username admin \
@@ -135,19 +122,3 @@ function bootstrap_keystone {
 		--bootstrap-public-url "$KEYSTONE_SERVICE_URI"
 }
 export -f bootstrap_keystone
-# Create an endpoint with a specific interface
-# Usage: _get_or_create_endpoint_with_interface <service> <interface> <url> <region>
-function _get_or_create_endpoint_with_interface {
-	cat <<EOF | kubectl apply -f-
----
-apiVersion: identity.openstack.org/v1alpha1
-kind: Endpoint
-metadata:
-  name: ${1//_/-}-$2
-spec:
-  service: $1
-  interface: $2
-  url: $3
-EOF
-}
-export -f _get_or_create_endpoint_with_interface

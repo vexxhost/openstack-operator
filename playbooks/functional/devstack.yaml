@@ -50,6 +50,7 @@
           CELLSV2_SETUP: singleconductor
           MEMCACHE_SERVERS: "{{ _memcached_ip.stdout }}:11211"
           RABBIT_HOST: "{{ _rabbitmq_ip.stdout }}"
+          DATABASE_HOST: "{{ hostvars['controller']['nodepool']['private_ipv4'] }}"
     - name: Re-write local.conf
       include_role:
         name: write-devstack-local-conf
