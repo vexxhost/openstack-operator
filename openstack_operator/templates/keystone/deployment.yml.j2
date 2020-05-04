@@ -46,11 +46,11 @@ spec:
             port: keystone
         resources:
           limits:
-            cpu: 1000m
+            cpu: 2000m
             ephemeral-storage: 500M
             memory: 1024M
           requests:
-            cpu: 500m
+            cpu: 1000m
             ephemeral-storage: 500M
             memory: 128M
         securityContext:
@@ -64,6 +64,7 @@ spec:
         hostPath:
           path: {{ spec['configDir'] }}
           type: Directory
+      terminationGracePeriodSeconds: 5
 {% if 'nodeSelector' in spec %}
       nodeSelector:
         {{ spec.nodeSelector | to_yaml | indent(8) }}
