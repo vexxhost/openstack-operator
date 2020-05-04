@@ -15,14 +15,17 @@
 
 FROM docker.io/opendevorg/python-builder as builder
 COPY bindep.txt /tmp/src/bindep.txt
-RUN assemble keystone==16.0.0 \
+RUN apt update && apt -y install git
+RUN assemble git+https://opendev.org/openstack/keystone@stable/train \
              msgpack===0.6.1 \
              PyMySQL \
 	     python-memcached
 
 FROM docker.io/opendevorg/uwsgi-base
 COPY --from=builder /output/ /output
-RUN /output/install-from-bindep
+RUN apt update && apt -y install git && \
+    /output/install-from-bindep && \
+    apt -y purge git && apt clean all
 EXPOSE 5000
 ENV UWSGI_HTTP_SOCKET=:5000 \
     UWSGI_WSGI_FILE=/usr/local/bin/keystone-wsgi-public
