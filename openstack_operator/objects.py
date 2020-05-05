@@ -24,6 +24,7 @@ from combinations of apiVersion and kind to the exact model.
 
 from pykube.objects import ConfigMap
 from pykube.objects import Deployment
+from pykube.objects import HorizontalPodAutoscaler
 from pykube.objects import Ingress
 from pykube.objects import NamespacedAPIObject
 from pykube.objects import Pod
@@ -74,6 +75,9 @@ MAPPING = {
     "apps/v1": {
         "Deployment": Deployment,
         "StatefulSet": StatefulSet,
+    },
+    "autoscaling/v1": {
+        "HorizontalPodAutoscaler": HorizontalPodAutoscaler,
     },
     "extensions/v1beta1": {
         "Ingress": Ingress
