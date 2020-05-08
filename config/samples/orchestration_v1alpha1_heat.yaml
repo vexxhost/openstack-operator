@@ -1,0 +1,7 @@
+---
+apiVersion: orchestration.openstack.org/v1alpha1
+kind: Heat
+metadata:
+  name: sample
+spec:
+  configDir: /etc/heat

@@ -1,0 +1,45 @@
+- job:
+    name: openstack-operator:images:build:heat
+    parent: vexxhost-build-docker-image
+    provides: openstack-operator:image:heat
+    vars: &id001
+      docker_images:
+      - context: images/heat
+        repository: vexxhost/heat-api-base
+        target: heat-api-base
+      - context: images/heat
+        repository: vexxhost/heat-api
+        target: heat-api
+      - context: images/heat
+        repository: vexxhost/heat-api-cfn
+        target: heat-api-cfn
+      - context: images/heat
+        repository: vexxhost/heat-engine
+        target: heat-engine
+    dependencies:
+    - openstack-operator:images:build:openstack-operator
+    files: &id002
+    - ^images/heat/.*
+- job:
+    name: openstack-operator:images:upload:heat
+    parent: vexxhost-upload-docker-image
+    provides: openstack-operator:image:heat
+    vars: *id001
+    dependencies:
+    - openstack-operator:images:upload:openstack-operator
+    files: *id002
+- job:
+    name: openstack-operator:images:promote:heat
+    parent: vexxhost-promote-docker-image
+    vars: *id001
+    files: *id002
+- project:
+    check:
+      jobs:
+      - openstack-operator:images:build:heat
+    gate:
+      jobs:
+      - openstack-operator:images:upload:heat
+    promote:
+      jobs:
+      - openstack-operator:images:promote:heat
