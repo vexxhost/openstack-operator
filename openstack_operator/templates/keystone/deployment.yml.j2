@@ -33,6 +33,11 @@ spec:
       - name: keystone
         image: vexxhost/keystone:latest
         imagePullPolicy: Always
+        env:
+        {% for v in env %}
+        - name: "{{ v.name }}"
+          value: "{{ v.value }}"
+        {% endfor %}
         ports:
         - name: keystone
           containerPort: 5000

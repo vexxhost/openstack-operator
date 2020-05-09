@@ -35,6 +35,24 @@ from openstack_operator import objects
 
 
 DIR_PATH = os.path.dirname(os.path.realpath(__file__))
+
+UWSGI_SETTINGS = {
+    'UWSGI_ENABLE_THREADS': True,
+    'UWSGI_PROCESSES': 2,
+    'UWSGI_EXIT_ON_RELOAD': True,
+    'UWSGI_DIE_ON_TERM': True,
+    'UWSGI_LAZY_APPS': True,
+    'UWSGI_ADD_HEADER': 'Connection: close',
+    'UWSGI_BUFFER_SIZE': 65535,
+    'UWSGI_THUNDER_LOCK': True,
+    'UWSGI_DISABLE_LOGGING': True,
+    'UWSGI_AUTO_CHUNCKED': True,
+    'UWSGI_HTTP_RAW_BODY': True,
+    'UWSGI_SOCKET_TIMEOUT': 10,
+    'UWSGI_NEED_APP': True,
+    'UWSGI_ROUTE_USER_AGENT': '^kube-probe.* donotlog:'
+}
+
 VERSION = version.VersionInfo('openstack_operator').version_string()
 
 
@@ -194,8 +212,16 @@ def get_secret(namespace, name):
 
 
 def generate_hash(dictionary):
-    """Generate a has from a dictionary, return None if dictionary is empty"""
+    """Generate a hash from a dictionary, return None if dictionary is empty"""
 
     if not dictionary:
         return None
     return hash(frozenset(dictionary.items()))
+
+
+def get_uwsgi_env():
+    """Generate k8s env list from UWSGI_SETTINGS dict"""
+    res = []
+    for key, value in UWSGI_SETTINGS.items():
+        res.append({'name': key, 'value': value})
+    return res

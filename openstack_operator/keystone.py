@@ -30,9 +30,9 @@ def create_or_resume(name, spec, **_):
     This function is called when a new resource is created but also when we
     start the service up for the first time.
     """
-
+    env = utils.get_uwsgi_env()
     utils.create_or_update('keystone/deployment.yml.j2',
-                           name=name, spec=spec)
+                           name=name, spec=spec, env=env)
     utils.create_or_update('keystone/service.yml.j2',
                            name=name, spec=spec)
     utils.create_or_update('keystone/horizontalpodautoscaler.yml.j2',

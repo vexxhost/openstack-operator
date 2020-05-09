@@ -39,6 +39,13 @@ spec:
       - name: heat-{{ component }}
         image: vexxhost/heat-{{ component }}:latest
         imagePullPolicy: Always
+        {% if env is defined %}
+        env:
+        {% for v in env %}
+        - name: "{{ v.name }}"
+          value: "{{ v.value }}"
+        {% endfor %}
+        {% endif %}
         {% if 'api' in component %}
         ports:
         - name: heat-{{ component }}
