@@ -21,3 +21,11 @@ metadata:
     {{ labels("horizon", name) | indent(4) }}
 spec:
   megabytes: 128
+{% if 'nodeSelector' in spec %}
+  nodeSelector:
+    {{ spec.nodeSelector | to_yaml | indent(4) }}
+{% endif %}
+{% if 'tolerations' in spec %}
+  tolerations:
+    {{ spec.tolerations | to_yaml | indent(4) }}
+{% endif %}
