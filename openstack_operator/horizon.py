@@ -34,7 +34,7 @@ def create_secret(name, **_):
 
 @kopf.on.resume('dashboard.openstack.org', 'v1alpha1', 'horizons')
 @kopf.on.create('dashboard.openstack.org', 'v1alpha1', 'horizons')
-def create_or_resume(namespace, name, spec, **_):
+def create_or_resume(name, spec, **_):
     """Create and re-sync a horizon instance
 
     This function is called when a new resource is created but also when we
@@ -42,10 +42,6 @@ def create_or_resume(namespace, name, spec, **_):
     """
 
     # Grab the secretkey secret
-    secret_key = utils.get_secret(namespace, "horizon-%s-secretkey" % name)
-    utils.create_or_update('horizon/secret-config.yml.j2',
-                           name=name,
-                           secret=secret_key['secret_key'])
     conn = utils.get_openstack_connection()
     auth_url = conn.config.auth["auth_url"]
     config = utils.create_or_update('horizon/configmap.yml.j2',
