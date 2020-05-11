@@ -200,8 +200,8 @@ def get_secret(namespace, name):
     """
 
     api = pykube.HTTPClient(pykube.KubeConfig.from_env())
-    secret = objects.Secret.objects(api).get(
-        namespace=namespace,
+
+    secret = objects.Secret.objects(api).filter(namespace=namespace).get(
         name=name
     )
 
