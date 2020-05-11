@@ -34,6 +34,7 @@ class KubernetesObjectTestCase(testtools.TestCase):
     SAMPLES_PATH = 'config/samples'
     SAMPLE_FILE = ''
     TEMPLATE_FILE = ''
+
     @classmethod
     def setUpClass(cls):
         sample_path = "%s/%s" % (cls.SAMPLES_PATH, cls.SAMPLE_FILE)
