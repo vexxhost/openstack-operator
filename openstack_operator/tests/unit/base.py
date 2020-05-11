@@ -46,6 +46,10 @@ class KubernetesObjectTestCase(testtools.TestCase):
         cls.object = utils.render_template(cls.TEMPLATE_FILE,
                                            name=name, spec=spec)
 
+    def test_metadata_has_no_namespace(self):
+        """Ensure that the metadata does not specify the namespace."""
+        self.assertNotIn("namespace", self.object["metadata"])
+
 
 class KubernetesAppTestCaseMixin:
     """Mix-in to be used for tests that involve apps and containers."""
