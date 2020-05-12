@@ -35,11 +35,11 @@ RUN ln -s /etc/horizon/local_settings.py local/local_settings.py && \
     cp ../neutron_vpnaas_dashboard/enabled/*.py enabled/ && \
     cp ../octavia_dashboard/enabled/*.py enabled/ && \
     cp ../sahara_dashboard/enabled/*.py enabled/
-COPY *.svg ../static/dashboard/img/
 COPY manage.py .
 RUN python manage.py collectstatic --no-input && \
     python manage.py compress --force && \
     chown 1001 -R local/ ../static
+COPY *.svg ../static/dashboard/img/
 EXPOSE 8000
 ENV UWSGI_HTTP_SOCKET=:8000 \
     UWSGI_WSGI_FILE=/usr/local/lib/python3.7/site-packages/openstack_dashboard/wsgi.py \
