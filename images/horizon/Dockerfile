@@ -42,7 +42,7 @@ RUN python manage.py collectstatic --no-input && \
     chown 1001 -R local/ ../static
 EXPOSE 8000
 ENV UWSGI_HTTP_SOCKET=:8000 \
-    UWSGI_WSGI_FILE=/usr/local/lib/python3.7/site-packages/openstack_dashboard/wsgi/django.wsgi \
+    UWSGI_WSGI_FILE=/usr/local/lib/python3.7/site-packages/openstack_dashboard/wsgi.py \
     UWSGI_CHECK_STATIC=/usr/local/lib/python3.7/site-packages/static/ \
     UWSGI_STATIC_MAP="/static=/usr/local/lib/python3.7/site-packages/static/" \
     UWSGI_MIME_FILE="/etc/mime.types"
