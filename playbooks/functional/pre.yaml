@@ -17,5 +17,5 @@
 - hosts: all
   roles:
     - role: clear-firewall
-    - role: install-kubernetes
+    - role: ensure-kubernetes
     - role: ensure-helm

@@ -60,7 +60,7 @@ spec:
           name: config
       - name: exporter
         image: vexxhost/mcrouter_exporter:latest
-        args: ["-mcrouter.address", "localhost:11211", "-mcrouter.timeout", "3s"]
+        args: ["-mcrouter.address", "127.0.0.1:11211", "-mcrouter.timeout", "3s"]
         imagePullPolicy: Always
         ports:
         - name: metrics
