@@ -6,15 +6,24 @@
     pre-run: playbooks/functional/pre.yaml
     run: playbooks/functional/run.yaml
     post-run: playbooks/functional/post.yaml
+    required-projects:
+    - openstack/heat
+    - openstack/heat-tempest-plugin
     vars:
       devstack_services:
         etcd3: false
         rabbit: false
+        tls-proxy: false
       devstack_plugins:
         openstack-operator: https://opendev.org/vexxhost/openstack-operator
+        heat: https://github.com/openstack/heat
       devstack_source_dirs:
         - src/opendev.org/openstack
         - src/opendev.org/vexxhost
+      tempest_plugins:
+        - heat-tempest-plugin
+      devstack_localrc:
+        TEMPEST_PLUGINS: '/opt/stack/heat-tempest-plugin'
       docker_use_buildset_registry: true
       minikube_dns_resolvers: [1.1.1.1, 8.8.8.8]
 

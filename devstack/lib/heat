@@ -1,0 +1,353 @@
+#!/bin/bash
+#
+# lib/heat
+# Install and start **Heat** service
+
+# To enable, add the following to localrc
+#
+#   ENABLED_SERVICES+=,heat,h-api,h-api-cfn,h-eng
+
+# Dependencies:
+# (none)
+
+# stack.sh
+# ---------
+# - install_heatclient
+# - install_heat
+# - configure_heatclient
+# - configure_heat
+# - init_heat
+# - start_heat
+# - stop_heat
+# - cleanup_heat
+
+# Save trace setting
+_XTRACE_HEAT=$(set +o | grep xtrace)
+set +o xtrace
+
+# Defaults
+# --------
+
+# set up default directories
+GITDIR["python-heatclient"]=$DEST/python-heatclient
+
+# python heat client library
+GITREPO["python-heatclient"]=${HEATCLIENT_REPO:-${GIT_BASE}/openstack/python-heatclient.git}
+GITBRANCH["python-heatclient"]=${HEATCLIENT_BRANCH:-master}
+
+# Use HEAT_USE_MOD_WSGI for backward compatibility
+HEAT_USE_APACHE=${HEAT_USE_APACHE:-${HEAT_USE_MOD_WSGI:-True}}
+
+HEAT_DIR=$DEST/heat
+HEAT_FILES_DIR=$HEAT_DIR/heat/httpd/files
+
+HEAT_STANDALONE=$(trueorfalse False HEAT_STANDALONE)
+HEAT_ENABLE_ADOPT_ABANDON=$(trueorfalse False HEAT_ENABLE_ADOPT_ABANDON)
+HEAT_CONF_DIR=/etc/heat
+HEAT_CONF=$HEAT_CONF_DIR/heat.conf
+HEAT_ENV_DIR=$HEAT_CONF_DIR/environment.d
+HEAT_TEMPLATES_DIR=$HEAT_CONF_DIR/templates
+HEAT_API_HOST=${HEAT_API_HOST:-$SERVICE_HOST}
+HEAT_SERVICE_USER=${HEAT_SERVICE_USER:-heat}
+HEAT_TRUSTEE_USER=${HEAT_TRUSTEE_USER:-$HEAT_SERVICE_USER}
+HEAT_TRUSTEE_PASSWORD=${HEAT_TRUSTEE_PASSWORD:-$SERVICE_PASSWORD}
+HEAT_TRUSTEE_DOMAIN=${HEAT_TRUSTEE_DOMAIN:-default}
+
+# Support entry points installation of console scripts
+HEAT_BIN_DIR=$(get_python_exec_prefix)
+HEAT_API_UWSGI_CONF=$HEAT_CONF_DIR/heat-api-uwsgi.ini
+HEAT_CFN_API_UWSGI_CONF=$HEAT_CONF_DIR/heat-api-cfn-uwsgi.ini
+HEAT_API_UWSGI=$HEAT_BIN_DIR/heat-wsgi-api
+HEAT_CFN_API_UWSGI=$HEAT_BIN_DIR/heat-wsgi-api-cfn
+
+# other default options
+if [[ "$HEAT_STANDALONE" == "True" ]]; then
+    # for standalone, use defaults which require no service user
+    HEAT_STACK_DOMAIN=$(trueorfalse False HEAT_STACK_DOMAIN)
+    HEAT_DEFERRED_AUTH=${HEAT_DEFERRED_AUTH:-password}
+    if [[ ${HEAT_DEFERRED_AUTH} != "password" ]]; then
+        # Heat does not support keystone trusts when deployed in
+        # standalone mode
+        die $LINENO \
+            'HEAT_DEFERRED_AUTH can only be set to "password" when HEAT_STANDALONE is True.'
+    fi
+else
+    HEAT_STACK_DOMAIN=$(trueorfalse True HEAT_STACK_DOMAIN)
+    HEAT_DEFERRED_AUTH=${HEAT_DEFERRED_AUTH:-}
+fi
+HEAT_PLUGIN_DIR=${HEAT_PLUGIN_DIR:-$DATA_DIR/heat/plugins}
+ENABLE_HEAT_PLUGINS=${ENABLE_HEAT_PLUGINS:-}
+HEAT_ENGINE_WORKERS=${HEAT_ENGINE_WORKERS:=$(( ($(nproc)/4)<2 ? 2 : ($(nproc)/4) ))}
+
+# Functions
+# ---------
+
+# Test if any Heat services are enabled
+# is_heat_enabled
+function is_heat_enabled {
+    [[ ,${ENABLED_SERVICES} =~ ,"h-" ]] && return 0
+    return 1
+}
+
+function cleanup_heat {
+	echo noop
+}
+
+# configure_heat() - Set config files, create data dirs, etc
+function configure_heat {
+
+    sudo install -d -o $STACK_USER $HEAT_CONF_DIR
+    # remove old config files
+    rm -f $HEAT_CONF_DIR/heat-*.conf
+
+    HEAT_API_CFN_HOST=${HEAT_API_CFN_HOST:-$SERVICE_HOST}
+    HEAT_ENGINE_HOST=${HEAT_ENGINE_HOST:-$SERVICE_HOST}
+    HEAT_ENGINE_PORT=${HEAT_ENGINE_PORT:-8001}
+    HEAT_API_PASTE_FILE=$HEAT_CONF_DIR/api-paste.ini
+
+    cp $HEAT_DIR/etc/heat/api-paste.ini $HEAT_API_PASTE_FILE
+
+    # common options
+    iniset_rpc_backend heat $HEAT_CONF
+	iniset $HEAT_CONF DEFAULT heat_metadata_server_url http://$HEAT_API_CFN_HOST/heat-api-cfn
+	iniset $HEAT_CONF DEFAULT heat_waitcondition_server_url http://$HEAT_API_CFN_HOST/heat-api-cfn/v1/waitcondition
+
+    iniset $HEAT_CONF database connection `database_connection_url heat`
+    # we are using a hardcoded auth_encryption_key as it has to be the same for
+    # multinode deployment.
+    iniset $HEAT_CONF DEFAULT auth_encryption_key "767c3ed056cbaa3b9dfedb8c6f825bf0"
+
+    iniset $HEAT_CONF DEFAULT region_name_for_services "$REGION_NAME"
+
+    # logging
+    iniset $HEAT_CONF DEFAULT debug $ENABLE_DEBUG_LOG_LEVEL
+
+    # reduce Heat engine workers
+    iniset $HEAT_CONF DEFAULT num_engine_workers "$HEAT_ENGINE_WORKERS"
+
+	setup_logging $HEAT_CONF
+
+    if [[ ! -z "$HEAT_DEFERRED_AUTH" ]]; then
+        iniset $HEAT_CONF DEFAULT deferred_auth_method $HEAT_DEFERRED_AUTH
+    fi
+
+
+	configure_auth_token_middleware $HEAT_CONF heat
+
+    # If HEAT_DEFERRED_AUTH is unset or explicitly set to trusts, configure
+    # the section for the client plugin associated with the trustee
+    if [ -z "$HEAT_DEFERRED_AUTH" -o "trusts" == "$HEAT_DEFERRED_AUTH" ]; then
+        iniset $HEAT_CONF trustee auth_type password
+        iniset $HEAT_CONF trustee auth_url $KEYSTONE_AUTH_URI
+        iniset $HEAT_CONF trustee username $HEAT_TRUSTEE_USER
+        iniset $HEAT_CONF trustee password $HEAT_TRUSTEE_PASSWORD
+        iniset $HEAT_CONF trustee user_domain_id $HEAT_TRUSTEE_DOMAIN
+    fi
+
+    # clients_keystone
+    iniset $HEAT_CONF clients_keystone auth_uri $KEYSTONE_AUTH_URI
+
+    if is_ssl_enabled_service "key" || is_service_enabled tls-proxy; then
+        iniset $HEAT_CONF clients_keystone ca_file $SSL_BUNDLE_FILE
+    fi
+
+    if is_ssl_enabled_service "nova" || is_service_enabled tls-proxy; then
+        iniset $HEAT_CONF clients_nova ca_file $SSL_BUNDLE_FILE
+    fi
+
+    if is_ssl_enabled_service "cinder" || is_service_enabled tls-proxy; then
+        iniset $HEAT_CONF clients_cinder ca_file $SSL_BUNDLE_FILE
+    fi
+
+    if [[ "$HEAT_ENABLE_ADOPT_ABANDON" = "True" ]]; then
+        iniset $HEAT_CONF DEFAULT enable_stack_adopt true
+        iniset $HEAT_CONF DEFAULT enable_stack_abandon true
+    fi
+
+    iniset $HEAT_CONF cache enabled "True"
+    iniset $HEAT_CONF cache backend "dogpile.cache.memory"
+
+    if ! is_service_enabled c-bak; then
+        iniset $HEAT_CONF volumes backups_enabled false
+    fi
+
+    sudo install -d -o $STACK_USER $HEAT_ENV_DIR $HEAT_TEMPLATES_DIR
+
+    # copy the default environment
+    cp $HEAT_DIR/etc/heat/environment.d/* $HEAT_ENV_DIR/
+
+    # copy the default templates
+    cp $HEAT_DIR/etc/heat/templates/* $HEAT_TEMPLATES_DIR/
+
+    # Enable heat plugins.
+    # NOTE(nic): The symlink nonsense is necessary because when
+    # plugins are installed in "developer mode", the final component
+    # of their target directory is always "resources", which confuses
+    # Heat's plugin loader into believing that all plugins are named
+    # "resources", and therefore are all the same plugin; so it
+    # will only load one of them.  Linking them all to a common
+    # location with unique names avoids that type of collision,
+    # while still allowing the plugins to be edited in-tree.
+    local err_count=0
+
+    if [[ -n "$ENABLE_HEAT_PLUGINS" ]]; then
+        mkdir -p $HEAT_PLUGIN_DIR
+        # Clean up cruft from any previous runs
+        rm -f $HEAT_PLUGIN_DIR/*
+        iniset $HEAT_CONF DEFAULT plugin_dirs $HEAT_PLUGIN_DIR
+    fi
+
+    for heat_plugin in $ENABLE_HEAT_PLUGINS; do
+        if [[ -d $HEAT_DIR/contrib/$heat_plugin ]]; then
+            setup_package $HEAT_DIR/contrib/$heat_plugin -e
+            ln -s $HEAT_DIR/contrib/$heat_plugin/$heat_plugin/resources $HEAT_PLUGIN_DIR/$heat_plugin
+        else
+            : # clear retval on the test so that we can roll up errors
+            err $LINENO "Requested Heat plugin(${heat_plugin}) not found."
+            err_count=$(($err_count + 1))
+        fi
+    done
+    [ $err_count -eq 0 ] || die $LINENO "$err_count of the requested Heat plugins could not be installed."
+}
+
+# init_heat() - Initialize database - override
+function init_heat {
+	# NOTE: Permissions here are bad but it's temporary so we don't care as much.
+	sudo chmod -Rv 777 /etc/heat
+
+	# recreate db only if one of the db services is enabled
+    if is_service_enabled $DATABASE_BACKENDS; then
+        # (re)create heat database
+        recreate_database heat
+
+		time_start "dbsync"
+		sudo docker run -v $HEAT_CONF_DIR:$HEAT_CONF_DIR vexxhost/heat-engine:latest heat-manage db_sync
+		time_stop "dbsync"
+    fi
+}
+
+# install_heatclient() - Collect source and prepare
+function install_heatclient {
+	pip_install "python-heatclient"
+}
+
+# install_heat() - Collect source and prepare
+function install_heat {
+	echo noop
+}
+
+# start_heat() - Start running processes, including screen -
+function start_heat {
+	# rollout heat
+	kubernetes_rollout_restart heat-api
+	kubernetes_rollout_restart heat-api-cfn
+	kubernetes_rollout_restart heat-engine
+
+	kubernetes_rollout_status heat-api
+	kubernetes_rollout_status heat-api-cfn
+	kubernetes_rollout_status heat-engine
+
+	proxy_pass_to_kubernetes /heat-api heat-api heat-wsgi-api
+	proxy_pass_to_kubernetes /heat-api-cfn heat-api-cfn heat-wsgi-api-cfn
+}
+
+# stop_heat() - Stop running processes
+function stop_heat {
+	echo noop
+}
+
+# create_heat_accounts() - Set up common required heat accounts
+function create_heat_accounts {
+    if [[ "$HEAT_STANDALONE" != "True" ]]; then
+
+        local heat_api_service_url
+        local heat_cfn_api_service_url
+
+	heat_api_service_url="$SERVICE_PROTOCOL://$HEAT_API_HOST/heat-api/v1/\$(project_id)s"
+	heat_cfn_api_service_url="$SERVICE_PROTOCOL://$HEAT_API_CFN_HOST/heat-api-cfn/v1"
+
+        create_service_user "heat" "admin"
+        get_or_create_service "heat" "orchestration" "Heat Orchestration Service"
+        get_or_create_endpoint \
+            "orchestration" \
+            "$REGION_NAME" \
+            "$heat_api_service_url"
+
+        get_or_create_service "heat-cfn" "cloudformation" "Heat CloudFormation Service"
+        get_or_create_endpoint \
+            "cloudformation"  \
+            "$REGION_NAME" \
+            "$heat_cfn_api_service_url"
+
+        # heat_stack_user role is for users created by Heat
+        get_or_create_role "heat_stack_user"
+    fi
+
+    if [[ "$HEAT_STACK_DOMAIN" == "True" ]]; then
+        # domain -> heat and user -> heat_domain_admin
+        domain_id=$(get_or_create_domain heat 'Owns users and projects created by heat')
+        iniset $HEAT_CONF DEFAULT stack_user_domain_id ${domain_id}
+        get_or_create_user heat_domain_admin $SERVICE_PASSWORD heat
+        get_or_add_user_domain_role admin heat_domain_admin heat
+        iniset $HEAT_CONF DEFAULT stack_domain_admin heat_domain_admin
+        iniset $HEAT_CONF DEFAULT stack_domain_admin_password $SERVICE_PASSWORD
+    fi
+}
+
+# configure_tempest_for_heat()
+# NOTE (gmann): Configure all the Tempest setting for Heat service in
+# this function.
+function configure_tempest_for_heat {
+    # Skip SoftwareConfigIntegrationTest because it requires a custom image
+    # Skip AutoscalingLoadBalancerTest and AutoscalingLoadBalancerv2Test as deprecated neutron-lbaas service is not enabled
+    iniset $TEMPEST_CONFIG heat_plugin skip_scenario_test_list 'AutoscalingLoadBalancerTest, AutoscalingLoadBalancerv2Test, SoftwareConfigIntegrationTest'
+    # Skip LoadBalancerv2Test as deprecated neutron-lbaas service is not enabled
+    iniset $TEMPEST_CONFIG heat_plugin skip_functional_test_list 'LoadBalancerv2Test, NotificationTest'
+
+    openstack flavor show m1.heat_int || openstack flavor create m1.heat_int --ram 512 --disk 4
+    openstack flavor show m1.heat_micro || openstack flavor create m1.heat_micro --ram 128 --disk 1
+
+    source $TOP_DIR/openrc demo demo
+    openstack network show heat-net || openstack network create heat-net
+    openstack subnet show heat-subnet || openstack subnet create heat-subnet --network heat-net --subnet-range 10.0.5.0/24
+    openstack router add subnet router1 heat-subnet
+
+    iniset $TEMPEST_CONFIG heat_plugin username $OS_USERNAME
+    iniset $TEMPEST_CONFIG heat_plugin password $OS_PASSWORD
+    iniset $TEMPEST_CONFIG heat_plugin project_name $OS_PROJECT_NAME
+    iniset $TEMPEST_CONFIG heat_plugin auth_url $OS_AUTH_URL
+    iniset $TEMPEST_CONFIG heat_plugin user_domain_id $OS_USER_DOMAIN_ID
+    iniset $TEMPEST_CONFIG heat_plugin project_domain_id $OS_PROJECT_DOMAIN_ID
+    iniset $TEMPEST_CONFIG heat_plugin user_domain_name $OS_USER_DOMAIN_NAME
+    iniset $TEMPEST_CONFIG heat_plugin project_domain_name $OS_PROJECT_DOMAIN_NAME
+    iniset $TEMPEST_CONFIG heat_plugin region $OS_REGION_NAME
+    iniset $TEMPEST_CONFIG heat_plugin auth_version $OS_IDENTITY_API_VERSION
+
+    source $TOP_DIR/openrc admin admin
+    iniset $TEMPEST_CONFIG heat_plugin admin_username $OS_USERNAME
+    iniset $TEMPEST_CONFIG heat_plugin admin_password $OS_PASSWORD
+    if [[ -e /etc/ci/mirror_info.sh ]]; then
+        source /etc/ci/mirror_info.sh
+    fi
+    export HEAT_TEST_FEDORA_IMAGE=${NODEPOOL_FEDORA_MIRROR:-https://download.fedoraproject.org/pub/fedora/linux}/releases/31/Cloud/x86_64/images/Fedora-Cloud-Base-31-1.9.x86_64.qcow2
+    TOKEN=$(openstack token issue -c id -f value)
+    local image_exists=$( openstack image list | grep "Fedora-Cloud-Base-31-1.9.x86_64" )
+    if [[ -z $image_exists ]]; then
+        if is_service_enabled g-api; then
+            upload_image $HEAT_TEST_FEDORA_IMAGE $TOKEN
+        fi
+    fi
+
+    if is_service_enabled tls-proxy; then
+        iniset $TEMPEST_CONFIG heat_plugin ca_file $SSL_BUNDLE_FILE
+    fi
+    # add application credential and secret to support test multi-cloud
+    app_cred_id=$(openstack application credential show  heat_multicloud || openstack application credential create heat_multicloud \
+        --secret secret --unrestricted -c id -f value)
+    export OS_CREDENTIAL_SECRET_ID=$(openstack secret store -n heat-multi-cloud-test-cred --payload \
+        '{"auth_type": "v3applicationcredential", "auth": {"auth_url": $OS_AUTH_URL, "application_credential_id": $app_cred_id, "application_credential_secret": "secret"}}'\
+        -c "Secret href" -f value)
+}
+
+# Restore xtrace
+$_XTRACE_HEAT

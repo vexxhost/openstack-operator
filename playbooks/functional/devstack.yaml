@@ -51,11 +51,23 @@
           MEMCACHE_SERVERS: "{{ _memcached_ip.stdout }}:11211"
           RABBIT_HOST: "{{ _rabbitmq_ip.stdout }}"
           DATABASE_HOST: "{{ hostvars['controller']['nodepool']['private_ipv4'] }}"
+          ERROR_ON_CLONE: True
     - name: Re-write local.conf
       include_role:
         name: write-devstack-local-conf
       vars:
         devstack_localrc: "{{ _devstack_localrc | combine(_devstack_localrc_extra) }}"
+    - name: Copy Zuul repo into devstack working directory
+      become: true
+      command: rsync -av src/opendev.org/vexxhost/openstack-operator /opt/stack
+    - name: Copy heat repo into devstack working directory
+      git:
+        repo: https://github.com/openstack/heat
+        dest: /opt/stack/heat
+      become: true
+    - name: Override heat lib functions
+      become: true
+      command: rsync -av src/opendev.org/vexxhost/openstack-operator/devstack/lib/heat /opt/stack/heat/devstack/lib/heat
 
 # Changes that run through devstack-tempest are likely to have an impact on
 # the devstack part of the job, so we keep devstack in the main play to

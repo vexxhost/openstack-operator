@@ -15,12 +15,13 @@
 
 FROM docker.io/opendevorg/python-builder as builder
 COPY bindep.txt /tmp/src/bindep.txt
-RUN assemble openstack-heat==13.0.1 python-memcached
+RUN assemble openstack-heat==13.0.2 \
+    python-memcached \
+    PyMySQL
 
 FROM docker.io/opendevorg/uwsgi-base AS heat-api-base
 COPY --from=builder /output/ /output
 RUN /output/install-from-bindep
-RUN ln -s /usr/local/etc/heat /etc/heat
 
 FROM heat-api-base AS heat-api
 EXPOSE 8004
