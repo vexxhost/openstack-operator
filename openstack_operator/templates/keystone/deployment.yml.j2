@@ -77,3 +77,7 @@ spec:
       tolerations:
         {{ spec.tolerations | to_yaml | indent(8) }}
 {% endif %}
+{% if 'hostAliases' in spec %}
+      hostAliases:
+        {{ spec.hostAliases | to_yaml | indent(8) }}
+{% endif %}
