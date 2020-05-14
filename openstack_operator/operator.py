@@ -22,6 +22,7 @@ the appropriate deployments, an instance of Keystone, Heat and Horizon
 import os
 import kopf
 
+from openstack_operator import chronyd
 from openstack_operator import heat
 from openstack_operator import horizon
 from openstack_operator import keystone
@@ -58,6 +59,8 @@ async def startup_fn(logger, **kwargs):
         horizon.create_or_resume("horizon", config["horizon"])
     if "heat" in config:
         heat.create_or_resume("heat", config["heat"])
+    if "chronyd" in config:
+        chronyd.create_or_resume(config["chronyd"])
 
 
 @kopf.on.update('', 'v1', 'configmaps')
