@@ -39,3 +39,18 @@ def create_or_resume(name, spec, **_):
                            name=name, spec=spec)
     utils.create_or_update('keystone/horizontalpodautoscaler.yml.j2',
                            name=name)
+    if "ingress" in spec:
+        utils.create_or_update('keystone/ingress.yml.j2',
+                               spec=spec)
+
+
+@kopf.on.update('identity.openstack.org', 'v1alpha1', 'keystones')
+def update(spec, **_):
+    """Update a keystone
+
+    This function updates the deployment for horizon if there are any
+    changes that happen within it.
+    """
+    if "ingress" in spec:
+        utils.create_or_update('keystone/ingress.yml.j2',
+                               spec=spec)
