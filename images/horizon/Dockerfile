@@ -36,7 +36,8 @@ RUN ln -s /etc/horizon/local_settings.py local/local_settings.py && \
     cp ../octavia_dashboard/enabled/*.py enabled/ && \
     cp ../sahara_dashboard/enabled/*.py enabled/
 COPY manage.py .
-RUN python manage.py collectstatic --no-input && \
+RUN python manage.py compilemessages && \
+    python manage.py collectstatic --no-input && \
     python manage.py compress --force && \
     chown 1001 -R local/ ../static
 COPY *.svg ../static/dashboard/img/
