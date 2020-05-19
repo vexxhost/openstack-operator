@@ -16,7 +16,8 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: heat-{{ name }}-{{ component }}
+  name: heat-{{ component }}
+  namespace: openstack
 spec:
   serviceType: ClusterIP
   ports:

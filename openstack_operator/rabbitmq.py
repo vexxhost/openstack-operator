@@ -33,13 +33,13 @@ def create_or_resume(name, spec, **_):
     """
 
     utils.create_or_update('rabbitmq/deployment.yml.j2',
-                           name=name, spec=spec)
+                           name=name, spec=spec, adopt=True)
     utils.create_or_update('rabbitmq/service.yml.j2',
-                           name=name, spec=spec)
+                           name=name, spec=spec, adopt=True)
     utils.create_or_update('rabbitmq/podmonitor.yml.j2',
-                           name=name, spec=spec)
+                           name=name, spec=spec, adopt=True)
     utils.create_or_update('rabbitmq/prometheusrule.yml.j2',
-                           name=name, spec=spec)
+                           name=name, spec=spec, adopt=True)
 
 
 @kopf.on.update('infrastructure.vexxhost.cloud', 'v1alpha1', 'rabbitmqs')
@@ -51,4 +51,4 @@ def update(name, spec, **_):
     """
 
     utils.create_or_update('rabbitmq/deployment.yml.j2',
-                           name=name, spec=spec)
+                           name=name, spec=spec, adopt=True)

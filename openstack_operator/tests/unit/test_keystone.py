@@ -1,4 +1,3 @@
----
 # Copyright 2020 VEXXHOST, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,17 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-apiVersion: v1
-kind: Service
-metadata:
-  name: horizon
-  namespace: openstack
-spec:
-  type: ClusterIP
-  ports:
-  - name: horizon
-    port: 80
-    protocol: TCP
-    targetPort: horizon
-  selector:
-    {{ labels("horizon", name) | indent(4) }}
+"""Tests for Keystone Operator
+
+This module contains all the tests for the Keystone operator.
+"""
+
+from openstack_operator.tests.unit import base
+
+
+class KeystoneDeploymentTestCase(base.DeploymentTestCase):
+    """Basic tests for the Deployment."""
+
+    SAMPLE_FILE = 'identity_v1alpha1_keystone.yaml'
+    TEMPLATE_FILE = 'keystone/deployment.yml.j2'
+    NAMESPACE_CHECK = False

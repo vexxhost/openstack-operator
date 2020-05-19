@@ -34,16 +34,27 @@ function kubernetes_rollout_status {
 	kubectl rollout status deploy/$deployment
 }
 
+function kubernetes_rollout_restart {
+	local deployment="$1"
+
+	for i in {1..30}; do
+		kubectl get deploy/$deployment && break || sleep 1;
+	done
+
+	kubectl rollout restart deploy/$deployment
+}
+
 function proxy_pass_to_kubernetes {
 	local url=$1
 	local svc=$2
+	local conf=$3
 
 	local ip=$(get_kubernetes_service_ip $svc)
-	local apache_conf=$(apache_site_config_for $svc)
+	local apache_conf=$(apache_site_config_for $conf)
 
 	echo "ProxyPass \"${url}\" \"http://${ip}/\"" | sudo tee -a $apache_conf
 
-	enable_apache_site $svc
+	enable_apache_site $conf
 	restart_apache_server
 }
 

@@ -16,7 +16,8 @@
 apiVersion: extensions/v1beta1
 kind: Ingress
 metadata:
-  name: horizon-{{ name }}
+  name: horizon
+  namespace: openstack
 spec:
   rules:
   - host: {{ spec.ingress.host }}
@@ -24,5 +25,5 @@ spec:
       paths:
       - path: /
         backend:
-          serviceName: horizon-{{ name }}
+          serviceName: horizon
           servicePort: 80

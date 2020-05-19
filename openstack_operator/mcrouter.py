@@ -41,15 +41,15 @@ def create_or_resume(name, spec, **_):
     """
     data = McrouterSpecEncoder().encode(spec)
     utils.create_or_update('mcrouter/configmap.yml.j2',
-                           name=name, data=data)
+                           name=name, data=data, adopt=True)
     utils.create_or_update('mcrouter/deployment.yml.j2',
-                           name=name, spec=spec)
+                           name=name, spec=spec, adopt=True)
     utils.create_or_update('mcrouter/service.yml.j2',
-                           name=name, spec=spec)
+                           name=name, spec=spec, adopt=True)
     utils.create_or_update('mcrouter/podmonitor.yml.j2',
-                           name=name, spec=spec)
+                           name=name, spec=spec, adopt=True)
     utils.create_or_update('mcrouter/prometheusrule.yml.j2',
-                           name=name, spec=spec)
+                           name=name, spec=spec, adopt=True)
 
 
 @kopf.on.update('infrastructure.vexxhost.cloud', 'v1alpha1', 'mcrouters')
@@ -61,6 +61,6 @@ def update(name, spec, **_):
     """
     data = McrouterSpecEncoder().encode(spec)
     utils.create_or_update('mcrouter/configmap.yml.j2',
-                           name=name, data=data)
+                           name=name, data=data, adopt=True)
     utils.create_or_update('mcrouter/deployment.yml.j2',
-                           name=name, spec=spec)
+                           name=name, spec=spec, adopt=True)

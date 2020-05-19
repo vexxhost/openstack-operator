@@ -14,16 +14,11 @@
 # limitations under the License.
 
 apiVersion: v1
-kind: Service
+kind: Namespace
 metadata:
-  name: horizon
-  namespace: openstack
+  name: openstack
+  labels:
+    {{ labels("operator", "openstack") | indent(4) }}
 spec:
-  type: ClusterIP
-  ports:
-  - name: horizon
-    port: 80
-    protocol: TCP
-    targetPort: horizon
-  selector:
-    {{ labels("horizon", name) | indent(4) }}
+  finalizers:
+  - kubernetes

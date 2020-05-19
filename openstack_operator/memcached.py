@@ -33,15 +33,15 @@ def create_or_resume(name, spec, **_):
     """
 
     utils.create_or_update('memcached/statefulset.yml.j2',
-                           name=name, spec=spec)
+                           name=name, spec=spec, adopt=True)
     utils.create_or_update('memcached/service.yml.j2',
-                           name=name, spec=spec)
+                           name=name, spec=spec, adopt=True)
     utils.create_or_update('memcached/mcrouter.yml.j2',
-                           name=name, spec=spec)
+                           name=name, spec=spec, adopt=True)
     utils.create_or_update('memcached/podmonitor.yml.j2',
-                           name=name, spec=spec)
+                           name=name, spec=spec, adopt=True)
     utils.create_or_update('memcached/prometheusrule.yml.j2',
-                           name=name, spec=spec)
+                           name=name, spec=spec, adopt=True)
 
     # NOTE(mnaser): We should remove this once all deployments are no longer
     #               using Deployment for Memcached.
@@ -58,4 +58,4 @@ def update(name, spec, **_):
     """
 
     utils.create_or_update('memcached/statefulset.yml.j2',
-                           name=name, spec=spec)
+                           name=name, spec=spec, adopt=True)

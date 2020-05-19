@@ -141,7 +141,9 @@ def generate_yaml(template, **kwargs):
     """
 
     doc = render_template(template, **kwargs)
-    kopf.adopt(doc)
+
+    if "adopt" in kwargs and kwargs["adopt"]:
+        kopf.adopt(doc)
 
     return doc
 
@@ -201,9 +203,12 @@ def get_secret(namespace, name):
 
     api = pykube.HTTPClient(pykube.KubeConfig.from_env())
 
-    secret = objects.Secret.objects(api).filter(namespace=namespace).get(
-        name=name
-    )
+    try:
+        secret = objects.Secret.objects(api).filter(namespace=namespace).get(
+            name=name
+        )
+    except pykube.exceptions.ObjectDoesNotExist:
+        return None
 
     return {
         k: base64.b64decode(v).decode('utf-8')
@@ -225,3 +230,22 @@ def get_uwsgi_env():
     for key, value in UWSGI_SETTINGS.items():
         res.append({'name': key, 'value': value})
     return res
+
+
+def get_configmap(namespace, name):
+    """Retrieve a configmap from Kubernetes.
+
+    This function retrieves a configmap from Kubernetes, decodes it and passes
+    the value of the data
+    """
+
+    api = pykube.HTTPClient(pykube.KubeConfig.from_env())
+
+    try:
+        config = objects.ConfigMap.objects(api).filter(
+            namespace=namespace
+        ).get(name=name)
+    except pykube.exceptions.ObjectDoesNotExist:
+        return None
+
+    return config.obj["data"]

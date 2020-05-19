@@ -21,6 +21,11 @@ spec:
       - name: operator
         image: vexxhost/openstack-operator:latest
         command: ["/usr/local/bin/kopf"]
+        env:
+        - name: OPERATOR_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
 {{- with .Values.secretName }}
         envFrom:
         - secretRef:
@@ -29,11 +34,7 @@ spec:
         args:
         - run
         - -m
-        - openstack_operator.heat
-        - -m
-        - openstack_operator.horizon
-        - -m
-        - openstack_operator.keystone
+        - openstack_operator.operator
         - -m
         - openstack_operator.mcrouter
         - -m

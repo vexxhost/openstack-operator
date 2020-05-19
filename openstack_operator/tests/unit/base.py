@@ -34,6 +34,7 @@ class KubernetesObjectTestCase(testtools.TestCase):
     SAMPLES_PATH = 'config/samples'
     SAMPLE_FILE = ''
     TEMPLATE_FILE = ''
+    NAMESPACE_CHECK = True
 
     @classmethod
     def setUpClass(cls):
@@ -48,7 +49,8 @@ class KubernetesObjectTestCase(testtools.TestCase):
 
     def test_metadata_has_no_namespace(self):
         """Ensure that the metadata does not specify the namespace."""
-        self.assertNotIn("namespace", self.object["metadata"])
+        if self.NAMESPACE_CHECK:
+            self.assertNotIn("namespace", self.object["metadata"])
 
 
 class KubernetesAppTestCaseMixin:

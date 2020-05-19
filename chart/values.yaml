@@ -1,3 +1,4 @@
 crd:
   monitoring: true
   dns: true
+configMap: {}

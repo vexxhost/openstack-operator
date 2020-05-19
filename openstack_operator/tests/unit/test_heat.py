@@ -25,3 +25,4 @@ class HeatAPIDeploymentTestCase(base.DeploymentTestCase):
 
     SAMPLE_FILE = 'orchestration_v1alpha1_heat.yaml'
     TEMPLATE_FILE = 'heat/deployment.yml.j2'
+    NAMESPACE_CHECK = False

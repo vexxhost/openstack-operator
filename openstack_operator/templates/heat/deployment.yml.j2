@@ -22,7 +22,8 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: heat-{{ name }}-{{ component }}
+  name: heat-{{ component }}
+  namespace: openstack
   labels:
     {{ labels("heat", name, component) | indent(4) }}
 spec:
@@ -59,7 +60,7 @@ spec:
         {% endif %}
         resources:
           limits:
-            cpu: 1000m
+            cpu: 500m
             ephemeral-storage: 50M
             memory: 512M
           requests:

@@ -26,6 +26,7 @@ from pykube.objects import ConfigMap
 from pykube.objects import Deployment
 from pykube.objects import HorizontalPodAutoscaler
 from pykube.objects import Ingress
+from pykube.objects import Namespace
 from pykube.objects import NamespacedAPIObject
 from pykube.objects import Pod
 from pykube.objects import Secret
@@ -68,6 +69,7 @@ class PrometheusRule(NamespacedAPIObject):
 MAPPING = {
     "v1": {
         "ConfigMap": ConfigMap,
+        "Namespace": Namespace,
         "Pod": Pod,
         "Secret": Secret,
         "Service": Service,

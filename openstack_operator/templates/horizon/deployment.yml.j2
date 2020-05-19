@@ -16,7 +16,8 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: horizon-{{ name }}
+  name: horizon
+  namespace: openstack
   labels:
     {{ labels("horizon", name) | indent(4) }}
   annotations:
@@ -44,7 +45,7 @@ spec:
           valueFrom:
             secretKeyRef:
               key: secret_key
-              name: horizon-{{ name }}
+              name: horizon
         ports:
         - name: horizon
           containerPort: 8000
@@ -60,7 +61,7 @@ spec:
             ephemeral-storage: 500M
             memory: 256M
           requests:
-            cpu: 1000m
+            cpu: 200m
             ephemeral-storage: 500M
             memory: 128M
         securityContext:
@@ -71,7 +72,7 @@ spec:
       volumes:
       - configMap:
           defaultMode: 420
-          name: horizon-{{ name }}
+          name: horizon
         name: config
 {% if 'nodeSelector' in spec %}
       nodeSelector:

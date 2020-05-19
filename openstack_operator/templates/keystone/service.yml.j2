@@ -16,7 +16,8 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: keystone-{{ name }}
+  name: keystone
+  namespace: openstack
 spec:
   type: ClusterIP
   ports:

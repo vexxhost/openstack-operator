@@ -16,7 +16,8 @@
 apiVersion: infrastructure.vexxhost.cloud/v1alpha1
 kind: Memcached
 metadata:
-  name: horizon-{{ name }}
+  name: horizon
+  namespace: openstack
   labels:
     {{ labels("horizon", name) | indent(4) }}
 spec:

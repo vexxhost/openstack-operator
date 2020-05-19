@@ -54,18 +54,9 @@ export -f init_keystone
 # start_keystone() - Start running processes
 function start_keystone {
 
-	# install keystone
-	cat <<EOF | kubectl apply -f-
----
-apiVersion: identity.openstack.org/v1alpha1
-kind: Keystone
-metadata:
-  name: devstack
-spec:
-  configDir: ${KEYSTONE_CONF_DIR}
-EOF
 	# rollout keystone
-	kubernetes_rollout_status keystone-devstack
+	kubernetes_rollout_restart keystone
+	kubernetes_rollout_status keystone
 
 	# Get right service port for testing
 	local service_port=$KEYSTONE_SERVICE_PORT
@@ -74,8 +65,7 @@ EOF
 		service_port=$KEYSTONE_SERVICE_PORT_INT
 		auth_protocol="http"
 	fi
-
-	proxy_pass_to_kubernetes /identity keystone-devstack
+	proxy_pass_to_kubernetes /identity keystone keystone-devstack
 
 	echo "Waiting for keystone to start..."
 	# Check that the keystone service is running. Even if the tls tunnel
@@ -96,7 +86,7 @@ EOF
 	fi
 
 	# (re)start memcached to make sure we have a clean memcache.
-	kubectl rollout restart statefulset/memcached-devstack
+	kubectl rollout restart statefulset/memcached-devstack -n default
 }
 export -f start_keystone
 
@@ -111,7 +101,7 @@ export -f start_keystone
 # - ``KEYSTONE_SERVICE_HOST``
 # - ``KEYSTONE_SERVICE_PORT``
 function bootstrap_keystone {
-	kubectl exec deploy/keystone-devstack -- keystone-manage bootstrap \
+	kubectl exec deploy/keystone -- keystone-manage bootstrap \
 		--bootstrap-username admin \
 		--bootstrap-password "$ADMIN_PASSWORD" \
 		--bootstrap-project-name admin \

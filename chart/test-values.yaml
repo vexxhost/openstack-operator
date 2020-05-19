@@ -1,2 +1,10 @@
 ---
 secretName: devstack
+configMap:
+  horizon:
+    ingress:
+      host: "horizon.vexxhost.com"
+  keystone:
+    configDir: /etc/keystone
+  heat:
+    configDir: /etc/heat

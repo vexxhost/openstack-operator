@@ -25,3 +25,4 @@ class HorizonDeploymentTestCase(base.DeploymentTestCase):
 
     SAMPLE_FILE = 'dashboard_v1alpha1_horizon.yaml'
     TEMPLATE_FILE = 'horizon/deployment.yml.j2'
+    NAMESPACE_CHECK = False

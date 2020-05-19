@@ -16,14 +16,15 @@
 apiVersion: autoscaling/v1
 kind: HorizontalPodAutoscaler
 metadata:
-  name: keystone-{{ name }}
+  name: keystone
+  namespace: openstack
   labels:
     {{ labels("keystone", name) | indent(4) }}
 spec:
   scaleTargetRef:
     apiVersion: apps/v1
     kind: Deployment
-    name: keystone-{{ name }}
-  minReplicas: 3
+    name: keystone
+  minReplicas: 2
   maxReplicas: 10
   targetCPUUtilizationPercentage: 90

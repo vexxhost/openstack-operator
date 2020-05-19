@@ -16,7 +16,8 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: keystone-{{ name }}
+  name: keystone
+  namespace: openstack
   labels:
     {{ labels("keystone", name) | indent(4) }}
 spec:
@@ -55,7 +56,7 @@ spec:
             ephemeral-storage: 500M
             memory: 1024M
           requests:
-            cpu: 1000m
+            cpu: 200m
             ephemeral-storage: 500M
             memory: 512M
         securityContext:

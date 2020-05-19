@@ -27,9 +27,11 @@ from openstack_operator import utils
 def create_secret(name, **_):
     """Create a new horizon secret"""
 
-    utils.create_or_update('horizon/secret-secretkey.yml.j2',
-                           name=name,
-                           secret=utils.generate_password())
+    res = utils.get_secret("openstack", name)
+    if res is None:
+        utils.create_or_update('horizon/secret-secretkey.yml.j2',
+                               name=name,
+                               secret=utils.generate_password())
 
 
 @kopf.on.resume('dashboard.openstack.org', 'v1alpha1', 'horizons')
@@ -78,6 +80,6 @@ def update(name, spec, **_):
     utils.create_or_update('horizon/deployment.yml.j2',
                            config_hash=config_hash, name=name,
                            spec=spec, env=env)
-    if hasattr(spec, "ingress"):
+    if "ingress" in spec:
         utils.create_or_update('horizon/ingress.yml.j2',
                                name=name, spec=spec)

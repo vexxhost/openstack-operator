@@ -64,6 +64,9 @@
 # the devstack part of the job, so we keep devstack in the main play to
 # avoid zuul retrying on legitimate failures.
 - hosts: all
+  pre_tasks:
+    - name: Set the context with openstack namespace
+      command: kubectl config set-context --current --namespace=openstack
   roles:
     - orchestrate-devstack
 
