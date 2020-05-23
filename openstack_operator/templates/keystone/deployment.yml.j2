@@ -65,11 +65,21 @@ spec:
         volumeMounts:
         - mountPath: /etc/keystone
           name: config
+        - name: fernet-keys
+          mountPath: /etc/keystone/fernet-keys
+        - name: credential-keys
+          mountPath: /etc/keystone/credential-keys
       volumes:
       - name: config
         hostPath:
           path: {{ spec['configDir'] }}
           type: Directory
+      - name: fernet-keys
+        secret:
+          secretName: keystone-fernet
+      - name: credential-keys
+        secret:
+          secretName: keystone-credential
 {% if 'nodeSelector' in spec %}
       nodeSelector:
         {{ spec.nodeSelector | to_yaml | indent(8) }}

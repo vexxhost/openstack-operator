@@ -36,18 +36,6 @@ function init_keystone {
 	sudo docker run -v /etc/keystone:/etc/keystone vexxhost/keystone:latest keystone-manage --config-file $KEYSTONE_CONF db_sync
 	time_stop "dbsync"
 
-	# Get fernet keys
-	if [[ "$KEYSTONE_TOKEN_FORMAT" == "fernet" ]]; then
-		rm -rf "$KEYSTONE_CONF_DIR/fernet-keys/"
-		mkdir "$KEYSTONE_CONF_DIR/fernet-keys/"
-		sudo chmod -Rv 777 "$KEYSTONE_CONF_DIR/fernet-keys/"
-		sudo docker run -v /etc/keystone:/etc/keystone vexxhost/keystone:latest keystone-manage --config-file $KEYSTONE_CONF fernet_setup --keystone-user 65534 --keystone-group 65534
-	fi
-
-	# Get credential keys
-	rm -rf "$KEYSTONE_CONF_DIR/credential-keys/"
-	sudo docker run -v /etc/keystone:/etc/keystone vexxhost/keystone:latest keystone-manage --config-file $KEYSTONE_CONF credential_setup --keystone-user 65534 --keystone-group 65534
-
 }
 export -f init_keystone
 

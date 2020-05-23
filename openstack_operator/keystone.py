@@ -17,9 +17,72 @@
 This module maintains the operator for Keystone which does everything from
 deployment to taking care of rotating fernet & credentials keys."""
 
+import base64
 import kopf
 
+from cryptography import fernet
+
+from openstack_operator import filters
 from openstack_operator import utils
+
+TOKEN_EXPIRATION = 86400
+FERNET_ROTATION_INTERVAL = 3600
+
+
+def _is_keystone_deployment(name, **_):
+    return name == 'keystone'
+
+
+def create_or_rotate_fernet_repository(name):
+    """Create or rotate fernet tokens
+
+    This will happen when it sees a Keystone deployment that we manage and it
+    will initialize (or rotate) the fernet repository.
+    """
+
+    data = utils.get_secret('openstack', 'keystone-%s' % (name))
+
+    # Stage an initial key 0 if we don't have anything.
+    if data is None:
+        data = {'0': fernet.Fernet.generate_key().decode('utf-8')}
+
+    # Get highest key number
+    sorted_keys = [int(k) for k in data.keys()]
+    sorted_keys.sort()
+    next_key = str(max(sorted_keys) + 1)
+
+    # Promote key 0 to primary
+    data[next_key] = data['0']
+    sorted_keys.append(int(next_key))
+
+    # Stage a new key
+    data['0'] = fernet.Fernet.generate_key().decode('utf-8')
+
+    # Determine number of active keys
+    active_keys = int(TOKEN_EXPIRATION / FERNET_ROTATION_INTERVAL)
+
+    # Determine the keys to keep and drop others
+    keys_to_keep = [0] + sorted_keys[-active_keys:]
+    keys = {k: base64.b64encode(v.encode('utf-8')).decode('utf-8')
+            for k, v in data.items() if int(k) in keys_to_keep}
+
+    # Update secret
+    utils.create_or_update('keystone/secret-fernet.yml.j2', name=name,
+                           keys=keys, is_strategic=False, adopt=True)
+
+
+@kopf.timer('apps', 'v1', 'deployments',
+            when=kopf.all_([filters.managed, _is_keystone_deployment]),
+            interval=FERNET_ROTATION_INTERVAL)
+def create_or_rotate_fernet(**_):
+    """Create or rotate fernet keys
+
+    This will happen when it sees a Keystone deployment that we manage and it
+    will initialize (or rotate) the fernet repository.
+    """
+
+    create_or_rotate_fernet_repository('fernet')
+    create_or_rotate_fernet_repository('credential')
 
 
 @kopf.on.resume('identity.openstack.org', 'v1alpha1', 'keystones')
