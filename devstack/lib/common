@@ -52,7 +52,7 @@ function proxy_pass_to_kubernetes {
 	local ip=$(get_kubernetes_service_ip $svc)
 	local apache_conf=$(apache_site_config_for $conf)
 
-	echo "ProxyPass \"${url}\" \"http://${ip}/\"" | sudo tee -a $apache_conf
+	echo "ProxyPass \"${url}\" \"http://${ip}/\"" | sudo tee $apache_conf
 
 	enable_apache_site $conf
 	restart_apache_server

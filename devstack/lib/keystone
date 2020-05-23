@@ -65,7 +65,8 @@ function start_keystone {
 		service_port=$KEYSTONE_SERVICE_PORT_INT
 		auth_protocol="http"
 	fi
-	proxy_pass_to_kubernetes /identity keystone keystone-devstack
+	proxy_pass_to_kubernetes /identity_admin keystone keystone-wsgi-admin
+	proxy_pass_to_kubernetes /identity keystone keystone-wsgi-public
 
 	echo "Waiting for keystone to start..."
 	# Check that the keystone service is running. Even if the tls tunnel
