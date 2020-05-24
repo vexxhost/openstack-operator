@@ -56,9 +56,6 @@
         name: write-devstack-local-conf
       vars:
         devstack_localrc: "{{ _devstack_localrc | combine(_devstack_localrc_extra) }}"
-    - name: Copy Zuul repo into devstack working directory
-      become: true
-      command: rsync -av src/opendev.org/vexxhost/openstack-operator /opt/stack
 
 # Changes that run through devstack-tempest are likely to have an impact on
 # the devstack part of the job, so we keep devstack in the main play to

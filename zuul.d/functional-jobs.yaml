@@ -12,6 +12,9 @@
         rabbit: false
       devstack_plugins:
         openstack-operator: https://opendev.org/vexxhost/openstack-operator
+      devstack_source_dirs:
+        - src/opendev.org/openstack
+        - src/opendev.org/vexxhost
       docker_use_buildset_registry: true
       minikube_dns_resolvers: [1.1.1.1, 8.8.8.8]
 
