@@ -27,7 +27,9 @@
   until: _memcached_ips is success
   retries: 10
   delay: 5
-  failed_when: "{{ _memcached_ips.stdout_lines | length == 0 }}"
+  failed_when: |
+    {{ _memcached_ips.stdout_lines | length == 0 }} or
+    {{ "" in _memcached_ips.stdout_lines }}
 
 - name: Send request to Memcached exporter
   uri:
@@ -46,7 +48,9 @@
   until: _mcrouter_ips is success
   retries: 10
   delay: 5
-  failed_when: "{{ _mcrouter_ips.stdout_lines | length == 0 }}"
+  failed_when: |
+    {{ _mcrouter_ips.stdout_lines | length == 0 }} or
+    {{ "" in _mcrouter_ips.stdout_lines }}
 
 - name: Send request to Mcrouter exporter
   uri:
