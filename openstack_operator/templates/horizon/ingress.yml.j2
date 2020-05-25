@@ -18,7 +18,11 @@ kind: Ingress
 metadata:
   name: horizon
   namespace: openstack
+  annotations:
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    cert-manager.k8s.io/cluster-issuer: "letsencrypt-prod"
 spec:
+{% if spec.ingress.host is defined %}
   rules:
   - host: {{ spec.ingress.host }}
     http:
@@ -27,3 +31,25 @@ spec:
         backend:
           serviceName: horizon
           servicePort: 80
+  tls:
+  - hosts:
+    - {{ spec.ingress.host }}
+    secretName: horizon-tls
+{% else %}
+  rules:
+  {% for v in spec.ingress %}
+  - host: {{ v.host }}
+    http:
+      paths:
+      - path: /
+        backend:
+          serviceName: horizon
+          servicePort: 80
+  {% endfor %}
+  tls:
+  - hosts:
+    {% for v in spec.ingress %}
+    - {{ v.host }}
+    {% endfor %}
+    secretName: horizon-tls
+{% endif %}

@@ -6,4 +6,5 @@ metadata:
     prometheus: helm
 spec:
   ingress:
-    host: "horizon.vexxhost.com"
+  - host: "horizon1.vexxhost.com"
+  - host: "horizon2.vexxhost.com"
