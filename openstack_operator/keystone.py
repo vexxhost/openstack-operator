@@ -31,8 +31,10 @@ def create_or_resume(name, spec, **_):
     start the service up for the first time.
     """
     env = utils.get_uwsgi_env()
+    config_hash = utils.generate_hash(spec)
     utils.create_or_update('keystone/deployment.yml.j2',
-                           name=name, spec=spec, env=env)
+                           name=name, spec=spec,
+                           env=env, config_hash=config_hash)
     utils.create_or_update('keystone/service.yml.j2',
                            name=name, spec=spec)
     utils.create_or_update('keystone/horizontalpodautoscaler.yml.j2',

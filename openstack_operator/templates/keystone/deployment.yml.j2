@@ -29,6 +29,8 @@ spec:
     metadata:
       labels:
         {{ labels("keystone", name) | indent(8) }}
+      annotations:
+        checksum/config: "{{ config_hash }}"
     spec:
       containers:
       - name: keystone
