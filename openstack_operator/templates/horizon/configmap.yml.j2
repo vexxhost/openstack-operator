@@ -38,3 +38,8 @@ data:
     OPENSTACK_KEYSTONE_URL = '{{ auth_url }}'
 
     OPENSTACK_NEUTRON_NETWORK['enable_ha_router'] = True
+    {% if spec.multidomain is not defined %}
+    OPENSTACK_KEYSTONE_MULTIDOMAIN_SUPPORT = False
+    {% else %}
+    OPENSTACK_KEYSTONE_MULTIDOMAIN_SUPPORT = {{ spec.multidomain }}
+    {% endif %}
