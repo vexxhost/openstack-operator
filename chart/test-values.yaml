@@ -8,3 +8,4 @@ configMap:
     configDir: /etc/keystone
   heat:
     configDir: /etc/heat
+  chronyd: {}
