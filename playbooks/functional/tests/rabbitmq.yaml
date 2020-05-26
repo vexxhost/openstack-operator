@@ -14,6 +14,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+- name: Create Rabbitmq credential
+  shell: |
+    cat <<EOF | kubectl apply -f-
+    apiVersion: v1
+    metadata:
+      name: rabbitmq-sample
+      namespace: default
+    stringData:
+      username: stackrabbit
+      password: secretrabbit
+    kind: Secret
+    EOF
+
 - name: Create Rabbitmq custom resource
   command: kubectl apply -f {{ zuul.project.src_dir }}/config/samples/infrastructure_v1alpha1_rabbitmq.yaml
 
