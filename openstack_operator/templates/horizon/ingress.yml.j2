@@ -20,7 +20,7 @@ metadata:
   namespace: openstack
   annotations:
     cert-manager.io/cluster-issuer: "letsencrypt-prod"
-    cert-manager.k8s.io/cluster-issuer: "letsencrypt-prod"
+    certmanager.k8s.io/cluster-issuer: "letsencrypt-prod"
 spec:
 {% if spec.ingress.host is defined %}
   rules:
