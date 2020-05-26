@@ -38,7 +38,7 @@
   register: _metrics
   loop: "{{ _memcached_ips.stdout_lines }}"
   until: _metrics is success
-  retries: 10
+  retries: 60
   delay: 5
   failed_when: "'memcached_up 1' not in _metrics.content"
 
@@ -46,7 +46,7 @@
   command: kubectl get pods -l app.kubernetes.io/name=mcrouter,app.kubernetes.io/instance=memcached-devstack -o=jsonpath='{range .items[*]}{.status.podIP}{"\n"}{end}'
   register: _mcrouter_ips
   until: _mcrouter_ips is success
-  retries: 10
+  retries: 60
   delay: 5
   failed_when: |
     {{ _mcrouter_ips.stdout_lines | length == 0 }} or

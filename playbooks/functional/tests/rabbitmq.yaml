@@ -25,7 +25,7 @@
   command: kubectl get pods -l app.kubernetes.io/name=rabbitmq,app.kubernetes.io/instance=sample -o=jsonpath='{range .items[*]}{.status.podIP}{"\n"}{end}'
   register: _rabbitmq_ips
   until: _rabbitmq_ips is success
-  retries: 10
+  retries: 60
   delay: 5
   failed_when: "{{ _rabbitmq_ips.stdout_lines | length == 0 }}"
 
