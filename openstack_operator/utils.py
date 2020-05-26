@@ -20,6 +20,7 @@ to be able to use them across all different operators.
 import base64
 import copy
 import operator
+import json
 import os
 import secrets
 import string
@@ -28,6 +29,7 @@ import jinja2
 import kopf
 from pbr import version
 import pykube
+from pykube.utils import obj_merge
 import yaml
 import openstack
 
@@ -85,7 +87,7 @@ ENV.filters['to_yaml'] = to_yaml
 ENV.globals['labels'] = labels
 
 
-def create_or_update(template, **kwargs):
+def create_or_update(template, is_strategic=True, **kwargs):
     """Create or update a Kubernetes resource.
 
     This function is called with a template and the args to pass to that
@@ -101,7 +103,23 @@ def create_or_update(template, **kwargs):
     try:
         resource.reload()
         resource.obj = obj
-        resource.update()
+
+        # NOTE(mnaser): Workaround until the following lands
+        #               https://github.com/hjacobs/pykube/pull/68
+        # pylint: disable=W0212
+        patch = obj_merge(resource.obj, resource._original_obj, is_strategic)
+        resp = resource.api.patch(
+            **resource.api_kwargs(
+                headers={
+                    "Content-Type": "application/strategic-merge-patch+json"
+                },
+                data=json.dumps(patch),
+            )
+        )
+        resource.api.raise_for_status(resp)
+        resource.set_obj(resp.json())
+
+        resource.update(is_strategic)
     except pykube.exceptions.HTTPError as exc:
         if exc.code != 404:
             raise
