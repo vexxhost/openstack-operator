@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: operator-config
+data:
+  operator-config.yaml: |
+    horizon:
+      ingress:
+        host: "horizon.vexxhost.com"
+    keystone:
+      configDir: /etc/keystone
+    heat:
+      configDir: /etc/heat
+    chronyd: {}

@@ -34,22 +34,42 @@ class KubernetesObjectTestCase(testtools.TestCase):
     SAMPLES_PATH = 'config/samples'
     SAMPLE_FILE = ''
     TEMPLATE_FILE = ''
-    NAMESPACE_CHECK = True
+    # If auto generated, or no CR exists
+    AUTO_GENERATED = True
+    RELEASE_TYPE = ''
 
     @classmethod
     def setUpClass(cls):
-        sample_path = "%s/%s" % (cls.SAMPLES_PATH, cls.SAMPLE_FILE)
-        with open(sample_path) as sample_fd:
-            sample = yaml.load(sample_fd, Loader=yaml.FullLoader)
-        name = sample['metadata']['name']
-        spec = sample['spec']
+        if cls.AUTO_GENERATED:
+            config_path = "%s/%s" % (cls.SAMPLES_PATH, "operator-config.yaml")
+            with open(config_path) as config_fd:
+                sample = yaml.load(config_fd, Loader=yaml.FullLoader)
+            name = sample['metadata']['name']
+            spec = utils.to_dict(
+                sample['data']['operator-config.yaml'])[cls.RELEASE_TYPE]
+            cls.object = utils.render_template(cls.TEMPLATE_FILE,
+                                               name=cls.RELEASE_TYPE,
+                                               spec=spec)
+        else:
+            sample_path = "%s/%s" % (cls.SAMPLES_PATH, cls.SAMPLE_FILE)
+            with open(sample_path) as sample_fd:
+                sample = yaml.load(sample_fd, Loader=yaml.FullLoader)
+            name = sample['metadata']['name']
+            spec = sample['spec']
 
-        cls.object = utils.render_template(cls.TEMPLATE_FILE,
-                                           name=name, spec=spec)
+            cls.object = utils.render_template(cls.TEMPLATE_FILE,
+                                               name=name, spec=spec)
 
-    def test_metadata_has_no_namespace(self):
-        """Ensure that the metadata does not specify the namespace."""
-        if self.NAMESPACE_CHECK:
+    def auto_generation_test_metadata_has_openstack_namespace(self):
+        """Ensure that the metadata for auto-generated releases
+        has openstack namespace."""
+        if self.AUTO_GENERATED:
+            self.assertIn("namespace", self.object["metadata"])
+            self.assertEqual("openstack", self.object["metadata"]["namespace"])
+
+    def cr_test_metadata_has_no_specific_namespace(self):
+        """Ensure that the CR metadata has no specific namespace."""
+        if not self.AUTO_GENERATED:
             self.assertNotIn("namespace", self.object["metadata"])
 
 

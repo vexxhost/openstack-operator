@@ -23,6 +23,5 @@ from openstack_operator.tests.unit import base
 class HorizonDeploymentTestCase(base.DeploymentTestCase):
     """Basic tests for the Deployment."""
 
-    SAMPLE_FILE = 'dashboard_v1alpha1_horizon.yaml'
+    RELEASE_TYPE = 'horizon'
     TEMPLATE_FILE = 'horizon/deployment.yml.j2'
-    NAMESPACE_CHECK = False
