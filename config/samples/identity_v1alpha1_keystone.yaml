@@ -5,3 +5,6 @@ metadata:
   name: sample
 spec:
   configDir: /etc/keystone
+  ingress:
+  - host: "keystone1.vexxhost.com"
+  - host: "keystone2.vexxhost.com"
