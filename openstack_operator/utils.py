@@ -236,10 +236,9 @@ def get_secret(namespace, name):
 
 def generate_hash(dictionary):
     """Generate a hash from a dictionary, return None if dictionary is empty"""
-
     if not dictionary:
         return None
-    return hash(frozenset(dictionary.items()))
+    return hash(json.dumps(dictionary))
 
 
 def get_uwsgi_env():
