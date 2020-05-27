@@ -25,7 +25,7 @@
   command: kubectl get pods -l app.kubernetes.io/name=memcached,app.kubernetes.io/instance=devstack -o=jsonpath='{range .items[*]}{.status.podIP}{"\n"}{end}'
   register: _memcached_ips
   until: _memcached_ips is success
-  retries: 20
+  retries: 60
   delay: 5
   failed_when: |
     {{ _memcached_ips.stdout_lines | length == 0 }} or
@@ -38,7 +38,7 @@
   register: _metrics
   loop: "{{ _memcached_ips.stdout_lines }}"
   until: _metrics is success
-  retries: 60
+  retries: 10
   delay: 5
   failed_when: "'memcached_up 1' not in _metrics.content"
 

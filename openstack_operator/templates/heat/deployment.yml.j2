@@ -35,8 +35,8 @@ spec:
     metadata:
       labels:
         {{ labels("heat", name, component) | indent(8) }}
-    annotations:
-      checksum/config: "{{ config_hash }}"
+      annotations:
+        checksum/config: "{{ config_hash }}"
     spec:
       containers:
       - name: heat-{{ component }}

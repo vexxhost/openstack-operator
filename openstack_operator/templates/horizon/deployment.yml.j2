@@ -29,8 +29,8 @@ spec:
     metadata:
       labels:
         {{ labels("horizon", name) | indent(8) }}
-    annotations:
-      checksum/config: "{{ config_hash }}"
+      annotations:
+        checksum/config: "{{ config_hash }}"
     spec:
       containers:
       - name: horizon
