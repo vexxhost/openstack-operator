@@ -32,26 +32,26 @@ from openstack_operator import utils
 OPERATOR_CONFIGMAP = "operator-config"
 
 
-def _create_namespace():
-    """Create a namespace for the operator
+def operator_configmap(namespace, name, **_):
+    """Filter on the operator's ConfigMap."""
 
-    All resources which are managed by the operator would
-    be deployed on this namespace"""
-
-    utils.create_or_update('operator/namespace.yml.j2')
+    return namespace == os.getenv('OPERATOR_NAMESPACE', 'default') \
+        and name == OPERATOR_CONFIGMAP
 
 
-@kopf.on.startup()
-async def startup_fn(logger, **kwargs):
-    """Create several deployments at the startup of the operator
+@kopf.on.resume('', 'v1', 'configmaps', when=operator_configmap)
+@kopf.on.create('', 'v1', 'configmaps', when=operator_configmap)
+@kopf.on.update('', 'v1', 'configmaps', when=operator_configmap)
+def deploy(name, namespace, new, **_):
+    """Update the startup deployments when the operator configmap is changed
 
     keystone, heat, and horizon
     """
 
-    namespace = os.getenv('OPERATOR_NAMESPACE', 'default')
-    config = utils.get_configmap(namespace, OPERATOR_CONFIGMAP)
-    config = utils.to_dict(config["operator-config.yaml"])
-    _create_namespace()
+    utils.create_or_update('operator/namespace.yml.j2')
+
+    config = utils.to_dict(new['data']['operator-config.yaml'])
+
     if "keystone" in config:
         keystone.create_or_resume("keystone", config["keystone"])
     if "horizon" in config:
@@ -61,16 +61,3 @@ async def startup_fn(logger, **kwargs):
         heat.create_or_resume("heat", config["heat"])
     if "chronyd" in config:
         chronyd.create_or_resume(config["chronyd"])
-
-
-@kopf.on.update('', 'v1', 'configmaps')
-def update(name, namespace, new, **_):
-    """Update the startup deployments when the operator configmap is changed
-
-    keystone, heat, and horizon
-    """
-    if namespace == os.getenv('OPERATOR_NAMESPACE') \
-       and name == OPERATOR_CONFIGMAP:
-        config = utils.to_dict(new["data"]["operator-config.yaml"])
-        if "horizon" in config:
-            horizon.update("horizon", config["horizon"])
