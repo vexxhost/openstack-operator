@@ -19,9 +19,9 @@ metadata:
   name: heat-{{ component }}
   namespace: openstack
 spec:
-  serviceType: ClusterIP
   ports:
   - name: heat-{{ component }}
+    protocol: TCP
     port: 80
     targetPort: heat-{{ component }}
   selector:

@@ -68,7 +68,7 @@ def create_or_rotate_fernet_repository(name):
 
     # Update secret
     utils.create_or_update('keystone/secret-fernet.yml.j2', name=name,
-                           keys=keys, is_strategic=False, adopt=True)
+                           keys=keys, adopt=True)
 
 
 @kopf.timer('apps', 'v1', 'deployments',

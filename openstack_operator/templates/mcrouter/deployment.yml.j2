@@ -36,6 +36,7 @@ spec:
         imagePullPolicy: Always
         ports:
         - name: mcrouter
+          protocol: TCP
           containerPort: 11211
         livenessProbe:
           tcpSocket:
@@ -64,6 +65,7 @@ spec:
         imagePullPolicy: Always
         ports:
         - name: metrics
+          protocol: TCP
           containerPort: 9442
         livenessProbe:
           httpGet:

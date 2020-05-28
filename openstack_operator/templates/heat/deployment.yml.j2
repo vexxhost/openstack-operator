@@ -52,6 +52,7 @@ spec:
         {% if 'api' in component %}
         ports:
         - name: heat-{{ component }}
+          protocol: TCP
           containerPort: {% if component == 'api' %}8004{% else %}8000{% endif%}
         livenessProbe:
           tcpSocket:

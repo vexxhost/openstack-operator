@@ -46,8 +46,10 @@ spec:
         imagePullPolicy: Always
         ports:
         - name: rabbitmq
+          protocol: TCP
           containerPort: 5672
         - name: metrics
+          protocol: TCP
           containerPort: 15692
         livenessProbe:
           tcpSocket:

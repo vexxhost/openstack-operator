@@ -43,6 +43,7 @@ spec:
         {% endfor %}
         ports:
         - name: keystone
+          protocol: TCP
           containerPort: 5000
         livenessProbe:
           httpGet:
