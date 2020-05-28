@@ -48,7 +48,7 @@ async def startup_fn(logger, **kwargs):
     keystone, heat, and horizon
     """
 
-    namespace = os.getenv('OPERATOR_NAMESPACE')
+    namespace = os.getenv('OPERATOR_NAMESPACE', 'default')
     config = utils.get_configmap(namespace, OPERATOR_CONFIGMAP)
     config = utils.to_dict(config["operator-config.yaml"])
     _create_namespace()
