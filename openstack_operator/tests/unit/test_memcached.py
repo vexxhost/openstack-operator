@@ -43,3 +43,4 @@ class MemcachedStatefulSetTestCase(base.StatefulSetTestCase):
 
     SAMPLE_FILE = 'infrastructure_v1alpha1_memcached.yaml'
     TEMPLATE_FILE = 'memcached/statefulset.yml.j2'
+    AUTO_GENERATED = False

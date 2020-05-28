@@ -25,3 +25,4 @@ class McrouterDeploymentTestCase(base.StatefulSetTestCase):
 
     SAMPLE_FILE = 'infrastructure_v1alpha1_mcrouter.yaml'
     TEMPLATE_FILE = 'mcrouter/deployment.yml.j2'
+    AUTO_GENERATED = False

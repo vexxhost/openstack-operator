@@ -23,6 +23,5 @@ from openstack_operator.tests.unit import base
 class KeystoneDeploymentTestCase(base.DeploymentTestCase):
     """Basic tests for the Deployment."""
 
-    SAMPLE_FILE = 'identity_v1alpha1_keystone.yaml'
+    RELEASE_TYPE = 'keystone'
     TEMPLATE_FILE = 'keystone/deployment.yml.j2'
-    NAMESPACE_CHECK = False

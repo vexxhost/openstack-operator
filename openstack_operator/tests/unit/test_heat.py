@@ -23,6 +23,5 @@ from openstack_operator.tests.unit import base
 class HeatAPIDeploymentTestCase(base.DeploymentTestCase):
     """Basic tests for the Deployment."""
 
-    SAMPLE_FILE = 'orchestration_v1alpha1_heat.yaml'
+    RELEASE_TYPE = 'heat'
     TEMPLATE_FILE = 'heat/deployment.yml.j2'
-    NAMESPACE_CHECK = False
