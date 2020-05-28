@@ -21,6 +21,7 @@ spec:
   clusterIP: None
   ports:
   - name: memcached
+    protocol: TCP
     port: 11211
     targetPort: memcached
   selector:

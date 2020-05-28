@@ -18,7 +18,6 @@ The module contains a few useful utilities which we refactor out in order
 to be able to use them across all different operators.
 """
 import base64
-import copy
 import operator
 import json
 import os
@@ -29,7 +28,6 @@ import jinja2
 import kopf
 from pbr import version
 import pykube
-from pykube.utils import obj_merge
 import yaml
 import openstack
 
@@ -87,7 +85,7 @@ ENV.filters['to_yaml'] = to_yaml
 ENV.globals['labels'] = labels
 
 
-def create_or_update(template, is_strategic=True, **kwargs):
+def create_or_update(template, **kwargs):
     """Create or update a Kubernetes resource.
 
     This function is called with a template and the args to pass to that
@@ -97,31 +95,23 @@ def create_or_update(template, is_strategic=True, **kwargs):
     """
 
     resource = generate_object(template, **kwargs)
-    obj = copy.deepcopy(resource.obj)
 
-    # Try to get the remote record
-    try:
-        resource.reload()
-        resource.obj = obj
-
-        # NOTE(mnaser): Workaround until the following lands
-        #               https://github.com/hjacobs/pykube/pull/68
-        # pylint: disable=W0212
-        patch = obj_merge(resource.obj, resource._original_obj, is_strategic)
-        resp = resource.api.patch(
-            **resource.api_kwargs(
-                headers={
-                    "Content-Type": "application/strategic-merge-patch+json"
-                },
-                data=json.dumps(patch),
-            )
+    # NOTE(mnaser): The following relies on server-side apply and requires
+    #               at least Kuberentes v1.16+
+    resp = resource.api.patch(
+        **resource.api_kwargs(
+            headers={
+                "Content-Type": "application/apply-patch+yaml"
+            },
+            params={
+                'fieldManager': 'openstack-operator',
+                'force': True,
+            },
+            data=to_yaml(resource.obj),
         )
-        resource.api.raise_for_status(resp)
-        resource.set_obj(resp.json())
-    except pykube.exceptions.HTTPError as exc:
-        if exc.code != 404:
-            raise
-        resource.create()
+    )
+    resource.api.raise_for_status(resp)
+    resource.set_obj(resp.json())
 
     return resource
 

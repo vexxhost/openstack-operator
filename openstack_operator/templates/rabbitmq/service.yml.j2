@@ -18,7 +18,6 @@ kind: Service
 metadata:
   name: rabbitmq-{{ name }}
 spec:
-  serviceType: ClusterIP
   ports:
   - name: rabbitmq
     port: 5672
