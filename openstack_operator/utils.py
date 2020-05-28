@@ -118,8 +118,6 @@ def create_or_update(template, is_strategic=True, **kwargs):
         )
         resource.api.raise_for_status(resp)
         resource.set_obj(resp.json())
-
-        resource.update(is_strategic)
     except pykube.exceptions.HTTPError as exc:
         if exc.code != 404:
             raise
