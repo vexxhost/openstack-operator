@@ -49,7 +49,8 @@ UWSGI_SETTINGS = {
     'UWSGI_HTTP_RAW_BODY': True,
     'UWSGI_SOCKET_TIMEOUT': 10,
     'UWSGI_NEED_APP': True,
-    'UWSGI_ROUTE_USER_AGENT': '^kube-probe.* donotlog:'
+    'UWSGI_ROUTE_USER_AGENT': '^kube-probe.* donotlog:',
+    'UWSGI_LOG_X_FORWARDED_FOR': True,
 }
 
 VERSION = version.VersionInfo('openstack_operator').version_string()
