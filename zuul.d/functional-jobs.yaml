@@ -44,6 +44,7 @@
           /opt/stack/tempest-horizon
       docker_use_buildset_registry: true
       minikube_dns_resolvers: [1.1.1.1, 8.8.8.8]
+      ensure_kubernetes_minikube_addons: [metrics-server]
 
 - project:
     check:
