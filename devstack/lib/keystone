@@ -76,6 +76,7 @@ function start_keystone {
 
 	# (re)start memcached to make sure we have a clean memcache.
 	kubectl rollout restart statefulset/memcached-devstack -n default
+	sleep 10
 }
 export -f start_keystone
 

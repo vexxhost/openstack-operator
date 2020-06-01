@@ -17,7 +17,7 @@
 function get_kubernetes_service_ip {
 	local svc="$1"
 
-	for i in {1..30}; do
+	for i in {1..60}; do
 		ip=$(kubectl get svc/$svc -ojsonpath='{.spec.clusterIP}') && break || sleep 1;
 	done
 
@@ -27,7 +27,7 @@ function get_kubernetes_service_ip {
 function kubernetes_rollout_status {
 	local deployment="$1"
 
-	for i in {1..30}; do
+	for i in {1..60}; do
 		kubectl get deploy/$deployment && break || sleep 1;
 	done
 
@@ -37,7 +37,7 @@ function kubernetes_rollout_status {
 function kubernetes_rollout_restart {
 	local deployment="$1"
 
-	for i in {1..30}; do
+	for i in {1..60}; do
 		kubectl get deploy/$deployment && break || sleep 1;
 	done
 

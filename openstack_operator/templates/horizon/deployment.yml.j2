@@ -68,13 +68,47 @@ spec:
         securityContext:
           runAsUser: 1001
         volumeMounts:
-        - mountPath: /etc/horizon
-          name: config
+        - name: config
+          mountPath: /etc/horizon
+        {% if 'logo' in spec %}
+        - name: logo
+          mountPath: /usr/local/lib/python3.7/site-packages/static/dashboard/img/logo.svg
+          subPath: logo.svg
+        - name: logo-fav
+          mountPath: /usr/local/lib/python3.7/site-packages/static/dashboard/img/favicon.ico
+          subPath: favicon.ico
+        - name: logo-splash
+          mountPath: /usr/local/lib/python3.7/site-packages/static/dashboard/img/logo-splash.svg
+          subPath: logo-splash.svg
+        {% endif %}
       volumes:
-      - configMap:
+      - name: config
+        configMap:
           defaultMode: 420
           name: horizon
-        name: config
+      {% if 'logo' in spec %}
+      - name: logo
+        configMap:
+          defaultMode: 420
+          name: {{ spec.logo }}
+          items:
+          - key: logo.svg
+            path: logo.svg
+      - name: logo-fav
+        configMap:
+          defaultMode: 420
+          name: {{ spec.logo }}
+          items:
+          - key: favicon.ico
+            path: favicon.ico
+      - name: logo-splash
+        configMap:
+          defaultMode: 420
+          name: {{ spec.logo }}
+          items:
+          - key: logo-splash.svg
+            path: logo-splash.svg
+      {% endif %}
 {% if 'nodeSelector' in spec %}
       nodeSelector:
         {{ spec.nodeSelector | to_yaml | indent(8) }}
