@@ -46,3 +46,18 @@ def create_or_resume(name, spec, **_):
     utils.create_or_update('heat/deployment.yml.j2',
                            name=name, spec=spec, component='engine',
                            config_hash=config_hash)
+    if "ingress" in spec:
+        utils.create_or_update('heat/ingress.yml.j2',
+                               name=name, spec=spec)
+
+
+@kopf.on.update('orchestration.openstack.org', 'v1alpha1', 'heats')
+def update(name, spec, **_):
+    """Update a heat
+
+    This function updates the deployment for heat if there are any
+    changes that happen within it.
+    """
+    if "ingress" in spec:
+        utils.create_or_update('horizon/ingress.yml.j2',
+                               name=name, spec=spec)
