@@ -47,8 +47,11 @@ class KubernetesObjectTestCase(testtools.TestCase):
             with open(config_path) as config_fd:
                 sample = yaml.load(config_fd, Loader=yaml.FullLoader)
             name = sample['metadata']['name']
-            spec = utils.to_dict(
-                sample['data']['operator-config.yaml'])[cls.RELEASE_TYPE]
+            config = utils.to_dict(sample['data']['operator-config.yaml'])
+            if cls.RELEASE_TYPE in config:
+                spec = config[cls.RELEASE_TYPE]
+            else:
+                spec = {}
             cls.object = utils.render_template(cls.TEMPLATE_FILE,
                                                name=cls.RELEASE_TYPE,
                                                spec=spec,

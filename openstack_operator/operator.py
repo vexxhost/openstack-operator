@@ -28,6 +28,7 @@ from openstack_operator import glance
 from openstack_operator import heat
 from openstack_operator import horizon
 from openstack_operator import keystone
+from openstack_operator import libvirtd_exporter
 from openstack_operator import magnum
 from openstack_operator import utils
 
@@ -67,7 +68,17 @@ def deploy(name, namespace, new, **_):
         glance.create_or_resume("glance", config["glance"])
     if "magnum" in config:
         magnum.create_or_resume("magnum", config["magnum"])
-    if "chronyd" in config:
-        chronyd.create_or_resume(config["chronyd"])
     if "ceilometer" in config:
         ceilometer.create_or_resume(config["ceilometer"])
+
+    if "chronyd" in config:
+        spec = config["chronyd"]
+    else:
+        spec = {}
+    chronyd.create_or_resume(spec)
+
+    if "libvirtd-exporter" in config:
+        spec = config["libvirtd-exporter"]
+    else:
+        spec = {}
+    libvirtd_exporter.create_or_resume(spec)
