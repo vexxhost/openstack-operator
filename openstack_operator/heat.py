@@ -42,10 +42,14 @@ def create_or_resume(name, spec, **_):
                                config_hash=config_hash)
         utils.create_or_update('heat/service.yml.j2',
                                name=name, component=component)
+        utils.create_or_update('heat/horizontalpodautoscaler.yml.j2',
+                               name=name, component=component)
 
     utils.create_or_update('heat/deployment.yml.j2',
                            name=name, spec=spec, component='engine',
                            config_hash=config_hash)
+    utils.create_or_update('heat/horizontalpodautoscaler.yml.j2',
+                           name=name, component='engine')
     if "ingress" in spec:
         utils.create_or_update('heat/ingress.yml.j2',
                                name=name, spec=spec)
