@@ -67,7 +67,11 @@ function configure_keystone {
         iniset $KEYSTONE_CONF token provider $KEYSTONE_TOKEN_FORMAT
     fi
 
-    iniset $KEYSTONE_CONF database connection `database_connection_url keystone`
+    # Get mysql password
+    KEYSTONE_DATABASE_USER=$(get_data_from_secret keystone-mysql openstack USER)
+    KEYSTONE_DATABASE_PASSWORD=$(get_data_from_secret keystone-mysql openstack PASSWORD)
+    KEYSTONE_DATABASE_NAME=$(get_data_from_secret keystone-mysql openstack DATABASE)
+    iniset $KEYSTONE_CONF database connection "mysql+pymysql://$KEYSTONE_DATABASE_USER:$KEYSTONE_DATABASE_PASSWORD@keystone-mysql/$KEYSTONE_DATABASE_NAME?charset=utf8"
 
     # Set up logging
     if [ "$SYSLOG" != "False" ]; then
@@ -108,8 +112,7 @@ function configure_keystone {
 
 # init_keystone() - Initialize databases, etc.
 function init_keystone {
-	kubectl create secret generic keystone-config --from-file=/etc/keystone/keystone.conf -n openstack
-
+    kubectl create secret generic keystone-config --from-file=/etc/keystone/keystone.conf -n openstack
 	# NOTE(mnaser): Permissions here are bad but it's temporary so we don't care as much.
 	sudo chmod -Rv 777 /etc/keystone
 

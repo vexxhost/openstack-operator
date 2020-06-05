@@ -77,6 +77,9 @@
     - name: Override magnum lib functions
       become: true
       command: rsync -av src/opendev.org/vexxhost/openstack-operator/devstack/lib/magnum /opt/stack/magnum/devstack/lib/magnum
+    - name: Override magnum plugin.sh
+      become: true
+      command: rsync -av src/opendev.org/vexxhost/openstack-operator/devstack/plugin-magnum.sh /opt/stack/magnum/devstack/plugin.sh
 
 # Changes that run through devstack-tempest are likely to have an impact on
 # the devstack part of the job, so we keep devstack in the main play to

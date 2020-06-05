@@ -122,8 +122,8 @@ spec:
           runAsUser: 65534
           runAsGroup: 65534
         volumeMounts:
-        - mountPath: /etc/keystone/
-          name: config
+        - name: config
+          mountPath: /etc/keystone
         - name: fernet-keys
           mountPath: /etc/keystone/fernet-keys
         - name: credential-keys

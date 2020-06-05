@@ -236,7 +236,9 @@ def ensure_secret(namespace, name):
 
 
 def generate_hash(dictionary):
-    """Generate a hash from a dictionary, return None if dictionary is empty"""
+    """Generate a hash from a dictionary, return None
+    if dictionary is empty"""
+
     if not dictionary:
         return None
     return hash(json.dumps(dictionary))

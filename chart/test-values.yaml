@@ -19,7 +19,8 @@ configMap:
     ingress:
       host: "horizon.vexxhost.com"
   keystone:
-    configDir: /etc/keystone
+    mysql:
+      size: 10Gi
   heat:
     configDir: /etc/heat
   magnum:

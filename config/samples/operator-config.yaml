@@ -9,8 +9,7 @@ data:
     horizon:
       ingress:
         host: "horizon.vexxhost.com"
-    keystone:
-      configDir: /etc/keystone
+    keystone: {}
     heat:
       configDir: /etc/heat
       ingress:

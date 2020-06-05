@@ -34,7 +34,17 @@
           OS_PASSWORD: secretadmin
           OS_REGION_NAME: RegionOne
         EOF
+    - name: Copy mysql operator into devstack working directory
+      git:
+        repo: https://github.com/presslabs/mysql-operator
+        dest: /opt/stack/mysql-operator
+      become: true
   roles:
+    - role: helm-template
+      vars:
+        helm_release_name: mysql-operator
+        helm_chart: /opt/stack/mysql-operator/charts/mysql-operator
+        helm_values_file: /opt/stack/mysql-operator/charts/mysql-operator/values.yaml
     - role: helm-template
       vars:
         helm_release_name: openstack-operator

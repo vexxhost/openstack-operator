@@ -52,6 +52,14 @@ class Memcached(NamespacedAPIObject):
     kind = "Memcached"
 
 
+class MysqlCluster(NamespacedAPIObject):
+    """Mysql Cluster Kubernetes object"""
+
+    version = "mysql.presslabs.org/v1alpha1"
+    endpoint = "mysqlclusters"
+    kind = "MysqlCluster"
+
+
 class PodMonitor(NamespacedAPIObject):
     """PodMonitor Kubernetes object"""
 
@@ -109,5 +117,8 @@ MAPPING = {
     },
     "networking.k8s.io/v1beta1": {
         "Ingress": Ingress
+    },
+    "mysql.presslabs.org/v1alpha1": {
+        "MysqlCluster": MysqlCluster
     }
 }

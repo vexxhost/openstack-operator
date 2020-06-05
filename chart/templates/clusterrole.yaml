@@ -288,3 +288,23 @@ rules:
   - get
   - patch
   - update
+- apiGroups:
+  - mysql.presslabs.org
+  resources:
+  - mysqlclusters
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - mysql.presslabs.org
+  resources:
+  - mysqlclusters/status
+  verbs:
+  - get
+  - patch
+  - update

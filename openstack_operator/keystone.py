@@ -23,6 +23,7 @@ import kopf
 
 from cryptography import fernet
 
+from openstack_operator import database
 from openstack_operator import filters
 from openstack_operator import utils
 
@@ -107,10 +108,16 @@ def create_or_resume(name, spec, **_):
                            region_name=region_name,
                            username=username)
     # (TODO)Replace the current admin url
+
+    if "mysql" not in spec:
+        spec["mysql"] = {}
+    database.ensure_mysql_cluster("keystone", spec["mysql"])
+
+    utils.create_or_update('keystone/memcached.yml.j2', spec=spec)
+
     utils.create_or_update('keystone/daemonset.yml.j2',
                            name=name, spec=spec,
                            config_hash=config_hash)
-    utils.create_or_update('keystone/memcached.yml.j2', spec=spec)
     utils.create_or_update('keystone/service.yml.j2',
                            name=name, spec=spec)
     if "ingress" in spec:
