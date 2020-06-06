@@ -1,0 +1,70 @@
+---
+# Copyright 2020 VEXXHOST, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: openstack
+  name: ceilometer-agent-notification
+  labels:
+    {{ labels("ceilometer", "ceilometer") | indent(4) }}
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      {{ labels("ceilometer", "ceilometer") | indent(6) }}
+  template:
+    metadata:
+      annotations:
+        checksum/config: "{{ config_hash }}"
+      labels:
+        {{ labels("ceilometer", "ceilometer") | indent(8) }}
+    spec:
+      containers:
+      - name: ceilometer-notification-agent
+        image: vexxhost/ceilometer-agent-notification:latest
+        volumeMounts:
+        - name: ceilometer-config
+          mountPath: /etc/ceilometer
+        resources:
+          limits:
+            cpu: 1000m
+            ephemeral-storage: 1G
+            memory: 256M
+          requests:
+            cpu: 500m
+            ephemeral-storage: 1G
+            memory: 128M
+      - name: atmosphere-ingress
+        image: jmalloc/echo-server
+        env:
+        - name: LOG_HTTP_BODY
+          value: 'true'
+      volumes:
+      - name: ceilometer-config
+        secret:
+          secretName: ceilometer-config
+      securityContext:
+        runAsUser: 65534
+        runAsGroup: 65534
+        fsGroup: 65534
+{% if 'nodeSelector' in spec %}
+      nodeSelector:
+        {{ spec.nodeSelector | to_yaml | indent(8) }}
+{% endif %}
+{% if 'tolerations' in spec %}
+      tolerations:
+        {{ spec.tolerations | to_yaml | indent(8) }}
+{% endif %}

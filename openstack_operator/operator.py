@@ -22,6 +22,7 @@ the appropriate deployments, an instance of Keystone, Heat and Horizon
 import os
 import kopf
 
+from openstack_operator import ceilometer
 from openstack_operator import chronyd
 from openstack_operator import heat
 from openstack_operator import horizon
@@ -61,3 +62,5 @@ def deploy(name, namespace, new, **_):
         heat.create_or_resume("heat", config["heat"])
     if "chronyd" in config:
         chronyd.create_or_resume(config["chronyd"])
+    if "ceilometer" in config:
+        ceilometer.create_or_resume(config["ceilometer"])
