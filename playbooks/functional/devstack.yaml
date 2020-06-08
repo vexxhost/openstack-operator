@@ -69,6 +69,15 @@
       become: true
       command: rsync -av src/opendev.org/vexxhost/openstack-operator/devstack/lib/heat /opt/stack/heat/devstack/lib/heat
 
+    - name: Copy magnum repo into devstack working directory
+      git:
+        repo: https://github.com/openstack/magnum
+        dest: /opt/stack/magnum
+      become: true
+    - name: Override magnum lib functions
+      become: true
+      command: rsync -av src/opendev.org/vexxhost/openstack-operator/devstack/lib/magnum /opt/stack/magnum/devstack/lib/magnum
+
 # Changes that run through devstack-tempest are likely to have an impact on
 # the devstack part of the job, so we keep devstack in the main play to
 # avoid zuul retrying on legitimate failures.
