@@ -15,7 +15,8 @@
 
 FROM docker.io/opendevorg/python-builder as builder
 COPY bindep.txt /tmp/src/bindep.txt
-RUN assemble openstack-heat==13.0.2 \
+ADD https://releases.openstack.org/constraints/upper/ussuri /tmp/src/upper-constraints.txt
+RUN assemble openstack-heat==14.0.0 \
     python-memcached \
     PyMySQL
 
