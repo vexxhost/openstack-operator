@@ -33,7 +33,7 @@ spec:
         {{ labels("ceilometer", "ceilometer") | indent(8) }}
     spec:
       containers:
-      - name: ceilometer-notification-agent
+      - name: agent
         image: vexxhost/ceilometer-agent-notification:latest
         volumeMounts:
         - name: ceilometer-config
