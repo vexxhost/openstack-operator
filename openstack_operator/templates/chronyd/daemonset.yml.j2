@@ -50,15 +50,19 @@ spec:
           capabilities:
             add: ["SYS_TIME"]
         volumeMounts:
-        - mountPath: /var/lib/chrony
-          name: state
         - mountPath: /etc/chrony/chrony.conf
           subPath: chrony.conf
           name: config
+        - mountPath: /var/run/chrony
+          name: run
+        - mountPath: /var/lib/chrony
+          name: state
       volumes:
       - name: config
         configMap:
           name: chronyd
+      - name: run
+        emptyDir: {}
       - name: state
         emptyDir: {}
 {% if 'nodeSelector' in spec %}
