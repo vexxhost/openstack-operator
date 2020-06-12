@@ -39,13 +39,13 @@ spec:
         imagePullPolicy: Always
         resources:
           limits:
-            cpu: 500m
+            cpu: 50m
             ephemeral-storage: 100M
-            memory: 256M
+            memory: 64M
           requests:
-            cpu: 250m
+            cpu: 10m
             ephemeral-storage: 100M
-            memory: 128M
+            memory: 32M
         securityContext:
           capabilities:
             add: ["SYS_TIME"]
