@@ -22,6 +22,11 @@ metadata:
     {{ labels("keystone", name) | indent(4) }}
 spec:
   replicas: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
   selector:
     matchLabels:
       {{ labels("keystone", name) | indent(6) }}
@@ -32,6 +37,64 @@ spec:
       annotations:
         checksum/config: "{{ config_hash }}"
     spec:
+      initContainers:
+      - name: db-sync
+        image: vexxhost/keystone:latest
+        imagePullPolicy: Always
+        command:
+        - keystone-manage
+        - db_sync
+        volumeMounts:
+        - mountPath: /etc/keystone
+          name: config
+      - name: bootstrap
+        image: vexxhost/keystone:latest
+        imagePullPolicy: Always
+        env:
+        - name: OS_BOOTSTRAP_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              key: password
+              name: keystone-init
+        - name: OS_BOOTSTRAP_REGION_ID
+          valueFrom:
+            secretKeyRef:
+              key: region_name
+              name: keystone-init
+        - name: OS_BOOTSTRAP_ADMIN_URL
+          valueFrom:
+            secretKeyRef:
+              key: auth_url
+              name: keystone-init
+        - name: OS_BOOTSTRAP_PUBLIC_URL
+          valueFrom:
+            secretKeyRef:
+              key: auth_url
+              name: keystone-init
+        - name: OS_BOOTSTRAP_USERNAME
+          valueFrom:
+            secretKeyRef:
+              key: username
+              name: keystone-init
+        - name: OS_BOOTSTRAP_PROJECT_NAME
+          valueFrom:
+            secretKeyRef:
+              key: project_name
+              name: keystone-init
+        - name: OS_BOOTSTRAP_SERVICE_NAME
+          value: keystone
+        - name: OS_BOOTSTRAP_INTERNAL_URL
+          value: http://keystone.openstack
+        command:
+        - keystone-manage
+        - bootstrap
+        volumeMounts:
+        - mountPath: /etc/keystone
+          name: config
+        - name: fernet-keys
+          mountPath: /etc/keystone/fernet-keys
+        - name: credential-keys
+          mountPath: /etc/keystone/credential-keys
       containers:
       - name: keystone
         image: vexxhost/keystone:latest

@@ -30,12 +30,6 @@ function init_keystone {
 		# (Re)create keystone database
 		recreate_database keystone
 	fi
-
-	# DB sync
-	time_start "dbsync"
-	sudo docker run -v /etc/keystone:/etc/keystone vexxhost/keystone:latest keystone-manage --config-file $KEYSTONE_CONF db_sync
-	time_stop "dbsync"
-
 }
 export -f init_keystone
 
@@ -81,24 +75,7 @@ function start_keystone {
 export -f start_keystone
 
 # bootstrap_keystone() - Initialize user, role and project
-# This function uses the following GLOBAL variables:
-# - ``KEYSTONE_BIN_DIR``
-# - ``ADMIN_PASSWORD``
-# - ``IDENTITY_API_VERSION``
-# - ``KEYSTONE_AUTH_URI``
-# - ``REGION_NAME``
-# - ``KEYSTONE_SERVICE_PROTOCOL``
-# - ``KEYSTONE_SERVICE_HOST``
-# - ``KEYSTONE_SERVICE_PORT``
 function bootstrap_keystone {
-	kubectl exec deploy/keystone -- keystone-manage bootstrap \
-		--bootstrap-username admin \
-		--bootstrap-password "$ADMIN_PASSWORD" \
-		--bootstrap-project-name admin \
-		--bootstrap-role-name admin \
-		--bootstrap-service-name keystone \
-		--bootstrap-region-id "$REGION_NAME" \
-		--bootstrap-admin-url "$KEYSTONE_AUTH_URI" \
-		--bootstrap-public-url "$KEYSTONE_SERVICE_URI"
+	echo noop
 }
 export -f bootstrap_keystone

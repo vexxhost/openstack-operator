@@ -18,6 +18,7 @@ This module maintains the operator for Keystone which does everything from
 deployment to taking care of rotating fernet & credentials keys."""
 
 import base64
+import os
 import kopf
 
 from cryptography import fernet
@@ -95,6 +96,18 @@ def create_or_resume(name, spec, **_):
     """
     env = utils.get_uwsgi_env()
     config_hash = utils.generate_hash(spec)
+    conn = utils.get_openstack_connection()
+    auth_url = conn.config.auth["auth_url"]
+    password = os.getenv("OS_PASSWORD")
+    project_name = conn.config.auth["project_name"]
+    region_name = conn.config.get_region_name()
+    username = conn.config.auth["username"]
+    utils.create_or_update('keystone/secret-init.yml.j2',
+                           auth_url=auth_url,
+                           password=password,
+                           project_name=project_name,
+                           region_name=region_name,
+                           username=username)
     utils.create_or_update('keystone/deployment.yml.j2',
                            name=name, spec=spec,
                            env=env, config_hash=config_hash)
