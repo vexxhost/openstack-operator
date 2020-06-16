@@ -45,6 +45,8 @@ data:
     OPENSTACK_KEYSTONE_MULTIDOMAIN_SUPPORT = {{ spec.multidomain }}
     {% endif %}
 
+    OPENSTACK_ENABLE_PASSWORD_RETRIEVE = True
+
     SECURITY_GROUP_RULES = {
         'all_tcp': {
             'name': _('All TCP'),
