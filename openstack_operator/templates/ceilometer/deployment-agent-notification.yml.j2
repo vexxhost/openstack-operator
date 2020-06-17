@@ -21,7 +21,7 @@ metadata:
   labels:
     {{ labels("ceilometer", "ceilometer") | indent(4) }}
 spec:
-  replicas: 3
+  replicas: 1
   selector:
     matchLabels:
       {{ labels("ceilometer", "ceilometer") | indent(6) }}

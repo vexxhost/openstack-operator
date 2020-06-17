@@ -1,3 +1,4 @@
+---
 # Copyright 2020 VEXXHOST, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,21 +13,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Ceilometer
-
-The following modules maintains all the operations for deploying Ceilometer
-alongside Atmosphere.
-"""
-
-from openstack_operator import utils
-
-
-def create_or_resume(spec):
-    """Create or start-up Ceilometer."""
-
-    config_hash = utils.generate_hash(spec)
-
-    utils.create_or_update('ceilometer/secret.yml.j2', spec=spec)
-    utils.create_or_update('ceilometer/deployment-agent-notification.yml.j2',
-                           spec=spec, config_hash=config_hash)
-    utils.create_or_update('ceilometer/horizontalpodautoscaler.yml.j2')
+apiVersion: autoscaling/v1
+kind: HorizontalPodAutoscaler
+metadata:
+  name: ceilometer
+  namespace: openstack
+  labels:
+    {{ labels("ceilometer", "ceilometer") | indent(4) }}
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: ceilometer-agent-notification
+  minReplicas: 1
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 90
