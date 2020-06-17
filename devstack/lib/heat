@@ -219,10 +219,6 @@ function init_heat {
     if is_service_enabled $DATABASE_BACKENDS; then
         # (re)create heat database
         recreate_database heat
-
-		time_start "dbsync"
-		sudo docker run -v $HEAT_CONF_DIR:$HEAT_CONF_DIR vexxhost/heat-engine:latest heat-manage db_sync
-		time_stop "dbsync"
     fi
 }
 

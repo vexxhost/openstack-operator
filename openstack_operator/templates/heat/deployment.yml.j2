@@ -28,6 +28,11 @@ metadata:
     {{ labels("heat", name, component) | indent(4) }}
 spec:
   replicas: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
   selector:
     matchLabels:
       {{ labels("heat", name, component) | indent(6) }}
@@ -38,6 +43,18 @@ spec:
       annotations:
         checksum/config: "{{ config_hash }}"
     spec:
+      {% if 'engine' in component %}
+      initContainers:
+      - name: db-sync
+        image: vexxhost/heat-{{ component }}:latest
+        imagePullPolicy: Always
+        command:
+        - heat-manage
+        - db_sync
+        volumeMounts:
+        - mountPath: /etc/heat
+          name: config
+      {% endif %}
       containers:
       - name: heat-{{ component }}
         image: vexxhost/heat-{{ component }}:latest
