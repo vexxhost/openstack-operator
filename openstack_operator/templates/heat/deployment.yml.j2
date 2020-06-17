@@ -27,7 +27,7 @@ metadata:
   labels:
     {{ labels("heat", name, component) | indent(4) }}
 spec:
-  replicas: 3
+  replicas: 1
   strategy:
     type: RollingUpdate
     rollingUpdate:
