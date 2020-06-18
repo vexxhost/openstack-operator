@@ -35,6 +35,7 @@ class KubernetesObjectTestCase(testtools.TestCase):
     SAMPLE_FILE = ''
     TEMPLATE_FILE = ''
     TEMPLATE_PARAMS = {}
+    PORT_EXPOSED = True
     # If auto generated, or no CR exists
     AUTO_GENERATED = True
     RELEASE_TYPE = ''
@@ -85,11 +86,15 @@ class KubernetesAppTestCaseMixin:
 
     def test_containers_have_liveness_probe(self):
         """Ensure that all containers have liveness probes."""
+        if not self.PORT_EXPOSED:
+            return
         for container in self.object['spec']['template']['spec']['containers']:
             self.assertIn('livenessProbe', container)
 
     def test_containers_have_readiness_probe(self):
         """Ensure that all containers have readiness probes."""
+        if not self.PORT_EXPOSED:
+            return
         for container in self.object['spec']['template']['spec']['containers']:
             self.assertIn('readinessProbe', container)
 
@@ -101,6 +106,8 @@ class KubernetesAppTestCaseMixin:
     def test_container_http_probes_have_no_metrics_path(self):
         """Ensure that http probes (liveness/rediness) of all containers
          don't have metrics path"""
+        if not self.PORT_EXPOSED:
+            return
         for container in self.object['spec']['template']['spec']['containers']:
             if 'httpGet' in container['readinessProbe']:
                 self.assertNotEqual(
