@@ -20,11 +20,12 @@ This module contains all the tests for the Chronyd operator.
 from openstack_operator.tests.unit import base
 
 
-class ChronydAPIDeploymentTestCase(base.DaemonSetTestCase):
+class ChronydAPIDaemonsetTestCase(base.DaemonSetTestCase):
     """Basic tests for the DaemonSet."""
 
     RELEASE_TYPE = 'chronyd'
     TEMPLATE_FILE = 'chronyd/daemonset.yml.j2'
+    PORT_EXPOSED = False
 
 
 class ChronydAPIConfigMapTestCase(base.ConfigMapTestCase):
