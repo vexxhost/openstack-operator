@@ -130,7 +130,8 @@ class StatefulSetTestCase(KubernetesObjectTestCase,
     """Basic tests for Kubernetes StatefulSets."""
 
 
-class DaemonSetTestCase(KubernetesObjectTestCase):
+class DaemonSetTestCase(KubernetesObjectTestCase,
+                        KubernetesAppTestCaseMixin):
     """Basic tests for Kubernetes DaemonSets."""
 
 
