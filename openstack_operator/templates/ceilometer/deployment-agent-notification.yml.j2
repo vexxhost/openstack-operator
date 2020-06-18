@@ -35,13 +35,7 @@ spec:
       containers:
       - name: agent
         image: vexxhost/ceilometer-agent-notification:latest
-        env:
-        - name: "DATABASE_URI"
-          value: "{{ spec.dbUri }}"
-        {% for v in env %}
-        - name: "{{ v.name }}"
-          value: "{{ v.value }}"
-        {% endfor %}
+        imagePullPolicy: Always
         volumeMounts:
         - name: ceilometer-config
           mountPath: /etc/ceilometer
@@ -51,11 +45,28 @@ spec:
             ephemeral-storage: 1G
             memory: 256M
           requests:
-            cpu: 500m
+            cpu: 200m
             ephemeral-storage: 1G
             memory: 128M
       - name: atmosphere-ingress
         image: vexxhost/atmosphere-ingress
+        imagePullPolicy: Always
+        env:
+        - name: "DATABASE_URI"
+          value: "{{ spec.dbUri }}"
+        {% for v in env %}
+        - name: "{{ v.name }}"
+          value: "{{ v.value }}"
+        {% endfor %}
+        resources:
+          limits:
+            cpu: 100m
+            ephemeral-storage: 100M
+            memory: 128M
+          requests:
+            cpu: 50m
+            ephemeral-storage: 100M
+            memory: 64M
       volumes:
       - name: ceilometer-config
         secret:
