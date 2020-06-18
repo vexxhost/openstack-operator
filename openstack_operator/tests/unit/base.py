@@ -34,6 +34,7 @@ class KubernetesObjectTestCase(testtools.TestCase):
     SAMPLES_PATH = 'config/samples'
     SAMPLE_FILE = ''
     TEMPLATE_FILE = ''
+    TEMPLATE_PARAMS = {}
     # If auto generated, or no CR exists
     AUTO_GENERATED = True
     RELEASE_TYPE = ''
@@ -49,7 +50,8 @@ class KubernetesObjectTestCase(testtools.TestCase):
                 sample['data']['operator-config.yaml'])[cls.RELEASE_TYPE]
             cls.object = utils.render_template(cls.TEMPLATE_FILE,
                                                name=cls.RELEASE_TYPE,
-                                               spec=spec)
+                                               spec=spec,
+                                               **cls.TEMPLATE_PARAMS)
         else:
             sample_path = "%s/%s" % (cls.SAMPLES_PATH, cls.SAMPLE_FILE)
             with open(sample_path) as sample_fd:
