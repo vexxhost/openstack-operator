@@ -1,6 +1,8 @@
 ---
 secretName: devstack
 configMap:
+  ceilometer:
+    dbUri: "sqlite:///:memory:"
   horizon:
     ingress:
       host: "horizon.vexxhost.com"
