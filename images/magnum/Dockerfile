@@ -17,8 +17,8 @@ FROM docker.io/opendevorg/python-builder as builder
 COPY bindep.txt /tmp/src/bindep.txt
 ADD https://releases.openstack.org/constraints/upper/ussuri /tmp/src/upper-constraints.txt
 RUN assemble magnum==10.0.0 \
-    python-memcached \
-    PyMySQL
+             python-memcached \
+             PyMySQL
 
 FROM docker.io/opendevorg/uwsgi-base AS magnum-api-base
 COPY --from=builder /output/ /output

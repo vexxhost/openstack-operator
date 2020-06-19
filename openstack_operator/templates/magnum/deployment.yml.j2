@@ -21,7 +21,12 @@ metadata:
   labels:
     {{ labels("magnum", name, component) | indent(4) }}
 spec:
-  replicas: 3
+  replicas: 1
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
   selector:
     matchLabels:
       {{ labels("magnum", name, component) | indent(6) }}
@@ -32,6 +37,18 @@ spec:
       annotations:
         checksum/config: "{{ config_hash }}"
     spec:
+      {% if 'conductor' in component %}
+      initContainers:
+      - name: db-sync
+        image: vexxhost/magnum-{{ component }}:latest
+        imagePullPolicy: Always
+        command:
+        - magnum-db-manage
+        - upgrade
+        volumeMounts:
+        - mountPath: /etc/magnum
+          name: config
+      {% endif %}
       containers:
       - name: magnum-{{ component }}
         image: vexxhost/magnum-{{ component }}:latest

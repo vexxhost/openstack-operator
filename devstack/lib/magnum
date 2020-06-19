@@ -261,11 +261,6 @@ function init_magnum {
     if is_service_enabled $DATABASE_BACKENDS; then
         # (Re)create magnum database
         recreate_database magnum
-
-        # Migrate magnum database
-        time_start "dbsync"
-		sudo docker run -v $MAGNUM_CONF_DIR:$MAGNUM_CONF_DIR vexxhost/magnum-conductor:latest magnum-db-manage upgrade
-		time_stop "dbsync"
     fi
 }
 
