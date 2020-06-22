@@ -27,6 +27,7 @@ from openstack_operator import chronyd
 from openstack_operator import heat
 from openstack_operator import horizon
 from openstack_operator import keystone
+from openstack_operator import magnum
 from openstack_operator import utils
 
 
@@ -60,6 +61,8 @@ def deploy(name, namespace, new, **_):
         horizon.create_or_resume("horizon", config["horizon"])
     if "heat" in config:
         heat.create_or_resume("heat", config["heat"])
+    if "magnum" in config:
+        magnum.create_or_resume("magnum", config["magnum"])
     if "chronyd" in config:
         chronyd.create_or_resume(config["chronyd"])
     if "ceilometer" in config:

@@ -9,6 +9,8 @@
     required-projects:
     - openstack/heat
     - openstack/heat-tempest-plugin
+    - openstack/magnum
+    - openstack/magnum-tempest-plugin
     vars:
       devstack_services:
         etcd3: false
@@ -17,13 +19,15 @@
       devstack_plugins:
         openstack-operator: https://opendev.org/vexxhost/openstack-operator
         heat: https://github.com/openstack/heat
+        magnum: https://github.com/openstack/magnum
       devstack_source_dirs:
-        - src/opendev.org/openstack
-        - src/opendev.org/vexxhost
+      - src/opendev.org/openstack
+      - src/opendev.org/vexxhost
       tempest_plugins:
-        - heat-tempest-plugin
+      - heat-tempest-plugin
+      - magnum-tempest-plugin
       devstack_localrc:
-        TEMPEST_PLUGINS: '/opt/stack/heat-tempest-plugin'
+        TEMPEST_PLUGINS: '/opt/stack/heat-tempest-plugin /opt/stack/magnum-tempest-plugin'
       docker_use_buildset_registry: true
       minikube_dns_resolvers: [1.1.1.1, 8.8.8.8]
 
@@ -37,6 +41,8 @@
           - name: openstack-operator:images:build:horizon
             soft: true
           - name: openstack-operator:images:build:chronyd
+            soft: true
+          - name: openstack-operator:images:build:magnum
             soft: true
           - name: openstack-operator:images:build:rabbitmq
             soft: true
@@ -62,6 +68,8 @@
           - name: openstack-operator:images:upload:horizon
             soft: true
           - name: openstack-operator:images:upload:chronyd
+            soft: true
+          - name: openstack-operator:images:upload:magnum
             soft: true
           - name: openstack-operator:images:upload:rabbitmq
             soft: true
