@@ -205,6 +205,23 @@ def get_secret(namespace, name):
     }
 
 
+def ensure_secret(namespace, name):
+    """Check if a secret exists
+
+    This function return true when the specific secret exists while
+    return false when does not exist"""
+
+    api = pykube.HTTPClient(pykube.KubeConfig.from_env())
+
+    try:
+        objects.Secret.objects(api).filter(namespace=namespace).get(
+            name=name
+        )
+        return True
+    except pykube.exceptions.ObjectDoesNotExist:
+        return False
+
+
 def generate_hash(dictionary):
     """Generate a hash from a dictionary, return None if dictionary is empty"""
     if not dictionary:
