@@ -133,3 +133,19 @@ class StatefulSetTestCase(KubernetesObjectTestCase,
 
 class DaemonSetTestCase(KubernetesObjectTestCase):
     """Basic tests for Kubernetes DaemonSets."""
+
+
+class ConfigMapTestCase(KubernetesObjectTestCase):
+    """Basic tests for Kubernetes ConfigMaps."""
+
+
+class IngressTestCase(KubernetesObjectTestCase):
+    """Basic tests for Kubernetes Ingresses."""
+
+
+class SecretTestCase(KubernetesObjectTestCase):
+    """Basic tests for Kubernetes Secrets."""
+
+
+class ServiceTestCase(KubernetesObjectTestCase):
+    """Basic tests for Kubernetes Services."""

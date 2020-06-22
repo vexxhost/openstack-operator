@@ -25,3 +25,24 @@ class KeystoneDeploymentTestCase(base.DeploymentTestCase):
 
     RELEASE_TYPE = 'keystone'
     TEMPLATE_FILE = 'keystone/deployment.yml.j2'
+
+
+class KeystoneIngressTestCase(base.IngressTestCase):
+    """Basic tests for the Ingress."""
+
+    RELEASE_TYPE = 'keystone'
+    TEMPLATE_FILE = 'keystone/ingress.yml.j2'
+
+
+class KeystoneSecretTestCase(base.SecretTestCase):
+    """Basic tests for the Secret."""
+
+    RELEASE_TYPE = 'keystone'
+    TEMPLATE_FILE = 'keystone/secret-fernet.yml.j2'
+
+
+class KeystoneServiceTestCase(base.ServiceTestCase):
+    """Basic tests for the Service."""
+
+    RELEASE_TYPE = 'keystone'
+    TEMPLATE_FILE = 'keystone/service.yml.j2'

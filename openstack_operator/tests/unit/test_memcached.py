@@ -38,6 +38,14 @@ class MemcachedOperatorTestCase(base.BaseTestCase):
             'memcached/deployment.yml.j2', name="foo", spec={})
 
 
+class MemcachedServiceTestCase(base.ServiceTestCase):
+    """Basic tests for the Service."""
+
+    SAMPLE_FILE = 'infrastructure_v1alpha1_memcached.yaml'
+    TEMPLATE_FILE = 'memcached/service.yml.j2'
+    AUTO_GENERATED = False
+
+
 class MemcachedStatefulSetTestCase(base.StatefulSetTestCase):
     """Basic tests for the StatefulSet."""
 

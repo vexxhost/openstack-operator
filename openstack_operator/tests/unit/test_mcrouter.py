@@ -20,9 +20,25 @@ This module contains all the tests for the Mcrouter operator.
 from openstack_operator.tests.unit import base
 
 
+class McrouterConfigMapTestCase(base.ConfigMapTestCase):
+    """Basic tests for the ConfigMap."""
+
+    SAMPLE_FILE = 'infrastructure_v1alpha1_mcrouter.yaml'
+    TEMPLATE_FILE = 'mcrouter/configmap.yml.j2'
+    AUTO_GENERATED = False
+
+
 class McrouterDeploymentTestCase(base.StatefulSetTestCase):
     """Basic tests for the Deployment."""
 
     SAMPLE_FILE = 'infrastructure_v1alpha1_mcrouter.yaml'
     TEMPLATE_FILE = 'mcrouter/deployment.yml.j2'
+    AUTO_GENERATED = False
+
+
+class McrouterServiceTestCase(base.ServiceTestCase):
+    """Basic tests for the Service."""
+
+    SAMPLE_FILE = 'infrastructure_v1alpha1_mcrouter.yaml'
+    TEMPLATE_FILE = 'mcrouter/service.yml.j2'
     AUTO_GENERATED = False

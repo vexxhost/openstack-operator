@@ -25,3 +25,10 @@ class ChronydAPIDeploymentTestCase(base.DaemonSetTestCase):
 
     RELEASE_TYPE = 'chronyd'
     TEMPLATE_FILE = 'chronyd/daemonset.yml.j2'
+
+
+class ChronydAPIConfigMapTestCase(base.ConfigMapTestCase):
+    """Basic tests for the ConfigMap."""
+
+    RELEASE_TYPE = 'chronyd'
+    TEMPLATE_FILE = 'chronyd/configmap.yml.j2'

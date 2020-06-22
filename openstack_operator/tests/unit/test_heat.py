@@ -25,3 +25,10 @@ class HeatAPIDeploymentTestCase(base.DeploymentTestCase):
 
     RELEASE_TYPE = 'heat'
     TEMPLATE_FILE = 'heat/deployment.yml.j2'
+
+
+class HeatAPServiceTestCase(base.ServiceTestCase):
+    """Basic tests for the Service."""
+
+    RELEASE_TYPE = 'heat'
+    TEMPLATE_FILE = 'heat/service.yml.j2'

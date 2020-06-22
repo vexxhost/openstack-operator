@@ -20,8 +20,36 @@ This module contains all the tests for the Horizon operator.
 from openstack_operator.tests.unit import base
 
 
+class HorizonConfigMapTestCase(base.ConfigMapTestCase):
+    """Basic tests for the ConfigMap."""
+
+    RELEASE_TYPE = 'horizon'
+    TEMPLATE_FILE = 'horizon/configmap.yml.j2'
+
+
 class HorizonDeploymentTestCase(base.DeploymentTestCase):
     """Basic tests for the Deployment."""
 
     RELEASE_TYPE = 'horizon'
     TEMPLATE_FILE = 'horizon/deployment.yml.j2'
+
+
+class HorizonIngressTestCase(base.IngressTestCase):
+    """Basic tests for the Ingress."""
+
+    RELEASE_TYPE = 'horizon'
+    TEMPLATE_FILE = 'horizon/ingress.yml.j2'
+
+
+class HorizonSecretTestCase(base.SecretTestCase):
+    """Basic tests for the Secret."""
+
+    RELEASE_TYPE = 'horizon'
+    TEMPLATE_FILE = 'horizon/secret-secretkey.yml.j2'
+
+
+class HorizonServiceTestCase(base.ServiceTestCase):
+    """Basic tests for the Service."""
+
+    RELEASE_TYPE = 'horizon'
+    TEMPLATE_FILE = 'horizon/service.yml.j2'
