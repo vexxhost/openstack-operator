@@ -90,3 +90,14 @@ spec:
 EOF
 }
 export -f _get_or_create_endpoint_with_interface
+
+# Get plain data from the specified secret
+# Usage: get_data_from_secret <secret> <namespace> <key>
+function get_data_from_secret {
+	local secret=$1
+	local ns=$2
+	local key=$3
+	local data=$(kubectl get secret -n $ns $secret -o jsonpath="{.data.$key}" | base64 --decode)
+	echo $data
+}
+export -f get_data_from_secret
