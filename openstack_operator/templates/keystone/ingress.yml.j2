@@ -12,7 +12,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+{% if spec.ingress is defined %}
 apiVersion: extensions/v1beta1
 kind: Ingress
 metadata:
@@ -52,4 +52,5 @@ spec:
     - {{ v.host }}
     {% endfor %}
     secretName: keystone-tls
+{% endif %}
 {% endif %}

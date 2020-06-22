@@ -63,16 +63,15 @@ class KubernetesObjectTestCase(testtools.TestCase):
             cls.object = utils.render_template(cls.TEMPLATE_FILE,
                                                name=name, spec=spec)
 
-    def auto_generation_test_metadata_has_openstack_namespace(self):
+    def test_metadata_has_correct_namespace(self):
         """Ensure that the metadata for auto-generated releases
         has openstack namespace."""
+        if self.object is None:
+            return
         if self.AUTO_GENERATED:
             self.assertIn("namespace", self.object["metadata"])
             self.assertEqual("openstack", self.object["metadata"]["namespace"])
-
-    def cr_test_metadata_has_no_specific_namespace(self):
-        """Ensure that the CR metadata has no specific namespace."""
-        if not self.AUTO_GENERATED:
+        else:
             self.assertNotIn("namespace", self.object["metadata"])
 
 

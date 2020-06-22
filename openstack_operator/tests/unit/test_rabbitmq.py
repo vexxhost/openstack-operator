@@ -32,5 +32,5 @@ class RabbitmqServiceTestCase(base.ServiceTestCase):
     """Basic tests for the Service."""
 
     SAMPLE_FILE = 'infrastructure_v1alpha1_rabbitmq.yaml'
-    TEMPLATE_FILE = 'Rabbitmq/service.yml.j2'
+    TEMPLATE_FILE = 'rabbitmq/service.yml.j2'
     AUTO_GENERATED = False
