@@ -4,12 +4,3 @@ metadata:
   name: sample
 spec:
   authSecret: rabbitmq-sample
----
-apiVersion: v1
-metadata:
-  name: rabbitmq-sample
-  namespace: default
-stringData:
-  username: stackrabbit
-  password: secretrabbit
-kind: Secret
