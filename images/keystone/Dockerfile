@@ -16,7 +16,8 @@
 FROM docker.io/opendevorg/python-builder as builder
 COPY bindep.txt /tmp/src/bindep.txt
 RUN apt update && apt -y install git
-RUN assemble git+https://opendev.org/openstack/keystone@stable/train \
+ADD https://releases.openstack.org/constraints/upper/ussuri /tmp/src/upper-constraints.txt
+RUN assemble git+https://opendev.org/openstack/keystone@stable/ussuri \
              msgpack===0.6.1 \
              PyMySQL \
 	     python-memcached
