@@ -11,6 +11,7 @@
     - openstack/heat-tempest-plugin
     - openstack/magnum
     - openstack/magnum-tempest-plugin
+    - openstack/tempest-horizon
     vars:
       devstack_services:
         etcd3: false
@@ -23,11 +24,14 @@
       devstack_source_dirs:
       - src/opendev.org/openstack
       - src/opendev.org/vexxhost
+      tox_envlist: all
+      tempest_test_regex: '(\[.*\bsmoke\b.*\]|(^heat_tempest_plugin.tests.api)|(^tempest_horizon.tests.scenario))'
       tempest_plugins:
       - heat-tempest-plugin
       - magnum-tempest-plugin
+      - tempest-horizon
       devstack_localrc:
-        TEMPEST_PLUGINS: '/opt/stack/heat-tempest-plugin /opt/stack/magnum-tempest-plugin'
+        TEMPEST_PLUGINS: '/opt/stack/heat-tempest-plugin /opt/stack/magnum-tempest-plugin /opt/stack/tempest-horizon'
       docker_use_buildset_registry: true
       minikube_dns_resolvers: [1.1.1.1, 8.8.8.8]
 
