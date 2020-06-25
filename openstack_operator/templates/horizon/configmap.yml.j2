@@ -36,7 +36,7 @@ data:
         },
     }
 
-    OPENSTACK_KEYSTONE_URL = '{{ auth_url }}'
+    OPENSTACK_KEYSTONE_URL = 'http://keystone.openstack.svc.cluster.local'
 
     OPENSTACK_NEUTRON_NETWORK['enable_ha_router'] = True
     {% if spec.multidomain is not defined %}
