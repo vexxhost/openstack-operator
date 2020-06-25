@@ -44,10 +44,8 @@ def create_or_resume(name, spec, **_):
     """
 
     # Grab the secretkey secret
-    conn = utils.get_openstack_connection()
-    auth_url = conn.config.auth["auth_url"]
     config = utils.create_or_update('horizon/configmap.yml.j2',
-                                    name=name, spec=spec, auth_url=auth_url)
+                                    name=name, spec=spec)
     config_hash = utils.generate_hash(config.obj['data'])
     env = utils.get_uwsgi_env()
     utils.create_or_update('horizon/deployment.yml.j2',
@@ -71,10 +69,8 @@ def update(name, spec, **_):
     This function updates the deployment for horizon if there are any
     changes that happen within it.
     """
-    conn = utils.get_openstack_connection()
-    auth_url = conn.config.auth["auth_url"]
     config = utils.create_or_update('horizon/configmap.yml.j2',
-                                    name=name, spec=spec, auth_url=auth_url)
+                                    name=name, spec=spec)
     config_hash = utils.generate_hash(config.obj['data'])
     env = utils.get_uwsgi_env()
     utils.create_or_update('horizon/deployment.yml.j2',
