@@ -84,7 +84,7 @@ spec:
         - name: OS_BOOTSTRAP_SERVICE_NAME
           value: keystone
         - name: OS_BOOTSTRAP_INTERNAL_URL
-          value: http://keystone.openstack
+          value: http://keystone.openstack.svc.cluster.local
         command:
         - keystone-manage
         - bootstrap

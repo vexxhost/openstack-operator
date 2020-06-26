@@ -108,6 +108,7 @@ def create_or_resume(name, spec, **_):
                            project_name=project_name,
                            region_name=region_name,
                            username=username)
+    # (TODO)Replace the current admin url
     utils.create_or_update('keystone/deployment.yml.j2',
                            name=name, spec=spec,
                            env=env, config_hash=config_hash)
