@@ -18,12 +18,10 @@ This module maintains the operator for Mcrouter, it takes care of creating
 the appropriate deployments, Mcrouter, pod monitors and Prometheus rules.
 """
 
-import kopf
 
 from openstack_operator import utils
 
 
-@kopf.on.create('dashboard.openstack.org', 'v1alpha1', 'horizons')
 def create_secret(name, **_):
     """Create a new horizon secret"""
 
@@ -34,8 +32,6 @@ def create_secret(name, **_):
                                secret=utils.generate_password())
 
 
-@kopf.on.resume('dashboard.openstack.org', 'v1alpha1', 'horizons')
-@kopf.on.create('dashboard.openstack.org', 'v1alpha1', 'horizons')
 def create_or_resume(name, spec, **_):
     """Create and re-sync a horizon instance
 
@@ -62,7 +58,6 @@ def create_or_resume(name, spec, **_):
                                name=name, spec=spec)
 
 
-@kopf.on.update('dashboard.openstack.org', 'v1alpha1', 'horizons')
 def update(name, spec, **_):
     """Update a horizon
 

@@ -19,13 +19,10 @@ the appropriate deployments, an instance of Memcache, RabbitMQ and a database
 server for the installation.
 """
 
-import kopf
 
 from openstack_operator import utils
 
 
-@kopf.on.resume('orchestration.openstack.org', 'v1alpha1', 'heats')
-@kopf.on.create('orchestration.openstack.org', 'v1alpha1', 'heats')
 def create_or_resume(name, spec, **_):
     """Create and re-sync any Heat instances
 
@@ -55,7 +52,6 @@ def create_or_resume(name, spec, **_):
                                name=name, spec=spec)
 
 
-@kopf.on.update('orchestration.openstack.org', 'v1alpha1', 'heats')
 def update(name, spec, **_):
     """Update a heat
 
