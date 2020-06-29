@@ -53,7 +53,7 @@ spec:
       - name: magnum-{{ component }}
         image: vexxhost/magnum-{{ component }}:latest
         imagePullPolicy: Always
-        {% if env is defined %}
+        {% if env is defined and env|length %}
         env:
         {% for v in env %}
         - name: "{{ v.name }}"
