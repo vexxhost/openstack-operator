@@ -44,6 +44,7 @@ spec:
         checksum/config: "{{ config_hash }}"
     spec:
       {% if 'engine' in component %}
+      terminationGracePeriodSeconds: 300
       initContainers:
       - name: db-sync
         image: vexxhost/heat-{{ component }}:latest
