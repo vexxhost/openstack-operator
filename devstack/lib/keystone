@@ -22,6 +22,7 @@ export -f install_keystone
 
 # init_keystone() - Initialize databases, etc.
 function init_keystone {
+	kubectl create secret generic keystone-config --from-file=/etc/keystone/keystone.conf -n openstack
 
 	# NOTE(mnaser): Permissions here are bad but it's temporary so we don't care as much.
 	sudo chmod -Rv 777 /etc/keystone
