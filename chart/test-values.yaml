@@ -3,6 +3,9 @@ secretName: devstack
 configMap:
   ceilometer:
     dbUri: "sqlite:///:memory:"
+  glance:
+    configDir: /etc/glance
+    dataDir: /opt/stack/data/glance
   horizon:
     ingress:
       host: "horizon.vexxhost.com"

@@ -24,6 +24,7 @@ import kopf
 
 from openstack_operator import ceilometer
 from openstack_operator import chronyd
+from openstack_operator import glance
 from openstack_operator import heat
 from openstack_operator import horizon
 from openstack_operator import keystone
@@ -62,6 +63,8 @@ def deploy(name, namespace, new, **_):
         horizon.create_or_resume("horizon", config["horizon"])
     if "heat" in config:
         heat.create_or_resume("heat", config["heat"])
+    if "glance" in config:
+        glance.create_or_resume("glance", config["glance"])
     if "magnum" in config:
         magnum.create_or_resume("magnum", config["magnum"])
     if "chronyd" in config:
