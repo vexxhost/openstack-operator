@@ -93,5 +93,8 @@ MAPPING = {
     "monitoring.coreos.com/v1": {
         "PodMonitor": PodMonitor,
         "PrometheusRule": PrometheusRule,
+    },
+    "networking.k8s.io/v1beta1": {
+        "Ingress": Ingress
     }
 }
