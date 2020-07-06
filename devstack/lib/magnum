@@ -255,8 +255,10 @@ function create_magnum_cache_dir {
 
 # init_magnum() - Initialize databases, etc.
 function init_magnum {
-	# NOTE: Permissions here are bad but it's temporary so we don't care as much.
-	sudo chmod -Rv 777 /etc/heat
+	kubectl create secret generic magnum-config --from-file=/etc/magnum/magnum.conf --from-file=/etc/magnum/api-paste.ini -n openstack
+
+    # NOTE: Permissions here are bad but it's temporary so we don't care as much.
+	sudo chmod -Rv 777 /etc/magnum
     # Only do this step once on the API node for an entire cluster.
     if is_service_enabled $DATABASE_BACKENDS; then
         # (Re)create magnum database
