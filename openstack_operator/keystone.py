@@ -86,8 +86,6 @@ def create_or_rotate_fernet(**_):
     create_or_rotate_fernet_repository('credential')
 
 
-@kopf.on.resume('identity.openstack.org', 'v1alpha1', 'keystones')
-@kopf.on.create('identity.openstack.org', 'v1alpha1', 'keystones')
 def create_or_resume(name, spec, **_):
     """Create and re-sync any Keystone instances
 
@@ -121,7 +119,6 @@ def create_or_resume(name, spec, **_):
                                spec=spec)
 
 
-@kopf.on.update('identity.openstack.org', 'v1alpha1', 'keystones')
 def update(spec, **_):
     """Update a keystone
 
