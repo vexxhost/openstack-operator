@@ -116,6 +116,10 @@ spec:
           httpGet:
             path: /v3
             port: keystone
+        lifecycle:
+          preStop:
+            exec:
+              command: ["/bin/sleep", "5"]
         resources:
           limits:
             cpu: 2000m

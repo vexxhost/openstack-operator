@@ -78,6 +78,10 @@ spec:
         readinessProbe:
           tcpSocket:
             port: heat-{{ component }}
+        lifecycle:
+          preStop:
+            exec:
+              command: ["/bin/sleep", "5"]
         {% endif %}
         resources:
           limits:
