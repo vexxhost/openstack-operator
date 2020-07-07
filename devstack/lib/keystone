@@ -38,8 +38,8 @@ export -f init_keystone
 function start_keystone {
 
 	# rollout keystone
-	kubernetes_rollout_restart keystone
-	kubernetes_rollout_status keystone
+	kubernetes_rollout_restart deploy/keystone
+	kubernetes_rollout_status deploy/keystone
 
 	# Get right service port for testing
 	local service_port=$KEYSTONE_SERVICE_PORT
