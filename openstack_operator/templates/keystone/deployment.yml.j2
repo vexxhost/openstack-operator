@@ -129,7 +129,7 @@ spec:
           runAsUser: 65534
           runAsGroup: 65534
         volumeMounts:
-        - mountPath: /etc/keystone
+        - mountPath: /etc/keystone/
           name: config
         - name: fernet-keys
           mountPath: /etc/keystone/fernet-keys
@@ -137,9 +137,8 @@ spec:
           mountPath: /etc/keystone/credential-keys
       volumes:
       - name: config
-        hostPath:
-          path: {{ spec['configDir'] }}
-          type: Directory
+        secret:
+          secretName: keystone-config
       - name: fernet-keys
         secret:
           secretName: keystone-fernet
