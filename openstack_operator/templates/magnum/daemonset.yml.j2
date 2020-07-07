@@ -1,0 +1,114 @@
+---
+# Copyright 2020 VEXXHOST, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: magnum-{{ component }}
+  namespace: openstack
+  labels:
+    {{ labels("magnum", name, component) | indent(4) }}
+spec:
+  updateStrategy:
+    rollingUpdate:
+      maxUnavailable: 1
+    type: RollingUpdate
+  selector:
+    matchLabels:
+      {{ labels("magnum", name, component) | indent(6) }}
+  template:
+    metadata:
+      labels:
+        {{ labels("magnum", name, component) | indent(8) }}
+      annotations:
+        checksum/config: "{{ config_hash }}"
+    spec:
+      {% if 'conductor' in component %}
+      initContainers:
+      - name: db-sync
+        image: vexxhost/magnum-{{ component }}:latest
+        imagePullPolicy: Always
+        command:
+        - magnum-db-manage
+        - upgrade
+        volumeMounts:
+        - mountPath: /etc/magnum
+          name: config
+      {% endif %}
+      containers:
+      - name: magnum-{{ component }}
+        image: vexxhost/magnum-{{ component }}:latest
+        imagePullPolicy: Always
+        {% if env is defined and env|length %}
+        env:
+        {% for v in env %}
+        - name: "{{ v.name }}"
+          value: "{{ v.value }}"
+        {% endfor %}
+        {% endif %}
+        {% if 'api' in component %}
+        ports:
+        - name: magnum-{{ component }}
+          protocol: TCP
+          containerPort: 9511
+        livenessProbe:
+          tcpSocket:
+            port: magnum-{{ component }}
+        readinessProbe:
+          tcpSocket:
+            port: magnum-{{ component }}
+        lifecycle:
+          preStop:
+            exec:
+              command: ["/bin/sleep", "5"]
+        {% endif %}
+        resources:
+          limits:
+            cpu: 2000m
+            ephemeral-storage: 50M
+            memory: 512M
+          requests:
+            cpu: 200m
+            ephemeral-storage: 50M
+            memory: 64M
+        securityContext:
+          runAsUser: 65534
+          runAsGroup: 65534
+        volumeMounts:
+        - mountPath: /etc/magnum
+          name: config
+        - name: uwsgi-config
+          mountPath: /etc/uwsgi
+      volumes:
+      - name: config
+        hostPath:
+          path: {{ spec['configDir'] }}
+          type: Directory
+      - name: uwsgi-config
+        configMap:
+          defaultMode: 420
+          name: uwsgi-default
+{% if 'nodeSelector' in spec %}
+      nodeSelector:
+        {{ spec.nodeSelector | to_yaml | indent(8) }}
+{% endif %}
+{% if 'tolerations' in spec %}
+      tolerations:
+        {{ spec.tolerations | to_yaml | indent(8) }}
+{% endif %}
+{% if 'hostAliases' in spec %}
+      hostAliases:
+        {{ spec.hostAliases | to_yaml | indent(8) }}
+{% endif %}

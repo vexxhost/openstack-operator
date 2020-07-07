@@ -4,19 +4,19 @@ metadata:
   name: uwsgi-default
   namespace: openstack
 data:
-  uwsgi.yaml: |
-    uwsgi:
-      enable-threads: True
-      processes: '%k'
-      exit-on-reload: True
-      die-on-term: True
-      lazy-apps: True
-      add-header: 'Connection: close'
-      buffer-size: 65535
-      thunder-lock: True
-      http-auto-chunked: True
-      http-raw-body: True
-      socket-timeout: 10
-      need-app: True
-      route-user-agent: '^kube-probe.* donotlog:'
-      log-x-forwarded-for: True
+  uwsgi.ini: |-
+    [uwsgi]
+    enable-threads = true
+    workers = %(%k * 1)
+    exit-on-reload = true
+    die-on-term = true
+    lazy-apps = true
+    add-header = 'Connection: close'
+    buffer-size = 65535
+    thunder-lock = true
+    http-auto-chunked = true
+    http-raw-body = true
+    socket-timeout = 10
+    need-app = true
+    route-user-agent = '^kube-probe.* donotlog:'
+    log-x-forwarded-for = true
