@@ -31,13 +31,9 @@ def create_or_resume(name, spec, **_):
 
     config_hash = utils.generate_hash(spec)
     for component in ("api", "conductor"):
-        if component == "api":
-            env = utils.get_uwsgi_env()
-        else:
-            env = {}
         utils.create_or_update('magnum/deployment.yml.j2',
                                name=name, spec=spec,
-                               component=component, env=env,
+                               component=component,
                                config_hash=config_hash)
         utils.create_or_update('magnum/horizontalpodautoscaler.yml.j2',
                                name=name, component=component)

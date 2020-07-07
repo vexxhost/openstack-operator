@@ -91,11 +91,17 @@ spec:
         volumeMounts:
         - mountPath: /etc/magnum
           name: config
+        - name: uwsgi-config
+          mountPath: /etc/uwsgi
       volumes:
       - name: config
         hostPath:
           path: {{ spec['configDir'] }}
           type: Directory
+      - name: uwsgi-config
+        configMap:
+          defaultMode: 420
+          name: uwsgi-default
 {% if 'nodeSelector' in spec %}
       nodeSelector:
         {{ spec.nodeSelector | to_yaml | indent(8) }}

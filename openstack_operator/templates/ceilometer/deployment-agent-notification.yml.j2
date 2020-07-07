@@ -39,6 +39,8 @@ spec:
         volumeMounts:
         - name: ceilometer-config
           mountPath: /etc/ceilometer
+        - name: uwsgi-config
+          mountPath: /etc/uwsgi
         resources:
           limits:
             cpu: 1000m
@@ -54,10 +56,12 @@ spec:
         env:
         - name: "DATABASE_URI"
           value: "{{ spec.dbUri }}"
+        {% if env is defined %}
         {% for v in env %}
         - name: "{{ v.name }}"
           value: "{{ v.value }}"
         {% endfor %}
+        {% endif %}
         resources:
           limits:
             cpu: 100m
@@ -71,6 +75,10 @@ spec:
       - name: ceilometer-config
         secret:
           secretName: ceilometer-config
+      - name: uwsgi-config
+        configMap:
+          defaultMode: 420
+          name: uwsgi-default
       securityContext:
         runAsUser: 65534
         runAsGroup: 65534

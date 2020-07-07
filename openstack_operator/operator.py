@@ -51,6 +51,7 @@ def deploy(name, namespace, new, **_):
     """
 
     utils.create_or_update('operator/namespace.yml.j2')
+    utils.create_or_update('operator/uwsgidefaultconfig.yml.j2')
 
     config = utils.to_dict(new['data']['operator-config.yaml'])
 

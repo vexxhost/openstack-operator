@@ -25,10 +25,9 @@ def create_or_resume(spec):
     """Create or start-up Ceilometer."""
 
     config_hash = utils.generate_hash(spec)
-    env = utils.get_uwsgi_env()
 
     utils.create_or_update('ceilometer/secret.yml.j2', spec=spec)
     utils.create_or_update('ceilometer/deployment-agent-notification.yml.j2',
-                           spec=spec, env=env,
+                           spec=spec,
                            config_hash=config_hash)
     utils.create_or_update('ceilometer/horizontalpodautoscaler.yml.j2')

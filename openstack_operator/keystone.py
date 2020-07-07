@@ -92,7 +92,7 @@ def create_or_resume(name, spec, **_):
     This function is called when a new resource is created but also when we
     start the service up for the first time.
     """
-    env = utils.get_uwsgi_env()
+
     config_hash = utils.generate_hash(spec)
     conn = utils.get_openstack_connection()
     auth_url = conn.config.auth["auth_url"]
@@ -109,7 +109,7 @@ def create_or_resume(name, spec, **_):
     # (TODO)Replace the current admin url
     utils.create_or_update('keystone/deployment.yml.j2',
                            name=name, spec=spec,
-                           env=env, config_hash=config_hash)
+                           config_hash=config_hash)
     utils.create_or_update('keystone/service.yml.j2',
                            name=name, spec=spec)
     utils.create_or_update('keystone/horizontalpodautoscaler.yml.j2',
