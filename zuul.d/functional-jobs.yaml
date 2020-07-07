@@ -7,6 +7,7 @@
     run: playbooks/functional/run.yaml
     post-run: playbooks/functional/post.yaml
     required-projects:
+    - openstack/devstack-plugin-ceph
     - openstack/heat
     - openstack/heat-tempest-plugin
     - openstack/magnum
@@ -21,6 +22,7 @@
         openstack-operator: https://opendev.org/vexxhost/openstack-operator
         heat: https://github.com/openstack/heat
         magnum: https://github.com/openstack/magnum
+        devstack-plugin-ceph: https://github.com/openstack/devstack-plugin-ceph
       devstack_source_dirs:
       - src/opendev.org/openstack
       - src/opendev.org/vexxhost

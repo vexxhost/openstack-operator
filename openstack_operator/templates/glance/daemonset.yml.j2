@@ -81,6 +81,8 @@ spec:
         securityContext:
           runAsUser: 1001
         volumeMounts:
+        - name: ceph
+          mountPath: /etc/ceph
         - name: config
           mountPath: /etc/glance
         - name: data
@@ -88,6 +90,10 @@ spec:
         - name: uwsgi-config
           mountPath: /etc/uwsgi
       volumes:
+      - name: ceph
+        hostPath:
+          path: /etc/ceph
+          type: Directory
       - name: config
         hostPath:
           path: {{ spec['configDir'] }}

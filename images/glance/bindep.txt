@@ -1,2 +1,6 @@
 gcc [compile]
 libc-dev [compile]
+librados-dev [compile]
+librbd-dev [compile]
+librados2
+librbd1
