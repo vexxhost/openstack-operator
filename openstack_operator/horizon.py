@@ -44,18 +44,27 @@ def create_or_resume(name, spec, **_):
                                     name=name, spec=spec)
     config_hash = utils.generate_hash(config.obj['data'])
 
-    utils.create_or_update('horizon/deployment.yml.j2',
+    utils.create_or_update('horizon/daemonset.yml.j2',
                            config_hash=config_hash, name=name,
                            spec=spec)
     utils.create_or_update('horizon/service.yml.j2',
                            name=name, spec=spec)
     utils.create_or_update('horizon/memcached.yml.j2',
                            name=name, spec=spec)
-    utils.create_or_update('horizon/horizontalpodautoscaler.yml.j2',
-                           name=name)
     if "ingress" in spec:
         utils.create_or_update('horizon/ingress.yml.j2',
                                name=name, spec=spec)
+
+    # NOTE(Alex): We should remove this once all deployments are no longer
+    #               using Deployment.
+    utils.ensure_absent('horizon/deployment.yml.j2',
+                        config_hash=config_hash, name=name,
+                        spec=spec)
+
+    # NOTE(Alex): We should remove this once all deployments are no longer
+    #               using HPA.
+    utils.ensure_absent('horizon/horizontalpodautoscaler.yml.j2',
+                        name=name)
 
 
 def update(name, spec, **_):
