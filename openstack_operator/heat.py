@@ -30,12 +30,11 @@ def create_or_resume(name, spec, **_):
     start the service up for the first time.
     """
 
-    env = utils.get_uwsgi_env()
     config_hash = utils.generate_hash(spec)
     for component in ("api", "api-cfn"):
         utils.create_or_update('heat/deployment.yml.j2',
                                name=name, spec=spec,
-                               component=component, env=env,
+                               component=component,
                                config_hash=config_hash)
         utils.create_or_update('heat/service.yml.j2',
                                name=name, component=component)

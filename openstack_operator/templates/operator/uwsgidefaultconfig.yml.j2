@@ -1,0 +1,22 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: uwsgi-default
+  namespace: openstack
+data:
+  uwsgi.yaml: |
+    uwsgi:
+      enable-threads: True
+      processes: '%k'
+      exit-on-reload: True
+      die-on-term: True
+      lazy-apps: True
+      add-header: 'Connection: close'
+      buffer-size: 65535
+      thunder-lock: True
+      http-auto-chunked: True
+      http-raw-body: True
+      socket-timeout: 10
+      need-app: True
+      route-user-agent: '^kube-probe.* donotlog:'
+      log-x-forwarded-for: True

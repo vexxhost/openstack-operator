@@ -43,10 +43,10 @@ def create_or_resume(name, spec, **_):
     config = utils.create_or_update('horizon/configmap.yml.j2',
                                     name=name, spec=spec)
     config_hash = utils.generate_hash(config.obj['data'])
-    env = utils.get_uwsgi_env()
+
     utils.create_or_update('horizon/deployment.yml.j2',
                            config_hash=config_hash, name=name,
-                           spec=spec, env=env)
+                           spec=spec)
     utils.create_or_update('horizon/service.yml.j2',
                            name=name, spec=spec)
     utils.create_or_update('horizon/memcached.yml.j2',
@@ -67,10 +67,10 @@ def update(name, spec, **_):
     config = utils.create_or_update('horizon/configmap.yml.j2',
                                     name=name, spec=spec)
     config_hash = utils.generate_hash(config.obj['data'])
-    env = utils.get_uwsgi_env()
+
     utils.create_or_update('horizon/deployment.yml.j2',
                            config_hash=config_hash, name=name,
-                           spec=spec, env=env)
+                           spec=spec)
     if "ingress" in spec:
         utils.create_or_update('horizon/ingress.yml.j2',
                                name=name, spec=spec)

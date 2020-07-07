@@ -99,11 +99,13 @@ spec:
       - name: keystone
         image: vexxhost/keystone:latest
         imagePullPolicy: Always
+        {% if env is defined %}
         env:
         {% for v in env %}
         - name: "{{ v.name }}"
           value: "{{ v.value }}"
         {% endfor %}
+        {% endif %}
         ports:
         - name: keystone
           protocol: TCP
@@ -139,6 +141,8 @@ spec:
           mountPath: /etc/keystone/fernet-keys
         - name: credential-keys
           mountPath: /etc/keystone/credential-keys
+        - name: uwsgi-config
+          mountPath: /etc/uwsgi
       volumes:
       - name: config
         secret:
@@ -149,6 +153,10 @@ spec:
       - name: credential-keys
         secret:
           secretName: keystone-credential
+      - name: uwsgi-config
+        configMap:
+          defaultMode: 420
+          name: uwsgi-default
 {% if 'nodeSelector' in spec %}
       nodeSelector:
         {{ spec.nodeSelector | to_yaml | indent(8) }}
