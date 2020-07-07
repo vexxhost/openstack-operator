@@ -25,23 +25,23 @@ function get_kubernetes_service_ip {
 }
 
 function kubernetes_rollout_status {
-	local deployment="$1"
+	local resource="$1"
 
 	for i in {1..60}; do
-		kubectl get deploy/$deployment && break || sleep 1;
+		kubectl get $resource && break || sleep 1;
 	done
 
-	kubectl rollout status deploy/$deployment
+	kubectl rollout status $resource
 }
 
 function kubernetes_rollout_restart {
-	local deployment="$1"
+	local resource="$1"
 
 	for i in {1..60}; do
-		kubectl get deploy/$deployment && break || sleep 1;
+		kubectl get $resource && break || sleep 1;
 	done
 
-	kubectl rollout restart deploy/$deployment
+	kubectl rollout restart $resource
 }
 
 function proxy_pass_to_kubernetes {
