@@ -237,13 +237,13 @@ function install_heat {
 # start_heat() - Start running processes, including screen -
 function start_heat {
 	# rollout heat
-	kubernetes_rollout_restart deploy/heat-api
-	kubernetes_rollout_restart deploy/heat-api-cfn
-	kubernetes_rollout_restart deploy/heat-engine
+	kubernetes_rollout_restart daemonset/heat-api
+	kubernetes_rollout_restart daemonset/heat-api-cfn
+	kubernetes_rollout_restart daemonset/heat-engine
 
-	kubernetes_rollout_status deploy/heat-api
-	kubernetes_rollout_status deploy/heat-api-cfn
-	kubernetes_rollout_status deploy/heat-engine
+	kubernetes_rollout_status daemonset/heat-api
+	kubernetes_rollout_status daemonset/heat-api-cfn
+	kubernetes_rollout_status daemonset/heat-engine
 
 	proxy_pass_to_kubernetes /heat-api heat-api heat-wsgi-api
 	proxy_pass_to_kubernetes /heat-api-cfn heat-api-cfn heat-wsgi-api-cfn

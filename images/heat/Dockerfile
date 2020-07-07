@@ -27,10 +27,12 @@ RUN /output/install-from-bindep
 FROM heat-api-base AS heat-api
 EXPOSE 8004
 ENV UWSGI_HTTP_SOCKET=:8004 UWSGI_WSGI_FILE=/usr/local/bin/heat-wsgi-api
+CMD ["/usr/local/bin/uwsgi","--ini","/etc/uwsgi/uwsgi.ini"]
 
 FROM heat-api-base AS heat-api-cfn
 EXPOSE 8000
 ENV UWSGI_HTTP_SOCKET=:8000 UWSGI_WSGI_FILE=/usr/local/bin/heat-wsgi-api-cfn
+CMD ["/usr/local/bin/uwsgi","--ini","/etc/uwsgi/uwsgi.ini"]
 
 FROM docker.io/opendevorg/python-base AS heat-engine
 COPY --from=builder /output/ /output
