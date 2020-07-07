@@ -72,7 +72,7 @@ def create_or_rotate_fernet_repository(name):
                            keys=keys, adopt=True)
 
 
-@kopf.timer('apps', 'v1', 'deployments',
+@kopf.timer('apps', 'v1', 'daemonsets',
             when=kopf.all_([filters.managed, _is_keystone_deployment]),
             interval=FERNET_ROTATION_INTERVAL)
 def create_or_rotate_fernet(**_):
@@ -107,22 +107,31 @@ def create_or_resume(name, spec, **_):
                            region_name=region_name,
                            username=username)
     # (TODO)Replace the current admin url
-    utils.create_or_update('keystone/deployment.yml.j2',
+    utils.create_or_update('keystone/daemonset.yml.j2',
                            name=name, spec=spec,
                            config_hash=config_hash)
     utils.create_or_update('keystone/service.yml.j2',
                            name=name, spec=spec)
-    utils.create_or_update('keystone/horizontalpodautoscaler.yml.j2',
-                           name=name)
     if "ingress" in spec:
         utils.create_or_update('keystone/ingress.yml.j2',
                                spec=spec)
+
+    # NOTE(Alex): We should remove this once all deployments are no longer
+    #               using Deployment.
+    utils.ensure_absent('keystone/deployment.yml.j2',
+                        name=name, spec=spec,
+                        config_hash=config_hash)
+
+    # NOTE(Alex): We should remove this once all deployments are no longer
+    #               using HPA.
+    utils.create_or_update('keystone/horizontalpodautoscaler.yml.j2',
+                           name=name)
 
 
 def update(spec, **_):
     """Update a keystone
 
-    This function updates the deployment for horizon if there are any
+    This function updates the deployment for keystone if there are any
     changes that happen within it.
     """
     if "ingress" in spec:
