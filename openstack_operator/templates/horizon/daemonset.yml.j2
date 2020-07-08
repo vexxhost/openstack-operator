@@ -73,6 +73,8 @@ spec:
         volumeMounts:
         - name: config
           mountPath: /etc/horizon
+        - name: uwsgi-config
+          mountPath: /etc/uwsgi
         {% if 'logo' in spec %}
         - name: logo
           mountPath: /usr/local/lib/python3.7/site-packages/static/dashboard/img/logo.svg
@@ -89,6 +91,10 @@ spec:
         configMap:
           defaultMode: 420
           name: horizon
+      - name: uwsgi-config
+        configMap:
+          defaultMode: 420
+          name: uwsgi-default
       {% if 'logo' in spec %}
       - name: logo
         configMap:

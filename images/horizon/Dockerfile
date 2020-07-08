@@ -48,3 +48,4 @@ ENV UWSGI_HTTP_SOCKET=:8000 \
     UWSGI_CHECK_STATIC=/usr/local/lib/python3.7/site-packages/static/ \
     UWSGI_STATIC_MAP="/static=/usr/local/lib/python3.7/site-packages/static/" \
     UWSGI_MIME_FILE="/etc/mime.types"
+CMD ["/usr/local/bin/uwsgi","--ini","/etc/uwsgi/uwsgi.ini"]
