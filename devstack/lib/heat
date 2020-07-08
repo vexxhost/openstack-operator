@@ -212,7 +212,9 @@ function configure_heat {
 
 # init_heat() - Initialize database - override
 function init_heat {
-	# NOTE: Permissions here are bad but it's temporary so we don't care as much.
+	kubectl create secret generic heat-config --from-file=/etc/heat/heat.conf --from-file=/etc/heat/api-paste.ini -n openstack
+
+    # NOTE: Permissions here are bad but it's temporary so we don't care as much.
 	sudo chmod -Rv 777 /etc/heat
 
 	# recreate db only if one of the db services is enabled
