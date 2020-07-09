@@ -30,3 +30,4 @@ RUN apt update && apt -y install git && \
 EXPOSE 5000
 ENV UWSGI_HTTP_SOCKET=:5000 \
     UWSGI_WSGI_FILE=/usr/local/bin/keystone-wsgi-public
+CMD ["/usr/local/bin/uwsgi","--ini","/etc/uwsgi/uwsgi.ini"]
