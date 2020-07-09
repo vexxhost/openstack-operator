@@ -120,11 +120,6 @@ spec:
           preStop:
             exec:
               command: ["/bin/sleep", "5"]
-        resources:
-          requests:
-            cpu: 200m
-            ephemeral-storage: 500M
-            memory: 512M
         securityContext:
           runAsUser: 65534
           runAsGroup: 65534

@@ -74,15 +74,6 @@ spec:
             exec:
               command: ["/bin/sleep", "5"]
         {% endif %}
-        resources:
-          limits:
-            cpu: 2000m
-            ephemeral-storage: 50M
-            memory: 512M
-          requests:
-            cpu: 200m
-            ephemeral-storage: 50M
-            memory: 64M
         securityContext:
           runAsUser: 65534
           runAsGroup: 65534
