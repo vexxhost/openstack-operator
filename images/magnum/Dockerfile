@@ -27,6 +27,7 @@ RUN /output/install-from-bindep
 FROM magnum-api-base AS magnum-api
 EXPOSE 9511
 ENV UWSGI_HTTP_SOCKET=:9511 UWSGI_WSGI_FILE=/usr/local/bin/magnum-api-wsgi
+CMD ["/usr/local/bin/uwsgi","--ini","/etc/uwsgi/uwsgi.ini"]
 
 FROM docker.io/opendevorg/python-base AS magnum-conductor
 COPY --from=builder /output/ /output

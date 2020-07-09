@@ -388,11 +388,11 @@ EOF
 # start_magnum() - Start running processes, including screen
 function start_magnum {
 
-	kubernetes_rollout_restart deploy/magnum-api
-	kubernetes_rollout_restart deploy/magnum-conductor
+	kubernetes_rollout_restart daemonset/magnum-api
+	kubernetes_rollout_restart daemonset/magnum-conductor
 
-	kubernetes_rollout_status deploy/magnum-api
-	kubernetes_rollout_status deploy/magnum-conductor
+	kubernetes_rollout_status daemonset/magnum-api
+	kubernetes_rollout_status daemonset/magnum-conductor
 
     proxy_pass_to_kubernetes /magnum-api magnum-api magnum-api-wsgi
 }

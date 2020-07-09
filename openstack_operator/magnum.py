@@ -31,12 +31,10 @@ def create_or_resume(name, spec, **_):
 
     config_hash = utils.generate_hash(spec)
     for component in ("api", "conductor"):
-        utils.create_or_update('magnum/deployment.yml.j2',
+        utils.create_or_update('magnum/daemonset.yml.j2',
                                name=name, spec=spec,
                                component=component,
                                config_hash=config_hash)
-        utils.create_or_update('magnum/horizontalpodautoscaler.yml.j2',
-                               name=name, component=component)
 
     utils.create_or_update('magnum/service.yml.j2',
                            name=name)
@@ -44,6 +42,18 @@ def create_or_resume(name, spec, **_):
     if "ingress" in spec:
         utils.create_or_update('magnum/ingress.yml.j2',
                                name=name, spec=spec)
+
+    # NOTE(Alex): We should remove this once all deployments are no longer
+    #               using Deployment.
+    utils.ensure_absent('magnum/deployment.yml.j2',
+                        name=name, spec=spec,
+                        component=component,
+                        config_hash=config_hash)
+
+    # NOTE(Alex): We should remove this once all deployments are no longer
+    #               using HPA.
+    utils.create_or_update('magnum/horizontalpodautoscaler.yml.j2',
+                           name=name, component=component)
 
 
 def update(name, spec, **_):
