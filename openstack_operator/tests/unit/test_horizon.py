@@ -27,11 +27,11 @@ class HorizonConfigMapTestCase(base.ConfigMapTestCase):
     TEMPLATE_FILE = 'horizon/configmap.yml.j2'
 
 
-class HorizonDeploymentTestCase(base.DeploymentTestCase):
-    """Basic tests for the Deployment."""
+class HorizonDaemonsetTestCase(base.DaemonSetTestCase):
+    """Basic tests for the Daemonset."""
 
     RELEASE_TYPE = 'horizon'
-    TEMPLATE_FILE = 'horizon/deployment.yml.j2'
+    TEMPLATE_FILE = 'horizon/daemonset.yml.j2'
 
 
 class HorizonIngressTestCase(base.IngressTestCase):

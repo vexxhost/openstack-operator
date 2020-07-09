@@ -43,11 +43,6 @@ def create_or_resume(name, spec, **_):
     utils.create_or_update('memcached/prometheusrule.yml.j2',
                            name=name, spec=spec, adopt=True)
 
-    # NOTE(mnaser): We should remove this once all deployments are no longer
-    #               using Deployment for Memcached.
-    utils.ensure_absent('memcached/deployment.yml.j2',
-                        name=name, spec=spec)
-
 
 @kopf.on.update('infrastructure.vexxhost.cloud', 'v1alpha1', 'memcacheds')
 def update(name, spec, **_):

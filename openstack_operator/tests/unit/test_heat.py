@@ -20,11 +20,11 @@ This module contains all the tests for the Heat operator.
 from openstack_operator.tests.unit import base
 
 
-class HeatAPIDeploymentTestCase(base.DeploymentTestCase):
-    """Basic tests for the Deployment."""
+class HeatAPIDaemonsetTestCase(base.DaemonSetTestCase):
+    """Basic tests for the Daemonset."""
 
     RELEASE_TYPE = 'heat'
-    TEMPLATE_FILE = 'heat/deployment.yml.j2'
+    TEMPLATE_FILE = 'heat/daemonset.yml.j2'
 
 
 class HeatAPServiceTestCase(base.ServiceTestCase):

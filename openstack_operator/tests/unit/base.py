@@ -97,11 +97,6 @@ class KubernetesAppTestCaseMixin:
         for container in self.object['spec']['template']['spec']['containers']:
             self.assertIn('readinessProbe', container)
 
-    def test_containers_have_resource_limits(self):
-        """Ensure that all containers have resource limits."""
-        for container in self.object['spec']['template']['spec']['containers']:
-            self.assertIn('resources', container)
-
     def test_container_http_probes_have_no_metrics_path(self):
         """Ensure that http probes (liveness/rediness) of all containers
          don't have metrics path"""

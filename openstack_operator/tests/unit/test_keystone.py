@@ -20,11 +20,11 @@ This module contains all the tests for the Keystone operator.
 from openstack_operator.tests.unit import base
 
 
-class KeystoneDeploymentTestCase(base.DeploymentTestCase):
-    """Basic tests for the Deployment."""
+class KeystoneDaemonsetTestCase(base.DaemonSetTestCase):
+    """Basic tests for the Daemonset."""
 
     RELEASE_TYPE = 'keystone'
-    TEMPLATE_FILE = 'keystone/deployment.yml.j2'
+    TEMPLATE_FILE = 'keystone/daemonset.yml.j2'
 
 
 class KeystoneIngressTestCase(base.IngressTestCase):
