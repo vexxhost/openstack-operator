@@ -93,9 +93,8 @@ spec:
           mountPath: /etc/uwsgi
       volumes:
       - name: config
-        hostPath:
-          path: {{ spec['configDir'] }}
-          type: Directory
+        secret:
+          secretName: magnum-config
       - name: uwsgi-config
         configMap:
           defaultMode: 420
