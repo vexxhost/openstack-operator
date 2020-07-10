@@ -77,7 +77,7 @@ def update(name, spec, **_):
                                     name=name, spec=spec)
     config_hash = utils.generate_hash(config.obj['data'])
 
-    utils.create_or_update('horizon/deployment.yml.j2',
+    utils.create_or_update('horizon/daemonset.yml.j2',
                            config_hash=config_hash, name=name,
                            spec=spec)
     if "ingress" in spec:

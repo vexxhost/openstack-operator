@@ -11,12 +11,12 @@ data:
     exit-on-reload = true
     die-on-term = true
     lazy-apps = true
-    add-header = 'Connection: close'
+    add-header = Connection: close
     buffer-size = 65535
     thunder-lock = true
     http-auto-chunked = true
     http-raw-body = true
     socket-timeout = 10
     need-app = true
-    route-user-agent = '^kube-probe.* donotlog:'
+    route-user-agent = ^kube-probe.* donotlog:
     log-x-forwarded-for = true
