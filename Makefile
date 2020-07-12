@@ -5,6 +5,7 @@ images:
 	docker build images/heat --target heat-api -t vexxhost/heat-api:latest
 	docker build images/heat --target heat-api-cfn -t vexxhost/heat-api-cfn:latest
 	docker build images/heat --target heat-engine -t vexxhost/heat-engine:latest
+	docker build images/glance --target glance-api -t vexxhost/glance-api:latest
 	docker build images/chronyd -t vexxhost/chronyd:latest
 	docker build images/magnum --target magnum-api -t vexxhost/magnum-api:latest
 	docker build images/magnum --target magnum-conductor -t vexxhost/magnum-conductor:latest

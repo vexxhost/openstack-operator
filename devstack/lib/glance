@@ -1,0 +1,60 @@
+#!/bin/bash
+#
+# lib/glance
+# Functions to control the configuration and operation of the **Glance** service
+
+# Dependencies:
+#
+# - ``functions`` file
+# - ``DEST``, ``DATA_DIR``, ``STACK_USER`` must be defined
+# - ``SERVICE_{TENANT_NAME|PASSWORD}`` must be defined
+# - ``SERVICE_HOST``
+# - ``KEYSTONE_TOKEN_FORMAT`` must be defined
+
+# ``stack.sh`` calls the entry points in this order:
+#
+# - install_glance
+# - configure_glance
+# - init_glance
+# - start_glance
+# - stop_glance
+# - cleanup_glance
+
+# init_glance() - Initialize databases, etc.
+function init_glance {
+    # Delete existing images
+    rm -rf $GLANCE_IMAGE_DIR
+    mkdir -p $GLANCE_IMAGE_DIR
+
+    # NOTE: Permissions here are bad but it's temporary so we don't care as much.
+	sudo chmod -Rv 777 $DATA_DIR/glance
+
+    # (Re)create glance database
+    recreate_database glance
+}
+export -f init_glance
+
+# install_glance() - Collect source and prepare
+function install_glance {
+    echo noop
+}
+export -f install_glance
+
+# start_glance() - Start running processes
+function start_glance {
+
+	kubernetes_rollout_restart daemonset/glance
+	kubernetes_rollout_status daemonset/glance
+
+    run_process g-reg "$GLANCE_BIN_DIR/glance-registry --config-file=$GLANCE_CONF_DIR/glance-registry.conf"
+
+    echo "Waiting for g-api ($GLANCE_SERVICE_HOST) to start..."
+
+    proxy_pass_to_kubernetes /image glance glance-wsgi-api
+}
+export -f start_glance
+
+# Tell emacs to use shell-script-mode
+## Local variables:
+## mode: shell-script
+## End:
