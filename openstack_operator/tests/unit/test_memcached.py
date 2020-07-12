@@ -20,22 +20,12 @@ This module contains all the tests for the Memcached operator.
 # Disable no-self-use
 # pylint: disable=R0201
 
-from unittest import mock
 
-from openstack_operator import memcached
 from openstack_operator.tests.unit import base
 
 
 class MemcachedOperatorTestCase(base.BaseTestCase):
     """Basic tests for the operator."""
-
-    @mock.patch.object(memcached.utils, 'create_or_update')
-    @mock.patch.object(memcached.utils, 'ensure_absent')
-    def test_ensure_deployment_removal(self, mock_ensure_absent, _):
-        """Test that we remove the old deployment"""
-        memcached.create_or_resume("foo", {})
-        mock_ensure_absent.assert_called_once_with(
-            'memcached/deployment.yml.j2', name="foo", spec={})
 
 
 class MemcachedServiceTestCase(base.ServiceTestCase):

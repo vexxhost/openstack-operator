@@ -43,18 +43,6 @@ def create_or_resume(name, spec, **_):
         utils.create_or_update('magnum/ingress.yml.j2',
                                name=name, spec=spec)
 
-    # NOTE(Alex): We should remove this once all deployments are no longer
-    #               using Deployment.
-    utils.ensure_absent('magnum/deployment.yml.j2',
-                        name=name, spec=spec,
-                        component=component,
-                        config_hash=config_hash)
-
-    # NOTE(Alex): We should remove this once all deployments are no longer
-    #               using HPA.
-    utils.create_or_update('magnum/horizontalpodautoscaler.yml.j2',
-                           name=name, component=component)
-
 
 def update(name, spec, **_):
     """Update a Magnum

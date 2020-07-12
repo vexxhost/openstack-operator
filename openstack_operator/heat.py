@@ -40,18 +40,6 @@ def create_or_resume(name, spec, **_):
         utils.create_or_update('heat/service.yml.j2',
                                name=name, component=component)
 
-        # NOTE(Alex): We should remove this once all deployments are no longer
-        #               using Deployment.
-        utils.ensure_absent('heat/deployment.yml.j2',
-                            name=name, spec=spec,
-                            component=component,
-                            config_hash=config_hash)
-
-        # NOTE(Alex): We should remove this once all deployments are no longer
-        #               using HPA.
-        utils.ensure_absent('heat/horizontalpodautoscaler.yml.j2',
-                            name=name, component=component)
-
     utils.create_or_update('heat/daemonset.yml.j2',
                            name=name, spec=spec, component='engine',
                            config_hash=config_hash)
@@ -59,18 +47,6 @@ def create_or_resume(name, spec, **_):
     if "ingress" in spec:
         utils.create_or_update('heat/ingress.yml.j2',
                                name=name, spec=spec)
-
-    # NOTE(Alex): We should remove this once all deployments are no longer
-    #               using Deployment.
-    utils.ensure_absent('heat/deployment.yml.j2',
-                        name=name, spec=spec,
-                        component='engine',
-                        config_hash=config_hash)
-
-    # NOTE(Alex): We should remove this once all deployments are no longer
-    #               using HPA.
-    utils.ensure_absent('heat/horizontalpodautoscaler.yml.j2',
-                        name=name, component='engine')
 
 
 def update(name, spec, **_):

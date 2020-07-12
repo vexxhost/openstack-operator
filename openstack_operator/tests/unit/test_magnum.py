@@ -20,18 +20,18 @@ This module contains all the tests for the Magnum operator.
 from openstack_operator.tests.unit import base
 
 
-class MagnumAPIDeploymentTestCase(base.DeploymentTestCase):
-    """Basic tests for the API Deployment."""
+class MagnumAPIDaemonsetTestCase(base.DaemonSetTestCase):
+    """Basic tests for the API Daemonset."""
 
     RELEASE_TYPE = 'magnum'
-    TEMPLATE_FILE = 'magnum/deployment.yml.j2'
+    TEMPLATE_FILE = 'magnum/daemonset.yml.j2'
     TEMPLATE_PARAMS = {'component': 'api'}
 
 
-class MagnumConductorDeploymentTestCase(base.DeploymentTestCase):
-    """Basic tests for the Conductor Deployment."""
+class MagnumConductorDaemonsetTestCase(base.DaemonSetTestCase):
+    """Basic tests for the Conductor Daemonset."""
 
     RELEASE_TYPE = 'magnum'
-    TEMPLATE_FILE = 'magnum/deployment.yml.j2'
+    TEMPLATE_FILE = 'magnum/daemonset.yml.j2'
     TEMPLATE_PARAMS = {'component': 'conductor'}
     PORT_EXPOSED = False

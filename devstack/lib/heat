@@ -138,14 +138,14 @@ function configure_heat {
     # the section for the client plugin associated with the trustee
     if [ -z "$HEAT_DEFERRED_AUTH" -o "trusts" == "$HEAT_DEFERRED_AUTH" ]; then
         iniset $HEAT_CONF trustee auth_type password
-        iniset $HEAT_CONF trustee auth_url $KEYSTONE_AUTH_URI
+        iniset $HEAT_CONF trustee auth_url $KEYSTONE_AUTH_URI_V3
         iniset $HEAT_CONF trustee username $HEAT_TRUSTEE_USER
         iniset $HEAT_CONF trustee password $HEAT_TRUSTEE_PASSWORD
         iniset $HEAT_CONF trustee user_domain_id $HEAT_TRUSTEE_DOMAIN
     fi
 
     # clients_keystone
-    iniset $HEAT_CONF clients_keystone auth_uri $KEYSTONE_AUTH_URI
+    iniset $HEAT_CONF clients_keystone auth_uri $KEYSTONE_AUTH_URI_V3
 
     if is_ssl_enabled_service "key" || is_service_enabled tls-proxy; then
         iniset $HEAT_CONF clients_keystone ca_file $SSL_BUNDLE_FILE
