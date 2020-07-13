@@ -65,15 +65,6 @@ spec:
           periodSeconds: 15
           successThreshold: 1
           timeoutSeconds: 1
-        resources:
-          limits:
-            cpu: 1000m
-            ephemeral-storage: 1G
-            memory: 1G
-          requests:
-            cpu: 100m
-            ephemeral-storage: 500M
-            memory: 512M
         securityContext:
           runAsUser: 999
           runAsGroup: 999
