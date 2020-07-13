@@ -58,12 +58,12 @@ spec:
       - name: heat-{{ component }}
         image: vexxhost/heat-{{ component }}:latest
         imagePullPolicy: Always
-        {% if env is defined %}
         env:
         - name: OS_DEFAULT__HOST
           valueFrom:
             fieldRef:
               fieldPath: spec.nodeName
+        {% if env is defined %}
         {% for v in env %}
         - name: "{{ v.name }}"
           value: "{{ v.value }}"
