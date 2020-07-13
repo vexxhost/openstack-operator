@@ -23,6 +23,7 @@ from combinations of apiVersion and kind to the exact model.
 """
 
 from pykube.objects import ConfigMap
+from pykube.objects import CronJob
 from pykube.objects import DaemonSet
 from pykube.objects import Deployment
 from pykube.objects import HorizontalPodAutoscaler
@@ -82,6 +83,9 @@ MAPPING = {
     },
     "autoscaling/v1": {
         "HorizontalPodAutoscaler": HorizontalPodAutoscaler,
+    },
+    "batch/v1beta1": {
+        "CronJob": CronJob,
     },
     "extensions/v1beta1": {
         "Ingress": Ingress

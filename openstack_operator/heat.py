@@ -44,6 +44,9 @@ def create_or_resume(name, spec, **_):
                            name=name, spec=spec, component='engine',
                            config_hash=config_hash)
 
+    utils.create_or_update('heat/cronjob-service-clean.yml.j2',
+                           name=name, spec=spec)
+
     if "ingress" in spec:
         utils.create_or_update('heat/ingress.yml.j2',
                                name=name, spec=spec)
