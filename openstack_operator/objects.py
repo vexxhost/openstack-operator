@@ -60,20 +60,20 @@ class PodMonitor(NamespacedAPIObject):
     kind = "PodMonitor"
 
 
-class Rabbitmq(NamespacedAPIObject):
-    """Rabbitmq Kubernetes object"""
-
-    version = "infrastructure.vexxhost.cloud/v1alpha1"
-    endpoint = "rabbitmqs"
-    kind = "Rabbitmq"
-
-
 class PrometheusRule(NamespacedAPIObject):
     """PrometheusRule Kubernetes object"""
 
     version = "monitoring.coreos.com/v1"
     endpoint = "prometheusrules"
     kind = "PrometheusRule"
+
+
+class Rabbitmq(NamespacedAPIObject):
+    """Rabbitmq Kubernetes object"""
+
+    version = "infrastructure.vexxhost.cloud/v1alpha1"
+    endpoint = "rabbitmqs"
+    kind = "Rabbitmq"
 
 
 MAPPING = {
@@ -101,7 +101,7 @@ MAPPING = {
     "infrastructure.vexxhost.cloud/v1alpha1": {
         "Mcrouter": Mcrouter,
         "Memcached": Memcached,
-        "Rabbitmq": Rabbitmq,
+        "Rabbitmq": Rabbitmq
     },
     "monitoring.coreos.com/v1": {
         "PodMonitor": PodMonitor,

@@ -133,7 +133,12 @@ function create_magnum_conf {
     rm -f $MAGNUM_CONF
     HOSTNAME=`hostname`
     iniset $MAGNUM_CONF DEFAULT debug "$ENABLE_DEBUG_LOG_LEVEL"
-    iniset $MAGNUM_CONF DEFAULT transport_url $(get_transport_url)
+    
+    # Get rabbitmq password
+    MAGNUM_RABBITMQ_PASSWORD=$(get_data_from_secret magnum-rabbitmq openstack password)
+    MAGNUM_RABBITMQ_USERNAME=$(get_data_from_secret magnum-rabbitmq openstack username)
+
+    iniset $MAGNUM_CONF DEFAULT transport_url "rabbit://$MAGNUM_RABBITMQ_USERNAME:$MAGNUM_RABBITMQ_PASSWORD@rabbitmq-magnum:5672/"
     iniset $MAGNUM_CONF DEFAULT host "$HOSTNAME"
 
     iniset $MAGNUM_CONF database connection `database_connection_url magnum`
