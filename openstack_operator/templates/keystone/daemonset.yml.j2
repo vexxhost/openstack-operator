@@ -59,11 +59,6 @@ spec:
             secretKeyRef:
               key: region_name
               name: keystone-init
-        - name: OS_BOOTSTRAP_ADMIN_URL
-          valueFrom:
-            secretKeyRef:
-              key: auth_url
-              name: keystone-init
         - name: OS_BOOTSTRAP_PUBLIC_URL
           valueFrom:
             secretKeyRef:
@@ -81,6 +76,8 @@ spec:
               name: keystone-init
         - name: OS_BOOTSTRAP_SERVICE_NAME
           value: keystone
+        - name: OS_BOOTSTRAP_ADMIN_URL
+          value: http://keystone.openstack.svc.cluster.local
         - name: OS_BOOTSTRAP_INTERNAL_URL
           value: http://keystone.openstack.svc.cluster.local
         command:
