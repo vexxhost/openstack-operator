@@ -11,10 +11,12 @@
     - openstack/heat-tempest-plugin
     - openstack/magnum
     - openstack/magnum-tempest-plugin
+    - openstack/horizon
     - openstack/tempest-horizon
     vars:
       devstack_services:
         etcd3: false
+        horizon: true
         rabbit: false
         tls-proxy: false
       devstack_plugins:
