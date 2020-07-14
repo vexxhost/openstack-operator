@@ -85,6 +85,14 @@
   pre_tasks:
     - name: Set the context with openstack namespace
       command: kubectl config set-context --current --namespace=openstack
+    - name: Update resolv.conf to point to the coredns
+      become: true
+      shell: |
+        cat <<EOF> /etc/resolv.conf
+        search svc.cluster.local cluster.local
+        nameserver 10.96.0.10
+        options ndots:5
+        EOF
   roles:
     - orchestrate-devstack
 
