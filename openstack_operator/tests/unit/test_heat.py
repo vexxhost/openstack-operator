@@ -26,6 +26,16 @@ class HeatAPIDaemonsetTestCase(base.DaemonSetTestCase):
     RELEASE_TYPE = 'heat'
     TEMPLATE_FILE = 'heat/daemonset.yml.j2'
 
+    def test_envvar_default_host_exists(self):
+        """Ensure that heat daemonset has OS_DEFAULT__HOST env var
+        to set the engine host"""
+        envvar_name_list = []
+        envvar_list = \
+            self.object['spec']['template']['spec']['containers'][0]["env"]
+        for envvar in envvar_list:
+            envvar_name_list.append(envvar["name"])
+        self.assertIn('OS_DEFAULT__HOST', envvar_name_list)
+
 
 class HeatAPServiceTestCase(base.ServiceTestCase):
     """Basic tests for the Service."""
