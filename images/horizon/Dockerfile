@@ -15,18 +15,22 @@
 
 FROM docker.io/opendevorg/python-builder as builder
 COPY bindep.txt /tmp/src/bindep.txt
-RUN assemble horizon==18.3.1 \
-    python-memcached \
-    heat-dashboard==2.0.0 \
-    designate-dashboard==9.0.0 \
-    neutron-vpnaas-dashboard==1.6.0 \
-    octavia-dashboard==4.0.0 \
-    sahara-dashboard==11.0.0 \
-    magnum-ui==6.0.0
+RUN apt update && apt -y install git
+ADD https://releases.openstack.org/constraints/upper/ussuri /tmp/src/upper-constraints.txt
+RUN assemble git+https://opendev.org/openstack/horizon@stable/ussuri \
+             git+https://opendev.org/openstack/heat-dashboard@stable/ussuri \
+             git+https://opendev.org/openstack/designate-dashboard@stable/ussuri \
+             git+https://opendev.org/openstack/neutron-vpnaas-dashboard@stable/ussuri \
+             git+https://opendev.org/openstack/octavia-dashboard@stable/ussuri \
+             git+https://opendev.org/openstack/sahara-dashboard@stable/ussuri \
+             git+https://opendev.org/openstack/magnum-ui@stable/ussuri \
+             python-memcached
 
 FROM docker.io/opendevorg/uwsgi-base
 COPY --from=builder /output/ /output
-RUN /output/install-from-bindep
+RUN apt update && apt -y install git && \
+    /output/install-from-bindep && \
+    apt -y purge git && apt clean all
 WORKDIR /usr/local/lib/python3.7/site-packages/openstack_dashboard
 RUN ln -s /etc/horizon/local_settings.py local/local_settings.py && \
     cp ../designatedashboard/enabled/*.py enabled/ && \
