@@ -53,6 +53,16 @@ spec:
         volumeMounts:
         - mountPath: /etc/heat
           name: config
+      - name: service-clean
+        image: vexxhost/heat-{{ component }}:latest
+        imagePullPolicy: Always
+        command:
+        - heat-manage
+        - service
+        - clean
+        volumeMounts:
+        - mountPath: /etc/heat
+          name: config
       {% endif %}
       containers:
       - name: heat-{{ component }}
