@@ -18,7 +18,7 @@ kind: PodMonitor
 metadata:
   name: rabbitmq-podmonitor
   labels:
-    {{ labels("rabbitmq", name) | indent(4) }}
+    {{ labels("rabbitmq") | indent(4) }}
 spec:
   podMetricsEndpoints:
   - interval: 15s
@@ -26,4 +26,6 @@ spec:
     port: metrics
   selector:
     matchLabels:
-      {{ labels("rabbitmq", name) | indent(6) }}
+      app.kubernetes.io/name: rabbitmq
+      app.kubernetes.io/managed-by: openstack-operator
+
