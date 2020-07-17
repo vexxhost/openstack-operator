@@ -14,10 +14,20 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-define_plugin openstack-operator
 
-source $DEST/openstack-operator/devstack/lib/common
-source $DEST/openstack-operator/devstack/lib/glance
-source $DEST/openstack-operator/devstack/lib/horizon
-source $DEST/openstack-operator/devstack/lib/keystone
-source $DEST/openstack-operator/devstack/lib/rpc_backend
+# iniset rpc configuration
+function iniset_k8s_rpc_backend {
+    local package=$1
+    local file=$2
+    local section=${3:-DEFAULT}
+	local conn_url=$4
+
+	iniset $file $section transport_url $conn_url
+	if [ -n "$RABBIT_HEARTBEAT_TIMEOUT_THRESHOLD" ]; then
+		iniset $file oslo_messaging_rabbit heartbeat_timeout_threshold $RABBIT_HEARTBEAT_TIMEOUT_THRESHOLD
+	fi
+	if [ -n "$RABBIT_HEARTBEAT_RATE" ]; then
+		iniset $file oslo_messaging_rabbit heartbeat_rate $RABBIT_HEARTBEAT_RATE
+	fi
+}
+export -f iniset_k8s_rpc_backend
