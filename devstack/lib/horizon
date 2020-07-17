@@ -1,0 +1,60 @@
+#!/bin/bash
+#
+# lib/horizon
+# Functions to control the configuration and operation of the horizon service
+
+# Dependencies:
+#
+# - ``functions`` file
+# - ``apache`` file
+# - ``SERVICE_{TENANT_NAME|PASSWORD}`` must be defined
+
+# ``stack.sh`` calls the entry points in this order:
+#
+# - install_horizon
+# - configure_horizon
+# - init_horizon
+# - start_horizon
+# - stop_horizon
+# - cleanup_horizon
+
+# Save trace setting
+_XTRACE_HORIZON=$(set +o | grep xtrace)
+set +o xtrace
+
+# Functions
+# ---------
+
+# configure_horizon() - Set config files, create data dirs, etc
+function configure_horizon {
+	echo noop
+}
+
+# init_horizon() - Initialize databases, etc.
+function init_horizon {
+	echo noop
+}
+
+# install_horizon() - Collect source and prepare
+function install_horizon {
+	echo noop
+}
+
+# start_horizon() - Start running processes
+function start_horizon {
+	kubectl rollout restart statefulset/memcached-horizon
+	sleep 10
+}
+
+# stop_horizon() - Stop running processes
+function stop_horizon {
+    stop_apache_server
+}
+
+# Restore xtrace
+$_XTRACE_HORIZON
+
+# Tell emacs to use shell-script-mode
+## Local variables:
+## mode: shell-script
+## End:

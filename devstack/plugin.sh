@@ -40,6 +40,13 @@ elif [[ "$1" == "stack" && "$2" == "post-config" ]]; then
 
 elif [[ "$1" == "stack" && "$2" == "extra" ]]; then
 	:
+
+elif [[ "$1" == "stack" && "$2" == "test-config" ]]; then
+	# Horizon dashboard Url in tempest_horizon
+	if is_service_enabled tempest; then
+		local ip=$(get_kubernetes_service_ip horizon)
+		iniset $TEMPEST_CONFIG dashboard dashboard_url http://$ip
+	fi
 fi
 
 if [[ "$1" == "unstack" ]]; then

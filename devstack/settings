@@ -18,4 +18,5 @@ define_plugin openstack-operator
 
 source $DEST/openstack-operator/devstack/lib/common
 source $DEST/openstack-operator/devstack/lib/glance
+source $DEST/openstack-operator/devstack/lib/horizon
 source $DEST/openstack-operator/devstack/lib/keystone
