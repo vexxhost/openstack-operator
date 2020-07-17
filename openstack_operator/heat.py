@@ -46,6 +46,11 @@ def create_or_resume(name, spec, **_):
 
     utils.create_or_update('heat/cronjob-service-clean.yml.j2',
                            name=name, spec=spec)
+    # deploy rabbitmq
+    if not utils.ensure_secret("openstack", "heat-rabbitmq"):
+        utils.create_or_update('heat/secret-rabbitmq.yml.j2',
+                               password=utils.generate_password())
+    utils.create_or_update('heat/rabbitmq.yml.j2')
 
     if "ingress" in spec:
         utils.create_or_update('heat/ingress.yml.j2',
