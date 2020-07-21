@@ -13,23 +13,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM docker.io/opendevorg/python-builder as builder
-COPY bindep.txt /tmp/src/bindep.txt
-ADD https://releases.openstack.org/constraints/upper/ussuri /tmp/src/upper-constraints.txt
-RUN assemble magnum==10.0.0 \
-             python-memcached \
-             PyMySQL
+FROM vexxhost/python-builder AS builder
 
-FROM docker.io/opendevorg/uwsgi-base AS magnum-api-base
-COPY --from=builder /output/ /output
-RUN /output/install-from-bindep
-
-FROM magnum-api-base AS magnum-api
+FROM vexxhost/python-base AS magnum-api
 EXPOSE 9511
 ENV UWSGI_HTTP_SOCKET=:9511 UWSGI_WSGI_FILE=/usr/local/bin/magnum-api-wsgi
 CMD ["/usr/local/bin/uwsgi","--ini","/etc/uwsgi/uwsgi.ini"]
 
-FROM docker.io/opendevorg/python-base AS magnum-conductor
-COPY --from=builder /output/ /output
-RUN /output/install-from-bindep
+FROM vexxhost/python-base AS magnum-conductor
 CMD ["/usr/local/bin/magnum-conductor"]

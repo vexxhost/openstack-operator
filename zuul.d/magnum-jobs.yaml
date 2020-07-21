@@ -5,9 +5,6 @@
     vars: &id001
       docker_images:
       - context: images/magnum
-        repository: vexxhost/magnum-api-base
-        target: magnum-api-base
-      - context: images/magnum
         repository: vexxhost/magnum-api
         target: magnum-api
       - context: images/magnum
