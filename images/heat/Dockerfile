@@ -12,17 +12,8 @@
 # implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-FROM docker.io/opendevorg/python-builder as builder
-COPY bindep.txt /tmp/src/bindep.txt
-ADD https://releases.openstack.org/constraints/upper/ussuri /tmp/src/upper-constraints.txt
-RUN assemble openstack-heat==14.0.0 \
-    python-memcached \
-    PyMySQL
-
-FROM docker.io/opendevorg/uwsgi-base AS heat-api-base
-COPY --from=builder /output/ /output
-RUN /output/install-from-bindep
+FROM vexxhost/python-builder AS builder
+FROM vexxhost/python-base AS heat-api-base
 
 FROM heat-api-base AS heat-api
 EXPOSE 8004
@@ -34,8 +25,6 @@ EXPOSE 8000
 ENV UWSGI_HTTP_SOCKET=:8000 UWSGI_WSGI_FILE=/usr/local/bin/heat-wsgi-api-cfn
 CMD ["/usr/local/bin/uwsgi","--ini","/etc/uwsgi/uwsgi.ini"]
 
-FROM docker.io/opendevorg/python-base AS heat-engine
-COPY --from=builder /output/ /output
-RUN /output/install-from-bindep
+FROM heat-api-base AS heat-engine
 RUN ln -s /usr/local/etc/heat /etc/heat
 CMD ["/usr/local/bin/heat-engine"]

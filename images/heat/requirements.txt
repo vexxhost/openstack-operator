@@ -1,0 +1,4 @@
+uWSGI
+python-memcached
+PyMySQL
+git+https://opendev.org/openstack/heat@stable/ussuri
