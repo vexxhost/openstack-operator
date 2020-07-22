@@ -1,0 +1,9 @@
+uWSGI
+python-memcached
+git+https://opendev.org/openstack/horizon@stable/ussuri
+git+https://opendev.org/openstack/heat-dashboard@stable/ussuri
+git+https://opendev.org/openstack/designate-dashboard@stable/ussuri
+git+https://opendev.org/openstack/neutron-vpnaas-dashboard@stable/ussuri
+git+https://opendev.org/openstack/octavia-dashboard@stable/ussuri
+git+https://opendev.org/openstack/sahara-dashboard@stable/ussuri
+git+https://opendev.org/openstack/magnum-ui@stable/ussuri
