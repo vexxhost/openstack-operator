@@ -1,0 +1,2 @@
+git+https://opendev.org/openstack/keystone@stable/ussuri
+--constraint https://releases.openstack.org/constraints/upper/ussuri

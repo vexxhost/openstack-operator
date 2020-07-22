@@ -13,21 +13,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM docker.io/opendevorg/python-builder as builder
-COPY bindep.txt /tmp/src/bindep.txt
-RUN apt update && apt -y install git
-ADD https://releases.openstack.org/constraints/upper/ussuri /tmp/src/upper-constraints.txt
-RUN assemble git+https://opendev.org/openstack/keystone@stable/ussuri \
-             msgpack===0.6.1 \
-             PyMySQL \
-	     python-memcached
+FROM vexxhost/python-builder AS builder
+FROM vexxhost/python-base
 
-FROM docker.io/opendevorg/uwsgi-base
-COPY --from=builder /output/ /output
-RUN apt update && apt -y install git && \
-    /output/install-from-bindep && \
-    apt -y purge git && apt clean all
 EXPOSE 5000
-ENV UWSGI_HTTP_SOCKET=:5000 \
-    UWSGI_WSGI_FILE=/usr/local/bin/keystone-wsgi-public
-CMD ["/usr/local/bin/uwsgi","--ini","/etc/uwsgi/uwsgi.ini"]
+ENV UWSGI_HTTP_SOCKET=:5000 UWSGI_WSGI_FILE=/usr/local/bin/keystone-wsgi-public
+CMD ["/usr/local/bin/uwsgi", "--ini", "/etc/uwsgi/uwsgi.ini"]

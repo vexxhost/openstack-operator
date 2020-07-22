@@ -1,0 +1,4 @@
+uWSGI
+keystone
+PyMySQL
+python-memcached
