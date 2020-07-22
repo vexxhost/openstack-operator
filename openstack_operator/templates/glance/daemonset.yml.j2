@@ -73,11 +73,6 @@ spec:
         readinessProbe:
           tcpSocket:
             port: glance
-        resources:
-          requests:
-            cpu: 200m
-            ephemeral-storage: 500M
-            memory: 128M
         securityContext:
           runAsUser: 1001
         volumeMounts:
