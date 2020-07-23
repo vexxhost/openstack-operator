@@ -43,7 +43,7 @@ def create_or_resume(name, spec, **_):
     if not utils.ensure_secret("openstack", "magnum-rabbitmq"):
         utils.create_or_update('magnum/secret-rabbitmq.yml.j2',
                                password=utils.generate_password())
-    utils.create_or_update('magnum/rabbitmq.yml.j2')
+    utils.create_or_update('magnum/rabbitmq.yml.j2', spec=spec)
 
     if "ingress" in spec:
         utils.create_or_update('magnum/ingress.yml.j2',
