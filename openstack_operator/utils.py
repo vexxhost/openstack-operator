@@ -49,13 +49,14 @@ def to_dict(value):
     return yaml.safe_load(value)
 
 
-def labels(app, instance, component=None):
+def labels(app, instance=None, component=None):
     """Return standard labels for the operator."""
     metadata = {
         'app.kubernetes.io/managed-by': 'openstack-operator',
         'app.kubernetes.io/name': app,
-        'app.kubernetes.io/instance': instance,
     }
+    if instance:
+        metadata['app.kubernetes.io/instance'] = instance
     if component:
         metadata['app.kubernetes.io/component'] = component
     return yaml.safe_dump(metadata).strip()
