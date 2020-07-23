@@ -7,6 +7,15 @@ configMap:
     configDir: /etc/glance
     dataDir: /opt/stack/data/glance
   horizon:
+    hostAliases:
+    - hostnames:
+      - internal.vexxhost.local
+      ip: 172.23.3.100
+    nodeSelector:
+      node-role.kubernetes.io/master: ""
+    tolerations:
+    - effect: NoSchedule
+      key: node-role.kubernetes.io/master
     ingress:
       host: "horizon.vexxhost.com"
   keystone:
