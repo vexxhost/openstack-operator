@@ -1,0 +1,7 @@
+uWSGI
+boto3
+PyMySQL
+python-memcached
+git+https://opendev.org/openstack/glance@stable/ussuri
+https://github.com/ceph/ceph/archive/octopus.tar.gz#egg=rados&subdirectory=src/pybind/rados
+https://github.com/ceph/ceph/archive/octopus.tar.gz#egg=rbd&subdirectory=src/pybind/rbd
