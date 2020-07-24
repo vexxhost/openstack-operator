@@ -39,6 +39,7 @@ def create_or_resume(name, spec, **_):
     utils.create_or_update('magnum/service.yml.j2',
                            name=name)
 
+    utils.create_or_update('magnum/memcached.yml.j2', spec=spec)
     # deploy rabbitmq
     if not utils.ensure_secret("openstack", "magnum-rabbitmq"):
         utils.create_or_update('magnum/secret-rabbitmq.yml.j2',

@@ -172,7 +172,7 @@ function create_magnum_conf {
     iniset $MAGNUM_CONF keystone_authtoken www_authenticate_uri $KEYSTONE_SERVICE_URI_V3
     iniset $MAGNUM_CONF keystone_authtoken auth_url $KEYSTONE_AUTH_URI_V3
     iniset $MAGNUM_CONF keystone_authtoken auth_version v3
-
+    iniset $MAGNUM_CONF keystone_authtoken memcached_servers "mcrouter-memcached-magnum:11211"
     if is_fedora || is_suse; then
         # magnum defaults to /usr/local/bin, but fedora and suse pip like to
         # install things in /usr/bin
