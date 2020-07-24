@@ -29,10 +29,6 @@ spec:
         priority: P2
   - name: high-load
     rules:
-    - alert: RabbitmqTooManyConnections
-      expr: "rabbitmq_connectionsTotal > 1000"
-      annotations:
-        priority: P2
     - alert: RabbitmqTooManyMessagesInQueue
       expr: "rabbitmq_queue_messages_ready > 1000"
       annotations:
