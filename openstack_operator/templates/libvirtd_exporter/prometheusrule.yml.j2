@@ -27,7 +27,7 @@ spec:
     - alert: VirtualizationDriverMismatch
       for: 15m
       expr: |
-        count(libvirtd_info) by (version, driver, driver_version) != 1
+        count(count by(version, driver, driver_version) (libvirtd_info)) != 1
       annotations:
         priority: P4
         description: QEMU and libvirt versions are not matching in the cloud.
