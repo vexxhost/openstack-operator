@@ -168,7 +168,8 @@ function configure_heat {
     fi
 
     iniset $HEAT_CONF cache enabled "True"
-    iniset $HEAT_CONF cache backend "dogpile.cache.memory"
+    iniset $HEAT_CONF cache backend "dogpile.cache.memcached"
+    iniset $HEAT_CONF cache memcache_servers "mcrouter-memcached-heat:11211"
 
     if ! is_service_enabled c-bak; then
         iniset $HEAT_CONF volumes backups_enabled false
@@ -250,6 +251,10 @@ function start_heat {
 
 	proxy_pass_to_kubernetes /heat-api heat-api heat-wsgi-api
 	proxy_pass_to_kubernetes /heat-api-cfn heat-api-cfn heat-wsgi-api-cfn
+    
+	# (re)start memcached to make sure we have a clean memcache.
+	kubectl rollout restart statefulset/memcached-heat
+	sleep 10
 }
 
 # stop_heat() - Stop running processes
