@@ -16,9 +16,10 @@
 apiVersion: monitoring.coreos.com/v1
 kind: PrometheusRule
 metadata:
-  name: libvirtd-alertrule
+  name: libvirtd-exporter
+  namespace: openstack
   labels:
-    {{ labels("libvirtd-exporter", "libvirtd-exporter") | indent(4) }}
+    {{ labels("libvirtd-exporter") | indent(4) }}
 spec:
   groups:
   - name: libvirtd
