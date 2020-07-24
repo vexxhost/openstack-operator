@@ -33,6 +33,7 @@ def create_or_resume(name, spec, **_):
                            name=name, spec=spec)
     utils.create_or_update('glance/service.yml.j2',
                            name=name, spec=spec)
+    utils.create_or_update('glance/memcached.yml.j2', spec=spec)
     if "ingress" in spec:
         utils.create_or_update('glance/ingress.yml.j2',
                                name=name, spec=spec)
