@@ -29,6 +29,7 @@ spec:
       labels:
         {{ labels("memcached", name) | indent(8) }}
     spec:
+      automountServiceAccountToken: false
       containers:
       - name: memcached
         image: vexxhost/memcached:latest

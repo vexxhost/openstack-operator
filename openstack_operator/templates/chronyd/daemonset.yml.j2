@@ -33,6 +33,7 @@ spec:
       labels:
         {{ labels("chronyd", "chronyd") | indent(8) }}
     spec:
+      automountServiceAccountToken: false
       containers:
       - name: main
         image: vexxhost/chronyd:latest

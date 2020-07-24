@@ -29,6 +29,7 @@ spec:
       labels:
         {{ labels("libvirtd-exporter", "libvirtd-exporter") | indent(8) }}
     spec:
+      automountServiceAccountToken: false
       containers:
       - name: main
         image: vexxhost/libvirtd-exporter:latest

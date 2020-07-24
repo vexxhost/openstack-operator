@@ -41,6 +41,7 @@ spec:
       annotations:
         checksum/config: "{{ config_hash }}"
     spec:
+      automountServiceAccountToken: false
       {% if 'engine' in component %}
       terminationGracePeriodSeconds: 300
       initContainers:

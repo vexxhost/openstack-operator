@@ -26,6 +26,7 @@ spec:
     spec:
       template:
         spec:
+          automountServiceAccountToken: false
           containers:
           - name: service-clean
             image: vexxhost/heat-engine:latest

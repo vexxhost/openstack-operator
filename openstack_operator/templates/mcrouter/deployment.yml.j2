@@ -29,6 +29,7 @@ spec:
       labels:
         {{ labels("mcrouter", name) | indent(8) }}
     spec:
+      automountServiceAccountToken: false
       containers:
       - name: mcrouter
         image: vexxhost/mcrouter:latest

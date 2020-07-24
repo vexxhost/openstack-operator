@@ -32,6 +32,7 @@ spec:
       labels:
         {{ labels("ceilometer", "ceilometer") | indent(8) }}
     spec:
+      automountServiceAccountToken: false
       containers:
       - name: agent
         image: vexxhost/ceilometer-agent-notification:latest
