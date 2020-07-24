@@ -32,3 +32,4 @@ def create_or_resume(spec, **_):
     utils.create_or_update('libvirtd_exporter/daemonset.yml.j2',
                            spec=spec)
     utils.create_or_update('libvirtd_exporter/podmonitor.yml.j2')
+    utils.create_or_update('libvirtd_exporter/prometheusrule.yml.j2')
