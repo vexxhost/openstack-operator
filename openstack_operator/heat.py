@@ -46,6 +46,7 @@ def create_or_resume(name, spec, **_):
 
     utils.create_or_update('heat/cronjob-service-clean.yml.j2',
                            name=name, spec=spec)
+    utils.create_or_update('heat/memcached.yml.j2', spec=spec)
     # deploy rabbitmq
     if not utils.ensure_secret("openstack", "heat-rabbitmq"):
         utils.create_or_update('heat/secret-rabbitmq.yml.j2',
