@@ -50,8 +50,6 @@
             soft: true
           - name: openstack-operator:images:build:horizon
             soft: true
-          - name: openstack-operator:images:build:chronyd
-            soft: true
           - name: openstack-operator:images:build:magnum
             soft: true
           - name: openstack-operator:images:build:glance
@@ -78,8 +76,6 @@
           - name: openstack-operator:images:upload:mcrouter-exporter
             soft: true
           - name: openstack-operator:images:upload:horizon
-            soft: true
-          - name: openstack-operator:images:upload:chronyd
             soft: true
           - name: openstack-operator:images:upload:magnum
             soft: true
