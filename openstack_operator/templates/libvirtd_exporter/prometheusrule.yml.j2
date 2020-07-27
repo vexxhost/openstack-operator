@@ -29,5 +29,5 @@ spec:
       expr: |
         count(count by(version, driver, driver_version) (libvirtd_info)) != 1
       annotations:
-        priority: P4
+        severity: P4
         description: QEMU and libvirt versions are not matching in the cloud.
