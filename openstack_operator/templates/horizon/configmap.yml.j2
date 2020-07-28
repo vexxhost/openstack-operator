@@ -46,6 +46,9 @@ data:
     {% endif %}
 
     OPENSTACK_ENABLE_PASSWORD_RETRIEVE = True
+    OPENSTACK_NOVA_EXTENSIONS_BLACKLIST = [
+        'SimpleTenantUsage',
+    ]
 
     SECURITY_GROUP_RULES = {
         'all_tcp': {
