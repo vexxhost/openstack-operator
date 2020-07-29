@@ -87,13 +87,11 @@ spec:
           mountPath: /etc/uwsgi
       volumes:
       - name: ceph
-        hostPath:
-          path: /etc/ceph
-          type: Directory
+        secret:
+          secretName: ceph-config
       - name: config
-        hostPath:
-          path: {{ spec['configDir'] }}
-          type: Directory
+        secret:
+          secretName: glance-config
       - name: data
         hostPath:
           path: {{ spec['dataDir'] }}
