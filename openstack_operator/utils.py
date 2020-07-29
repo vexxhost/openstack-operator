@@ -18,6 +18,7 @@ The module contains a few useful utilities which we refactor out in order
 to be able to use them across all different operators.
 """
 import base64
+import copy
 import operator
 import json
 import os
@@ -69,7 +70,7 @@ ENV.filters['to_yaml'] = to_yaml
 ENV.globals['labels'] = labels
 
 
-def create_or_update(template, **kwargs):
+def create_or_update(template, server_side=True, **kwargs):
     """Create or update a Kubernetes resource.
 
     This function is called with a template and the args to pass to that
@@ -80,22 +81,33 @@ def create_or_update(template, **kwargs):
 
     resource = generate_object(template, **kwargs)
 
-    # NOTE(mnaser): The following relies on server-side apply and requires
-    #               at least Kuberentes v1.16+
-    resp = resource.api.patch(
-        **resource.api_kwargs(
-            headers={
-                "Content-Type": "application/apply-patch+yaml"
-            },
-            params={
-                'fieldManager': 'openstack-operator',
-                'force': True,
-            },
-            data=to_yaml(resource.obj),
+    if server_side:
+        # NOTE(mnaser): The following relies on server-side apply and requires
+        #               at least Kuberentes v1.16+
+        resp = resource.api.patch(
+            **resource.api_kwargs(
+                headers={
+                    "Content-Type": "application/apply-patch+yaml"
+                },
+                params={
+                    'fieldManager': 'openstack-operator',
+                    'force': True,
+                },
+                data=to_yaml(resource.obj),
+            )
         )
-    )
-    resource.api.raise_for_status(resp)
-    resource.set_obj(resp.json())
+        resource.api.raise_for_status(resp)
+        resource.set_obj(resp.json())
+    else:
+        obj = copy.deepcopy(resource.obj)
+        try:
+            resource.reload()
+            resource.obj = obj
+            resource.update()
+        except pykube.exceptions.HTTPError as exc:
+            if exc.code != 404:
+                raise
+            resource.create()
 
     return resource
 
