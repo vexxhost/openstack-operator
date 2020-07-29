@@ -40,7 +40,6 @@ spec:
     tolerations:
     - effect: NoSchedule
       key: node-role.kubernetes.io/master
-  {% if "volumeSpec" in spec %}
   volumeSpec:
     persistentVolumeClaim:
       accessModes:
@@ -48,4 +47,3 @@ spec:
       resources:
         requests:
           storage: {{ spec.size | default("10Gi", true) }}
-  {% endif %}

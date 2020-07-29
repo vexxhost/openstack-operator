@@ -34,6 +34,9 @@
           OS_PASSWORD: secretadmin
           OS_REGION_NAME: RegionOne
         EOF
+    # NOTE(alex): To resolve the minikube issue
+    # https://github.com/kubernetes/minikube/issues/7218
+    - include_tasks: storage-provisioner.yaml
     - name: Copy mysql operator into devstack working directory
       git:
         repo: https://github.com/presslabs/mysql-operator
