@@ -141,7 +141,12 @@ function create_magnum_conf {
     iniset $MAGNUM_CONF DEFAULT transport_url "rabbit://$MAGNUM_RABBITMQ_USERNAME:$MAGNUM_RABBITMQ_PASSWORD@rabbitmq-magnum:5672/"
     iniset $MAGNUM_CONF DEFAULT host "$HOSTNAME"
 
-    iniset $MAGNUM_CONF database connection `database_connection_url magnum`
+    # Get mysql password
+    MAGNUM_DATABASE_USER=$(get_data_from_secret magnum-mysql openstack USER)
+    MAGNUM_DATABASE_PASSWORD=$(get_data_from_secret magnum-mysql openstack PASSWORD)
+    MAGNUM_DATABASE_NAME=$(get_data_from_secret magnum-mysql openstack DATABASE)
+    iniset $MAGNUM_CONF database connection "mysql+pymysql://$MAGNUM_DATABASE_USER:$MAGNUM_DATABASE_PASSWORD@magnum-mysql/$MAGNUM_DATABASE_NAME?charset=utf8"
+
     iniset $MAGNUM_CONF api host "$MAGNUM_SERVICE_HOST"
     if is_service_enabled tls-proxy; then
         iniset $MAGNUM_CONF api port "$MAGNUM_SERVICE_PORT_INT"
@@ -258,17 +263,12 @@ function create_magnum_cache_dir {
 }
 
 
-# init_magnum() - Initialize databases, etc.
+# init_magnum()
 function init_magnum {
 	kubectl create secret generic magnum-config --from-file=/etc/magnum/magnum.conf --from-file=/etc/magnum/api-paste.ini -n openstack
 
     # NOTE: Permissions here are bad but it's temporary so we don't care as much.
 	sudo chmod -Rv 777 /etc/magnum
-    # Only do this step once on the API node for an entire cluster.
-    if is_service_enabled $DATABASE_BACKENDS; then
-        # (Re)create magnum database
-        recreate_database magnum
-    fi
 }
 
 # magnum_register_image - Register heat image for magnum with property os_distro

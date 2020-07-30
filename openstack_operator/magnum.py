@@ -19,6 +19,7 @@ the appropriate deployments, an instance of Memcache, RabbitMQ and a database
 server for the installation.
 """
 
+from openstack_operator import database
 from openstack_operator import utils
 
 
@@ -29,6 +30,21 @@ def create_or_resume(name, spec, **_):
     start the service up for the first time.
     """
 
+    # deploy mysql
+    if "mysql" not in spec:
+        spec["mysql"] = {}
+    database.ensure_mysql_cluster("magnum", spec["mysql"])
+
+    # deploy memcached
+    utils.create_or_update('magnum/memcached.yml.j2', spec=spec)
+
+    # deploy rabbitmq
+    if not utils.ensure_secret("openstack", "magnum-rabbitmq"):
+        utils.create_or_update('magnum/secret-rabbitmq.yml.j2',
+                               password=utils.generate_password())
+    utils.create_or_update('magnum/rabbitmq.yml.j2', spec=spec)
+
+    # deploy magnum
     config_hash = utils.generate_hash(spec)
     for component in ("api", "conductor"):
         utils.create_or_update('magnum/daemonset.yml.j2',
@@ -38,14 +54,6 @@ def create_or_resume(name, spec, **_):
 
     utils.create_or_update('magnum/service.yml.j2',
                            name=name)
-
-    utils.create_or_update('magnum/memcached.yml.j2', spec=spec)
-    # deploy rabbitmq
-    if not utils.ensure_secret("openstack", "magnum-rabbitmq"):
-        utils.create_or_update('magnum/secret-rabbitmq.yml.j2',
-                               password=utils.generate_password())
-    utils.create_or_update('magnum/rabbitmq.yml.j2', spec=spec)
-
     if "ingress" in spec:
         utils.create_or_update('magnum/ingress.yml.j2',
                                name=name, spec=spec)

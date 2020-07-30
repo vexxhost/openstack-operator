@@ -24,5 +24,6 @@ configMap:
   heat:
     configDir: /etc/heat
   magnum:
-    configDir: /etc/magnum
+    mysql:
+      size: 10Gi
   chronyd: {}

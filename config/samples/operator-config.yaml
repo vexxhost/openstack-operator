@@ -16,6 +16,5 @@ data:
         host:
           api: "h-api.vexxhost.com"
           api-cfn: "h-api-cfn.vexxhost.com"
-    magnum:
-      configDir: /etc/magnum
+    magnum: {}
     chronyd: {}
