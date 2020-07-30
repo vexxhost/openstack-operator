@@ -28,6 +28,7 @@ spec:
       for: 15m
       expr: |
         count(count by(version, driver, driver_version) (libvirtd_info)) != 1
-      annotations:
+      labels:
         severity: P4
-        description: QEMU and libvirt versions are not matching in the cloud.
+      annotations:
+        summary: QEMU and libvirt versions are not matching in the cloud.
