@@ -22,7 +22,8 @@ configMap:
     mysql:
       size: 10Gi
   heat:
-    configDir: /etc/heat
+    mysql:
+      size: 10Gi
   magnum:
     mysql:
       size: 10Gi

@@ -10,11 +10,6 @@ data:
       ingress:
         host: "horizon.vexxhost.com"
     keystone: {}
-    heat:
-      configDir: /etc/heat
-      ingress:
-        host:
-          api: "h-api.vexxhost.com"
-          api-cfn: "h-api-cfn.vexxhost.com"
+    heat: {}
     magnum: {}
     chronyd: {}

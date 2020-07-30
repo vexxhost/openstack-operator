@@ -115,7 +115,12 @@ function configure_heat {
 	iniset $HEAT_CONF DEFAULT heat_metadata_server_url http://$HEAT_API_CFN_HOST/heat-api-cfn
 	iniset $HEAT_CONF DEFAULT heat_waitcondition_server_url http://$HEAT_API_CFN_HOST/heat-api-cfn/v1/waitcondition
 
-    iniset $HEAT_CONF database connection `database_connection_url heat`
+    # Get mysql password
+    HEAT_DATABASE_USER=$(get_data_from_secret heat-mysql openstack USER)
+    HEAT_DATABASE_PASSWORD=$(get_data_from_secret heat-mysql openstack PASSWORD)
+    HEAT_DATABASE_NAME=$(get_data_from_secret heat-mysql openstack DATABASE)
+    iniset $HEAT_CONF database connection "mysql+pymysql://$HEAT_DATABASE_USER:$HEAT_DATABASE_PASSWORD@heat-mysql/$HEAT_DATABASE_NAME?charset=utf8"
+
     # we are using a hardcoded auth_encryption_key as it has to be the same for
     # multinode deployment.
     iniset $HEAT_CONF DEFAULT auth_encryption_key "767c3ed056cbaa3b9dfedb8c6f825bf0"
@@ -214,18 +219,12 @@ function configure_heat {
     [ $err_count -eq 0 ] || die $LINENO "$err_count of the requested Heat plugins could not be installed."
 }
 
-# init_heat() - Initialize database - override
+# init_heat()
 function init_heat {
 	kubectl create secret generic heat-config --from-file=/etc/heat/heat.conf --from-file=/etc/heat/api-paste.ini -n openstack
 
     # NOTE: Permissions here are bad but it's temporary so we don't care as much.
 	sudo chmod -Rv 777 /etc/heat
-
-	# recreate db only if one of the db services is enabled
-    if is_service_enabled $DATABASE_BACKENDS; then
-        # (re)create heat database
-        recreate_database heat
-    fi
 }
 
 # install_heatclient() - Collect source and prepare
