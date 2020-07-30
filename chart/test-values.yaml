@@ -29,3 +29,6 @@ configMap:
     mysql:
       size: 10Gi
   chronyd: {}
+  backup:
+    secretName: aws-backup
+    url: s3://backups/
