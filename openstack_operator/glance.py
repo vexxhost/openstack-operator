@@ -19,6 +19,7 @@ the appropriate deployments, Mcrouter, pod monitors and Prometheus rules.
 """
 
 
+from openstack_operator import database
 from openstack_operator import utils
 
 
@@ -29,11 +30,20 @@ def create_or_resume(name, spec, **_):
     start the service up for the first time.
     """
 
+    # deploy mysql
+    if "mysql" not in spec:
+        database.ensure_mysql_cluster("glance", {})
+    else:
+        database.ensure_mysql_cluster("glance", spec["mysql"])
+
+    # deploy memcached
+    utils.create_or_update('glance/memcached.yml.j2', spec=spec)
+
+    # deploy glance api
     utils.create_or_update('glance/daemonset.yml.j2',
                            name=name, spec=spec)
     utils.create_or_update('glance/service.yml.j2',
                            name=name, spec=spec)
-    utils.create_or_update('glance/memcached.yml.j2', spec=spec)
     if "ingress" in spec:
         utils.create_or_update('glance/ingress.yml.j2',
                                name=name, spec=spec)

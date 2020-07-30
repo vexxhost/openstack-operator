@@ -12,4 +12,6 @@ data:
     keystone: {}
     heat: {}
     magnum: {}
+    glance:
+      dataDir: /opt/stack/data/glance
     chronyd: {}

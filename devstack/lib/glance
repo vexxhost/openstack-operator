@@ -25,8 +25,10 @@ function configure_glance {
     sudo install -d -o $STACK_USER $GLANCE_CONF_DIR $GLANCE_METADEF_DIR
 
     # Set non-default configuration options for the API server
-    local dburl
-    dburl=`database_connection_url glance`
+    # Get mysql password
+    GLANCE_DATABASE_USER=$(get_data_from_secret glance-mysql openstack USER)
+    GLANCE_DATABASE_PASSWORD=$(get_data_from_secret glance-mysql openstack PASSWORD)
+    GLANCE_DATABASE_NAME=$(get_data_from_secret glance-mysql openstack DATABASE)
 
     # Configure multiple stores
     if [[ "$GLANCE_ENABLE_MULTIPLE_STORES" == "True" ]]; then
@@ -39,7 +41,7 @@ function configure_glance {
     fi
 
     iniset $GLANCE_API_CONF DEFAULT debug $ENABLE_DEBUG_LOG_LEVEL
-    iniset $GLANCE_API_CONF database connection $dburl
+    iniset $GLANCE_API_CONF database connection "mysql+pymysql://$GLANCE_DATABASE_USER:$GLANCE_DATABASE_PASSWORD@glance-mysql/$GLANCE_DATABASE_NAME?charset=utf8"
     iniset $GLANCE_API_CONF DEFAULT use_syslog $SYSLOG
     iniset $GLANCE_API_CONF DEFAULT image_cache_dir $GLANCE_CACHE_DIR/
     iniset $GLANCE_API_CONF oslo_concurrency lock_path $GLANCE_LOCK_DIR
@@ -76,11 +78,6 @@ function configure_glance {
         iniset $GLANCE_API_CONF cors allowed_origin "$GLANCE_CORS_ALLOWED_ORIGIN"
     else
         iniset $GLANCE_API_CONF cors allowed_origin "http://$SERVICE_HOST"
-    fi
-
-    if [[ "$GLANCE_STANDALONE" == "False" ]]; then
-        # NOTE(danms): Do not advertise import methods if we are running in WSGI mode
-        iniset $GLANCE_API_CONF DEFAULT enabled_import_methods []
     fi
 
     # No multiple stores for swift yet
@@ -158,7 +155,7 @@ function configure_glance {
     fi
 }
 
-# init_glance() - Initialize databases, etc.
+# init_glance()
 function init_glance {
     # Delete existing images
     rm -rf $GLANCE_IMAGE_DIR
@@ -166,9 +163,6 @@ function init_glance {
 
     # NOTE: Permissions here are bad but it's temporary so we don't care as much.
 	sudo chmod -Rv 777 $DATA_DIR/glance
-
-    # (Re)create glance database
-    recreate_database glance
 }
 export -f init_glance
 
