@@ -2,27 +2,33 @@
     name: openstack-operator:images:build:mcrouter-exporter
     parent: vexxhost-build-docker-image
     provides: openstack-operator:image:mcrouter-exporter
-    vars: &id001
+    nodeset: &id001
+      nodes:
+      - name: ubuntu-bionic
+        label: ubuntu-bionic-vexxhost
+    vars: &id002
       docker_images:
       - context: images/mcrouter-exporter
         repository: vexxhost/mcrouter-exporter
     dependencies:
     - openstack-operator:images:build:openstack-operator
-    files: &id002
+    files: &id003
     - ^images/mcrouter-exporter/.*
 - job:
     name: openstack-operator:images:upload:mcrouter-exporter
     parent: vexxhost-upload-docker-image
     provides: openstack-operator:image:mcrouter-exporter
-    vars: *id001
+    nodeset: *id001
+    vars: *id002
     dependencies:
     - openstack-operator:images:upload:openstack-operator
-    files: *id002
+    files: *id003
 - job:
     name: openstack-operator:images:promote:mcrouter-exporter
     parent: vexxhost-promote-docker-image
-    vars: *id001
-    files: *id002
+    nodeset: *id001
+    vars: *id002
+    files: *id003
 - project:
     check:
       jobs:

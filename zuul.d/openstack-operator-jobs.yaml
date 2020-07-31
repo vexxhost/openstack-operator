@@ -2,7 +2,11 @@
     name: openstack-operator:images:build:openstack-operator
     parent: vexxhost-build-docker-image
     provides: openstack-operator:image:openstack-operator
-    vars: &id001
+    nodeset: &id001
+      nodes:
+      - name: ubuntu-bionic
+        label: ubuntu-bionic-vexxhost
+    vars: &id002
       docker_images:
       - context: .
         repository: vexxhost/openstack-operator
@@ -11,11 +15,13 @@
     name: openstack-operator:images:upload:openstack-operator
     parent: vexxhost-upload-docker-image
     provides: openstack-operator:image:openstack-operator
-    vars: *id001
+    nodeset: *id001
+    vars: *id002
 - job:
     name: openstack-operator:images:promote:openstack-operator
     parent: vexxhost-promote-docker-image
-    vars: *id001
+    nodeset: *id001
+    vars: *id002
 - project:
     check:
       jobs:
