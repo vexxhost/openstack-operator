@@ -43,9 +43,8 @@ function configure_glance {
     iniset $GLANCE_API_CONF DEFAULT debug $ENABLE_DEBUG_LOG_LEVEL
     iniset $GLANCE_API_CONF database connection "mysql+pymysql://$GLANCE_DATABASE_USER:$GLANCE_DATABASE_PASSWORD@glance-mysql/$GLANCE_DATABASE_NAME?charset=utf8"
     iniset $GLANCE_API_CONF DEFAULT use_syslog $SYSLOG
-    iniset $GLANCE_API_CONF DEFAULT image_cache_dir $GLANCE_CACHE_DIR/
     iniset $GLANCE_API_CONF oslo_concurrency lock_path $GLANCE_LOCK_DIR
-    iniset $GLANCE_API_CONF paste_deploy flavor keystone+cachemanagement
+    iniset $GLANCE_API_CONF paste_deploy flavor keystone
     configure_keystone_authtoken_middleware $GLANCE_API_CONF glance
     iniset $GLANCE_API_CONF oslo_messaging_notifications driver messagingv2
     iniset_rpc_backend glance $GLANCE_API_CONF
@@ -80,27 +79,6 @@ function configure_glance {
         iniset $GLANCE_API_CONF cors allowed_origin "http://$SERVICE_HOST"
     fi
 
-    # No multiple stores for swift yet
-    # Store the images in swift if enabled.
-    if is_service_enabled s-proxy; then
-        iniset $GLANCE_API_CONF glance_store default_store swift
-        iniset $GLANCE_API_CONF glance_store swift_store_create_container_on_put True
-
-        iniset $GLANCE_API_CONF glance_store swift_store_config_file $GLANCE_SWIFT_STORE_CONF
-        iniset $GLANCE_API_CONF glance_store default_swift_reference ref1
-        iniset $GLANCE_API_CONF glance_store stores "file, http, swift"
-        if is_service_enabled tls-proxy; then
-            iniset $GLANCE_API_CONF glance_store swift_store_cacert $SSL_BUNDLE_FILE
-        fi
-        iniset $GLANCE_API_CONF DEFAULT graceful_shutdown_timeout "$SERVICE_GRACEFUL_SHUTDOWN_TIMEOUT"
-
-        iniset $GLANCE_SWIFT_STORE_CONF ref1 user $SERVICE_PROJECT_NAME:glance-swift
-
-        iniset $GLANCE_SWIFT_STORE_CONF ref1 key $SERVICE_PASSWORD
-        iniset $GLANCE_SWIFT_STORE_CONF ref1 auth_address $KEYSTONE_SERVICE_URI/v3
-        iniset $GLANCE_SWIFT_STORE_CONF ref1 auth_version 3
-    fi
-
     # We need to tell glance what it's public endpoint is so that the version
     # discovery document will be correct
     iniset $GLANCE_API_CONF DEFAULT public_endpoint $GLANCE_URL
@@ -116,18 +94,6 @@ function configure_glance {
 
     cp -p $GLANCE_DIR/etc/glance-api-paste.ini $GLANCE_API_PASTE_INI
 
-    # Set non-default configuration options for the glance-cache
-    iniset $GLANCE_CACHE_CONF DEFAULT debug $ENABLE_DEBUG_LOG_LEVEL
-    iniset $GLANCE_CACHE_CONF DEFAULT use_syslog $SYSLOG
-    iniset $GLANCE_CACHE_CONF DEFAULT image_cache_dir $GLANCE_CACHE_DIR/
-    iniset $GLANCE_CACHE_CONF DEFAULT auth_url $KEYSTONE_SERVICE_URI
-    iniset $GLANCE_CACHE_CONF DEFAULT admin_tenant_name $SERVICE_PROJECT_NAME
-    iniset $GLANCE_CACHE_CONF DEFAULT admin_user glance
-    iniset $GLANCE_CACHE_CONF DEFAULT admin_password $SERVICE_PASSWORD
-
-    # Store specific confs
-    iniset $GLANCE_CACHE_CONF glance_store filesystem_store_datadir $GLANCE_IMAGE_DIR/
-
     # Set default configuration options for the glance-image-import
     iniset $GLANCE_IMAGE_IMPORT_CONF image_import_opts image_import_plugins []
     iniset $GLANCE_IMAGE_IMPORT_CONF inject_metadata_properties ignore_user_roles admin
@@ -142,7 +108,6 @@ function configure_glance {
         CINDER_SERVICE_PORT=${CINDER_SERVICE_PORT:-8776}
 
         iniset $GLANCE_API_CONF DEFAULT cinder_endpoint_template "https://$CINDER_SERVICE_HOST:$CINDER_SERVICE_PORT/v3/%(project_id)s"
-        iniset $GLANCE_CACHE_CONF DEFAULT cinder_endpoint_template "https://$CINDER_SERVICE_HOST:$CINDER_SERVICE_PORT/v3/%(project_id)s"
     fi
 
     if [[ "$GLANCE_STANDALONE" == False ]]; then

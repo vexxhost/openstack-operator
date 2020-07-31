@@ -3,10 +3,7 @@ secretName: devstack
 configMap:
   ceilometer:
     dbUri: "sqlite:///:memory:"
-  glance:
-    dataDir: /opt/stack/data/glance
-    mysql:
-      size: 10Gi
+  glance: {}
   horizon:
     hostAliases:
     - hostnames:

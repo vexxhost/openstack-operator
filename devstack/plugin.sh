@@ -40,7 +40,6 @@ elif [[ "$1" == "stack" && "$2" == "post-config" ]]; then
     kubectl create secret generic glance-config -n openstack \
     --from-file=/etc/glance/glance-api.conf \
     --from-file=/etc/glance/glance-api-paste.ini \
-    --from-file=/etc/glance/glance-cache.conf \
     --from-file=/etc/glance/glance-swift-store.conf
 
 	# NOTE(Alex): Permissions here are bad but it's temporary so we don't care as much.

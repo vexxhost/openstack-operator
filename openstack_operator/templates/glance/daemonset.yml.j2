@@ -81,8 +81,6 @@ spec:
           mountPath: /etc/ceph
         - name: config
           mountPath: /etc/glance
-        - name: data
-          mountPath: {{ spec['dataDir'] }}
         - name: uwsgi-config
           mountPath: /etc/uwsgi
       volumes:
@@ -92,10 +90,6 @@ spec:
       - name: config
         secret:
           secretName: glance-config
-      - name: data
-        hostPath:
-          path: {{ spec['dataDir'] }}
-          type: Directory
       - name: uwsgi-config
         configMap:
           defaultMode: 420
