@@ -35,6 +35,19 @@ import openstack
 from openstack_operator import objects
 
 
+BACKUP_SCHEDULE = {
+    'magnum': '0 0 * * * *',
+    'barbican': '0 5 * * * *',
+    'cinder': '0 10 * * * *',
+    'glance': '0 15 * * * *',
+    'heat': '0 20 * * * *',
+    'neutron': '0 25 * * * *',
+    'octavia': '0 30 * * * *',
+    'nova': '0 35 * * * *',
+    'keystone': '0 40 * * * *',
+    'zuul': '0 58 * * * *'
+}
+
 DIR_PATH = os.path.dirname(os.path.realpath(__file__))
 
 VERSION = version.VersionInfo('openstack_operator').version_string()
@@ -261,3 +274,14 @@ def get_configmap(namespace, name):
         return None
 
     return config.obj["data"]
+
+
+def get_backup_schedule(name):
+    """Retrieve backup schedule for openstack services
+
+    This function retrieves a backup schedule for the specified openstack
+    service and the schedule is a cronjob format"""
+
+    if name not in BACKUP_SCHEDULE:
+        return "0 0 * * * *"
+    return BACKUP_SCHEDULE[name]

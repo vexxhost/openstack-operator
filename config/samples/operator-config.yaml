@@ -15,3 +15,6 @@ data:
     glance:
       dataDir: /opt/stack/data/glance
     chronyd: {}
+    backup:
+      secretName: aws-backup
+      url: s3://backups/

@@ -22,6 +22,10 @@ metadata:
     {{ labels(name) | indent(4) }}
 spec:
   replicas: 2
+  backupSchedule: {{ spec.schedule }}
+  backupScheduleJobsHistoryLimit: 6
+  backupSecretName: {{ spec.secretName }}
+  backupURL: {{ spec.url }}
   secretName: {{ name }}-mysql
   {% if "mysqlConf" in spec %}
   mysqlConf:

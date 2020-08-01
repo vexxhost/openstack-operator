@@ -58,18 +58,23 @@ def deploy(name, namespace, new, **_):
     config = utils.to_dict(new['data']['operator-config.yaml'])
 
     if "keystone" in config:
-        keystone.create_or_resume("keystone", config["keystone"])
+        spec = set_service_config(config, "keystone")
+        keystone.create_or_resume("keystone", spec)
     if "horizon" in config:
-        horizon.create_secret("horizon")
-        horizon.create_or_resume("horizon", config["horizon"])
+        spec = set_service_config(config, "horizon")
+        horizon.create_or_resume("horizon", spec)
     if "heat" in config:
-        heat.create_or_resume("heat", config["heat"])
+        spec = set_service_config(config, "heat")
+        heat.create_or_resume("heat", spec)
     if "glance" in config:
-        glance.create_or_resume("glance", config["glance"])
+        spec = set_service_config(config, "glance")
+        glance.create_or_resume("glance", spec)
     if "magnum" in config:
-        magnum.create_or_resume("magnum", config["magnum"])
+        spec = set_service_config(config, "magnum")
+        magnum.create_or_resume("magnum", spec)
     if "ceilometer" in config:
-        ceilometer.create_or_resume(config["ceilometer"])
+        spec = config["ceilometer"]
+        ceilometer.create_or_resume(spec)
 
     if "chronyd" in config:
         spec = config["chronyd"]
@@ -82,3 +87,23 @@ def deploy(name, namespace, new, **_):
     else:
         spec = {}
     libvirtd_exporter.create_or_resume(spec)
+
+
+def set_service_config(all_config, service_name):
+    """Retrieve the config for each openstack service
+
+    The config for each service is comprised of service-level
+    config and operator-level config"""
+
+    # Set the service level config
+    spec = all_config[service_name]
+
+    # Inject the operator level config to service level
+    # Backup config for mysql
+    all_config["backup"]["schedule"] = utils.get_backup_schedule(service_name)
+    if "mysql" in spec:
+        spec["mysql"].update(all_config["backup"])
+    else:
+        spec["mysql"] = all_config["backup"]
+
+    return spec
