@@ -2,7 +2,11 @@
     name: openstack-operator:images:build:magnum
     parent: vexxhost-build-docker-image
     provides: openstack-operator:image:magnum
-    vars: &id001
+    nodeset: &id001
+      nodes:
+      - name: ubuntu-bionic
+        label: ubuntu-bionic-vexxhost
+    vars: &id002
       docker_images:
       - context: images/magnum
         repository: vexxhost/magnum-api
@@ -12,21 +16,23 @@
         target: magnum-conductor
     dependencies:
     - openstack-operator:images:build:openstack-operator
-    files: &id002
+    files: &id003
     - ^images/magnum/.*
 - job:
     name: openstack-operator:images:upload:magnum
     parent: vexxhost-upload-docker-image
     provides: openstack-operator:image:magnum
-    vars: *id001
+    nodeset: *id001
+    vars: *id002
     dependencies:
     - openstack-operator:images:upload:openstack-operator
-    files: *id002
+    files: *id003
 - job:
     name: openstack-operator:images:promote:magnum
     parent: vexxhost-promote-docker-image
-    vars: *id001
-    files: *id002
+    nodeset: *id001
+    vars: *id002
+    files: *id003
 - project:
     check:
       jobs:

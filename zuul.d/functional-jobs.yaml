@@ -14,6 +14,10 @@
     - openstack/magnum-tempest-plugin
     - openstack/horizon
     - openstack/tempest-horizon
+    nodeset:
+      nodes:
+      - name: controller
+        label: ubuntu-bionic-expanded-vexxhost
     vars:
       devstack_services:
         etcd3: false
@@ -46,53 +50,53 @@
       jobs:
       - openstack-operator:functional:
           dependencies:
-          - name: openstack-operator:images:build:mcrouter-exporter
-            soft: true
-          - name: openstack-operator:images:build:horizon
-            soft: true
-          - name: openstack-operator:images:build:magnum
-            soft: true
-          - name: openstack-operator:images:build:glance
-            soft: true
-          - name: openstack-operator:images:build:rabbitmq
+          - name: openstack-operator:images:build:heat
             soft: true
           - name: openstack-operator:images:build:ceilometer
             soft: true
-          - name: openstack-operator:images:build:memcached-exporter
-            soft: true
-          - name: openstack-operator:images:build:memcached
+          - name: openstack-operator:images:build:rabbitmq
             soft: true
           - name: openstack-operator:images:build:keystone
+            soft: true
+          - name: openstack-operator:images:build:horizon
+            soft: true
+          - name: openstack-operator:images:build:memcached
             soft: true
           - name: openstack-operator:images:build:mcrouter
             soft: true
           - openstack-operator:images:build:openstack-operator
-          - name: openstack-operator:images:build:heat
+          - name: openstack-operator:images:build:glance
+            soft: true
+          - name: openstack-operator:images:build:mcrouter-exporter
+            soft: true
+          - name: openstack-operator:images:build:memcached-exporter
+            soft: true
+          - name: openstack-operator:images:build:magnum
             soft: true
     gate:
       jobs:
       - openstack-operator:functional:
           dependencies:
-          - name: openstack-operator:images:upload:mcrouter-exporter
-            soft: true
-          - name: openstack-operator:images:upload:horizon
-            soft: true
-          - name: openstack-operator:images:upload:magnum
-            soft: true
-          - name: openstack-operator:images:upload:glance
-            soft: true
-          - name: openstack-operator:images:upload:rabbitmq
+          - name: openstack-operator:images:upload:heat
             soft: true
           - name: openstack-operator:images:upload:ceilometer
             soft: true
-          - name: openstack-operator:images:upload:memcached-exporter
-            soft: true
-          - name: openstack-operator:images:upload:memcached
+          - name: openstack-operator:images:upload:rabbitmq
             soft: true
           - name: openstack-operator:images:upload:keystone
+            soft: true
+          - name: openstack-operator:images:upload:horizon
+            soft: true
+          - name: openstack-operator:images:upload:memcached
             soft: true
           - name: openstack-operator:images:upload:mcrouter
             soft: true
           - openstack-operator:images:upload:openstack-operator
-          - name: openstack-operator:images:upload:heat
+          - name: openstack-operator:images:upload:glance
+            soft: true
+          - name: openstack-operator:images:upload:mcrouter-exporter
+            soft: true
+          - name: openstack-operator:images:upload:memcached-exporter
+            soft: true
+          - name: openstack-operator:images:upload:magnum
             soft: true
