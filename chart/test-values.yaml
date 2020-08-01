@@ -4,8 +4,9 @@ configMap:
   ceilometer:
     dbUri: "sqlite:///:memory:"
   glance:
-    configDir: /etc/glance
     dataDir: /opt/stack/data/glance
+    mysql:
+      size: 10Gi
   horizon:
     hostAliases:
     - hostnames:
