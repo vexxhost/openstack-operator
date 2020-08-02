@@ -1,2 +1,4 @@
 doc8
 sphinx
+sphinx-copybutton
+sphinx-tabs
