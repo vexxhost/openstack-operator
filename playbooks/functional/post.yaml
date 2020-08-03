@@ -18,4 +18,8 @@
   roles:
   - collect-container-logs
   - collect-kubernetes-logs
-  
+  tasks:
+  - name: Get node resource usage
+    command: kubectl top nodes
+  - name: Get pod resource usage
+    command: kubectl top pods -n openstack
