@@ -100,7 +100,7 @@
     - orchestrate-devstack
 
 # We run tests only on one node, regardless how many nodes are in the system
-- hosts: tempest
+- hosts: all
   environment:
     # This enviroment variable is used by the optional tempest-gabbi
     # job provided by the gabbi-tempest plugin. It can be safely ignored
