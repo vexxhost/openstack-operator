@@ -22,6 +22,7 @@ It also inclues a ``dict`` with mappings which allows doing reverse-lookups
 from combinations of apiVersion and kind to the exact model.
 """
 
+from pykube.objects import APIObject
 from pykube.objects import ConfigMap
 from pykube.objects import CronJob
 from pykube.objects import DaemonSet
@@ -34,6 +35,22 @@ from pykube.objects import Pod
 from pykube.objects import Secret
 from pykube.objects import Service
 from pykube.objects import StatefulSet
+
+
+class IdentityService(APIObject):
+    """Service Kubernetes object"""
+
+    version = "identity.openstack.org/v1alpha1"
+    endpoint = "services"
+    kind = "Service"
+
+
+class IdentityEndpoint(APIObject):
+    """Endpoint Kubernetes object"""
+
+    version = "identity.openstack.org/v1alpha1"
+    endpoint = "endpoints"
+    kind = "Endpoint"
 
 
 class Mcrouter(NamespacedAPIObject):
@@ -105,6 +122,10 @@ MAPPING = {
     },
     "extensions/v1beta1": {
         "Ingress": Ingress
+    },
+    "identity.openstack.org/v1alpha1": {
+        "Service": IdentityService,
+        "Endpoint": IdentityEndpoint
     },
     "infrastructure.vexxhost.cloud/v1alpha1": {
         "Mcrouter": Mcrouter,
