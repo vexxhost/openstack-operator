@@ -20,6 +20,7 @@ server for the installation.
 """
 
 from openstack_operator import database
+from openstack_operator import identity
 from openstack_operator import utils
 
 
@@ -30,7 +31,6 @@ def create_or_resume(name, spec, **_):
     start the service up for the first time.
     """
 
-    # deploy mysql
     if "mysql" not in spec:
         spec["mysql"] = {}
     database.ensure_mysql_cluster("magnum", spec["mysql"])
@@ -54,9 +54,16 @@ def create_or_resume(name, spec, **_):
 
     utils.create_or_update('magnum/service.yml.j2',
                            name=name)
+
+    url = None
     if "ingress" in spec:
         utils.create_or_update('magnum/ingress.yml.j2',
                                name=name, spec=spec)
+        url = spec["ingress"]["host"]
+    # Create service and endpoints
+    identity.ensure_service(name="magnum-api", service="container-infra",
+                            url=url, desc="Container Infrastructure \
+                                Management Service")
 
 
 def update(name, spec, **_):
