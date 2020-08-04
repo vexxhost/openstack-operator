@@ -52,6 +52,7 @@ spec:
         command:
         - glance-manage
         - db_load_metadefs
+        - /usr/local/etc/glance/metadefs
         volumeMounts:
         - mountPath: /etc/glance
           name: config
