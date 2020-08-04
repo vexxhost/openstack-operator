@@ -29,6 +29,7 @@ from openstack_operator import utils
 
 TOKEN_EXPIRATION = 86400
 FERNET_ROTATION_INTERVAL = 3600
+ACTIVE_KEYS = int(TOKEN_EXPIRATION / FERNET_ROTATION_INTERVAL)
 
 
 def _is_keystone_deployment(name, **_):
@@ -60,11 +61,8 @@ def create_or_rotate_fernet_repository(name):
     # Stage a new key
     data['0'] = fernet.Fernet.generate_key().decode('utf-8')
 
-    # Determine number of active keys
-    active_keys = int(TOKEN_EXPIRATION / FERNET_ROTATION_INTERVAL)
-
     # Determine the keys to keep and drop others
-    keys_to_keep = [0] + sorted_keys[-active_keys:]
+    keys_to_keep = [0] + sorted_keys[-ACTIVE_KEYS:]
     keys = {k: base64.b64encode(v.encode('utf-8')).decode('utf-8')
             for k, v in data.items() if int(k) in keys_to_keep}
 
@@ -109,12 +107,21 @@ def create_or_resume(name, spec, **_):
                            username=username)
     # (TODO)Replace the current admin url
 
+    # deploy mysql
     if "mysql" not in spec:
         spec["mysql"] = {}
-    database.ensure_mysql_cluster("keystone", spec["mysql"])
+    db_config = database.ensure_mysql_cluster("keystone", spec["mysql"])
 
+    # deploy memcached
     utils.create_or_update('keystone/memcached.yml.j2', spec=spec)
 
+    # keystone config
+    utils.create_or_update('keystone/secret-config.yml.j2',
+                           password=db_config["PASSWORD"],
+                           TOKEN_EXPIRATION=TOKEN_EXPIRATION,
+                           ACTIVE_KEYS=ACTIVE_KEYS)
+
+    # deploy keystone
     utils.create_or_update('keystone/daemonset.yml.j2',
                            name=name, spec=spec,
                            config_hash=config_hash)
