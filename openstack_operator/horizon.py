@@ -22,13 +22,12 @@ the appropriate deployments, Mcrouter, pod monitors and Prometheus rules.
 from openstack_operator import utils
 
 
-def create_secret(name, **_):
-    """Create a new horizon secret"""
+def create_secret():
+    """Create a new horizon secret for secretKey"""
 
-    res = utils.get_secret("openstack", name)
+    res = utils.get_secret("openstack", "horizon")
     if res is None:
         utils.create_or_update('horizon/secret-secretkey.yml.j2',
-                               name=name,
                                secret=utils.generate_password())
 
 
@@ -40,6 +39,7 @@ def create_or_resume(name, spec, **_):
     """
 
     # Grab the secretkey secret
+    create_secret()
     config = utils.create_or_update('horizon/configmap.yml.j2',
                                     name=name, spec=spec)
     config_hash = utils.generate_hash(config.obj['data'])
