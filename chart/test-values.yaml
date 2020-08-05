@@ -1,6 +1,7 @@
 ---
 secretName: devstack
 configMap:
+  barbican: {}
   ceilometer:
     dbUri: "sqlite:///:memory:"
   glance: {}

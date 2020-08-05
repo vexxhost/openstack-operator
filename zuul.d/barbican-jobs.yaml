@@ -1,0 +1,42 @@
+- job:
+    name: openstack-operator:images:build:barbican
+    parent: vexxhost-build-docker-image
+    provides: openstack-operator:image:barbican
+    nodeset: &id001
+      nodes:
+      - name: ubuntu-bionic
+        label: ubuntu-bionic-vexxhost
+    vars: &id002
+      docker_images:
+      - context: images/barbican
+        repository: vexxhost/barbican-api
+        target: barbican-api
+    dependencies:
+    - openstack-operator:images:build:openstack-operator
+    files: &id003
+    - ^images/barbican/.*
+- job:
+    name: openstack-operator:images:upload:barbican
+    parent: vexxhost-upload-docker-image
+    provides: openstack-operator:image:barbican
+    nodeset: *id001
+    vars: *id002
+    dependencies:
+    - openstack-operator:images:upload:openstack-operator
+    files: *id003
+- job:
+    name: openstack-operator:images:promote:barbican
+    parent: vexxhost-promote-docker-image
+    nodeset: *id001
+    vars: *id002
+    files: *id003
+- project:
+    check:
+      jobs:
+      - openstack-operator:images:build:barbican
+    gate:
+      jobs:
+      - openstack-operator:images:upload:barbican
+    promote:
+      jobs:
+      - openstack-operator:images:promote:barbican

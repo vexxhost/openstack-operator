@@ -1,0 +1,101 @@
+---
+# Copyright 2020 VEXXHOST, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: barbican
+  namespace: openstack
+  labels:
+    {{ labels("barbican") | indent(4) }}
+spec:
+  updateStrategy:
+    rollingUpdate:
+      maxUnavailable: 1
+    type: RollingUpdate
+  selector:
+    matchLabels:
+      {{ labels("barbican") | indent(6) }}
+  template:
+    metadata:
+      labels:
+        {{ labels("barbican") | indent(8) }}
+      annotations:
+        checksum/config: "{{ config_hash }}"
+    spec:
+      automountServiceAccountToken: false
+      initContainers:
+      - name: db-upgrade
+        image: vexxhost/barbican-api:latest
+        imagePullPolicy: Always
+        command:
+        - barbican-manage
+        - db
+        - upgrade
+        - -v
+        - head
+        volumeMounts:
+        - mountPath: /etc/barbican
+          name: config
+      containers:
+      - name: barbican
+        image: vexxhost/barbican-api:latest
+        imagePullPolicy: Always
+        env:
+        {% if 'sentryDSN' in spec %}
+        - name: SENTRY_DSN
+          value: {{ spec.sentryDSN }}
+        {% endif %}
+        {% for v in env %}
+        - name: "{{ v.name }}"
+          value: "{{ v.value }}"
+        {% endfor %}
+        ports:
+        - name: barbican
+          protocol: TCP
+          containerPort: 9311
+        livenessProbe:
+          tcpSocket:
+            port: barbican
+        readinessProbe:
+          tcpSocket:
+            port: barbican
+        securityContext:
+          runAsUser: 1001
+        volumeMounts:
+        - name: config
+          mountPath: /etc/barbican
+        - name: uwsgi-config
+          mountPath: /etc/uwsgi
+      volumes:
+      - name: config
+        secret:
+          secretName: barbican-config
+      - name: uwsgi-config
+        configMap:
+          defaultMode: 420
+          name: uwsgi-default
+{% if 'nodeSelector' in spec %}
+      nodeSelector:
+        {{ spec.nodeSelector | to_yaml | indent(8) }}
+{% endif %}
+{% if 'tolerations' in spec %}
+      tolerations:
+        {{ spec.tolerations | to_yaml | indent(8) }}
+{% endif %}
+{% if 'hostAliases' in spec %}
+      hostAliases:
+        {{ spec.hostAliases | to_yaml | indent(8) }}
+{% endif %}

@@ -1,0 +1,6 @@
+uWSGI
+PyKMIP
+PyMySQL
+python-memcached
+sentry-sdk
+git+https://opendev.org/openstack/barbican@stable/ussuri

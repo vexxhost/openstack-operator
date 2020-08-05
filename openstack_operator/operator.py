@@ -27,6 +27,7 @@ import kopf
 import sentry_sdk
 from sentry_sdk.integrations import aiohttp
 
+from openstack_operator import barbican
 from openstack_operator import ceilometer
 from openstack_operator import chronyd
 from openstack_operator import glance
@@ -110,6 +111,9 @@ def deploy(name, namespace, new, **_):
     if "magnum" in config:
         spec = set_service_config(config, "magnum")
         magnum.create_or_resume("magnum", spec)
+    if "barbican" in config:
+        spec = config["barbican"]
+        barbican.create_or_resume("barbican", spec)
     if "ceilometer" in config:
         spec = config["ceilometer"]
         ceilometer.create_or_resume(spec)
