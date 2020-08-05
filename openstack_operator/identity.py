@@ -22,25 +22,32 @@ import kopf
 from openstack_operator import utils
 
 
-def ensure_service(name, service, desc, url=None):
+def ensure_service(name, service_type, desc, url=None, path=""):
     """Create or update service and endpoints
+
+    name: service name
+    service_type: service type
+    desc: service descriptioin
+    url: hostname of public endpoint
+    path: sub path of endpoint
     """
 
     try:
         # Create or resume service
         utils.create_or_update('identity/service.yml.j2', name=name,
-                               type=service, description=desc)
+                               type=service_type, description=desc)
 
         # Create or resume endpoints
-        internal_url = "http://" + name + ".openstack.svc.cluster.local"
-        public_url = internal_url
+        internal_url = public_url = \
+            "http://" + name + ".openstack.svc.cluster.local" + path
+
         if url is not None:
-            public_url = "http://" + url
+            public_url = "http://" + url + path
         utils.create_or_update('identity/endpoint.yml.j2',
-                               service=service, interface='internal',
+                               service=service_type, interface='internal',
                                url=internal_url)
         utils.create_or_update('identity/endpoint.yml.j2',
-                               service=service, interface='public',
+                               service=service_type, interface='public',
                                url=public_url)
     except Exception as ex:
         raise kopf.TemporaryError(str(ex), delay=5)

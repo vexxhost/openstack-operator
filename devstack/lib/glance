@@ -120,12 +120,6 @@ function configure_glance {
     fi
 }
 
-# create_glance_accounts() - Set up common required glance accounts
-function create_glance_accounts {
-    create_service_user "glance"
-}
-export -f create_glance_accounts
-
 # init_glance()
 function init_glance {
     # Delete existing images

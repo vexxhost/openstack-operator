@@ -20,7 +20,6 @@ the appropriate deployments, Mcrouter, pod monitors and Prometheus rules.
 
 
 from openstack_operator import database
-from openstack_operator import identity
 from openstack_operator import utils
 
 
@@ -45,13 +44,10 @@ def create_or_resume(name, spec, **_):
                            name=name, spec=spec)
     utils.create_or_update('glance/service.yml.j2',
                            name=name, spec=spec)
-    url = None
+
     if "ingress" in spec:
         utils.create_or_update('glance/ingress.yml.j2',
                                name=name, spec=spec)
-        url = spec["ingress"]["host"]
-    identity.ensure_service(name="glance", service="image",
-                            url=url, desc="Glance Image Service")
 
 
 def update(name, spec, **_):

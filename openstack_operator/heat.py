@@ -26,12 +26,8 @@ from openstack_operator import utils
 
 def create_or_resume(name, spec, **_):
     """Create and re-sync any Heat instances
-
-    This function is called when a new resource is created but also when we
-    start the service up for the first time.
     """
 
-    # deploy mysql
     if "mysql" not in spec:
         database.ensure_mysql_cluster("heat", {})
     else:
