@@ -22,6 +22,10 @@ spec:
         image: vexxhost/openstack-operator:latest
         command: ["/usr/local/bin/kopf"]
         env:
+{{- with .Values.sentryDSN }}
+        - name: SENTRY_DSN
+          value: {{ .Values.sentryDSN }}
+{{- end }}
         - name: OPERATOR_NAMESPACE
           valueFrom:
             fieldRef:

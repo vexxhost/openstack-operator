@@ -21,6 +21,8 @@ the appropriate deployments, an instance of Keystone, Heat and Horizon
 
 import os
 import kopf
+import sentry_sdk
+from sentry_sdk.integrations import aiohttp
 
 from openstack_operator import ceilometer
 from openstack_operator import chronyd
@@ -34,6 +36,11 @@ from openstack_operator import utils
 
 
 OPERATOR_CONFIGMAP = "operator-config"
+
+sentry_sdk.init(
+    integrations=[aiohttp.AioHttpIntegration()],
+    traces_sample_rate=1.0
+)
 
 
 def operator_configmap(namespace, name, **_):
