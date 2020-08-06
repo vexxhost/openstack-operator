@@ -10,6 +10,12 @@
     vars:
       python_version: 3.7
 
+- job:
+    name: openstack-operator:github-mirror
+    parent: vexxhost-upload-git-mirror
+    vars:
+      git_mirror_repository: vexxhost/openstack-operator
+
 - project:
     templates:
       - publish-opendev-tox-docs
@@ -23,3 +29,6 @@
         - openstack-operator:linters:chart
         - openstack-operator:linters:tox
         - tox-py37
+    post:
+      jobs:
+        - openstack-operator:github-mirror
