@@ -16,110 +16,18 @@
 
 # install_keystone() - Collect source and prepare
 function install_keystone {
-	echo "Both installation and startup are included in the deployment of keystone crd."
+	echo noop
 }
 export -f install_keystone
 
 # configure_keystone() - Set config files, create data dirs, etc
 function configure_keystone {
-    sudo install -d -o $STACK_USER $KEYSTONE_CONF_DIR
-
-    if [[ "$KEYSTONE_CONF_DIR" != "$KEYSTONE_DIR/etc" ]]; then
-        install -m 600 /dev/null $KEYSTONE_CONF
-    fi
-    # Populate ``keystone.conf``
-    if is_service_enabled ldap; then
-        iniset $KEYSTONE_CONF identity domain_config_dir "$KEYSTONE_CONF_DIR/domains"
-        iniset $KEYSTONE_CONF identity domain_specific_drivers_enabled "True"
-    fi
-    iniset $KEYSTONE_CONF identity driver "$KEYSTONE_IDENTITY_BACKEND"
-    iniset $KEYSTONE_CONF identity password_hash_rounds $KEYSTONE_PASSWORD_HASH_ROUNDS
-    iniset $KEYSTONE_CONF assignment driver "$KEYSTONE_ASSIGNMENT_BACKEND"
-    iniset $KEYSTONE_CONF role driver "$KEYSTONE_ROLE_BACKEND"
-    iniset $KEYSTONE_CONF resource driver "$KEYSTONE_RESOURCE_BACKEND"
-
-    # Enable caching
-    iniset $KEYSTONE_CONF cache enabled $KEYSTONE_ENABLE_CACHE
-    iniset $KEYSTONE_CONF cache backend $CACHE_BACKEND
-    iniset $KEYSTONE_CONF cache memcache_servers "mcrouter-memcached-keystone:11211"
-
-    iniset_rpc_backend keystone $KEYSTONE_CONF oslo_messaging_notifications
-
-    local service_port=$KEYSTONE_SERVICE_PORT
-    local auth_port=$KEYSTONE_AUTH_PORT
-
-    if is_service_enabled tls-proxy; then
-        # Set the service ports for a proxy to take the originals
-        service_port=$KEYSTONE_SERVICE_PORT_INT
-        auth_port=$KEYSTONE_AUTH_PORT_INT
-    fi
-
-    # Override the endpoints advertised by keystone (the public_endpoint and
-    # admin_endpoint) so that clients use the correct endpoint. By default, the
-    # keystone server uses the public_port and admin_port which isn't going to
-    # work when you want to use a different port (in the case of proxy), or you
-    # don't want the port (in the case of putting keystone on a path in
-    # apache).
-    iniset $KEYSTONE_CONF DEFAULT public_endpoint $KEYSTONE_SERVICE_URI
-    iniset $KEYSTONE_CONF DEFAULT admin_endpoint $KEYSTONE_AUTH_URI
-
-    if [[ "$KEYSTONE_TOKEN_FORMAT" != "" ]]; then
-        iniset $KEYSTONE_CONF token provider $KEYSTONE_TOKEN_FORMAT
-    fi
-
-    # Get mysql password
-    KEYSTONE_DATABASE_USER=$(get_data_from_secret keystone-mysql openstack USER)
-    KEYSTONE_DATABASE_PASSWORD=$(get_data_from_secret keystone-mysql openstack PASSWORD)
-    KEYSTONE_DATABASE_NAME=$(get_data_from_secret keystone-mysql openstack DATABASE)
-    iniset $KEYSTONE_CONF database connection "mysql+pymysql://$KEYSTONE_DATABASE_USER:$KEYSTONE_DATABASE_PASSWORD@keystone-mysql/$KEYSTONE_DATABASE_NAME?charset=utf8"
-
-    # Set up logging
-    if [ "$SYSLOG" != "False" ]; then
-        iniset $KEYSTONE_CONF DEFAULT use_syslog "True"
-    fi
-
-    # Format logging
-    setup_logging $KEYSTONE_CONF
-
-    iniset $KEYSTONE_CONF DEFAULT debug $ENABLE_DEBUG_LOG_LEVEL
-
-    if [ "$KEYSTONE_DEPLOY" == "mod_wsgi" ]; then
-        iniset $KEYSTONE_CONF DEFAULT logging_exception_prefix "%(asctime)s.%(msecs)03d %(process)d TRACE %(name)s %(instance)s"
-        _config_keystone_apache_wsgi
-    else # uwsgi
-        write_uwsgi_config "$KEYSTONE_PUBLIC_UWSGI_CONF" "$KEYSTONE_PUBLIC_UWSGI" "/identity"
-        write_uwsgi_config "$KEYSTONE_ADMIN_UWSGI_CONF" "$KEYSTONE_ADMIN_UWSGI" "/identity_admin"
-    fi
-
-    iniset $KEYSTONE_CONF DEFAULT max_token_size 16384
-
-    iniset $KEYSTONE_CONF fernet_tokens key_repository "$KEYSTONE_CONF_DIR/fernet-keys/"
-
-    iniset $KEYSTONE_CONF credential key_repository "$KEYSTONE_CONF_DIR/credential-keys/"
-
-    # Configure the project created by the 'keystone-manage bootstrap' as the cloud-admin project.
-    # The users from this project are globally admin as before, but it also
-    # allows policy changes in order to clarify the adminess scope.
-    #iniset $KEYSTONE_CONF resource admin_project_domain_name Default
-    #iniset $KEYSTONE_CONF resource admin_project_name admin
-
-    if [[ "$KEYSTONE_SECURITY_COMPLIANCE_ENABLED" = True ]]; then
-        iniset $KEYSTONE_CONF security_compliance lockout_failure_attempts $KEYSTONE_LOCKOUT_FAILURE_ATTEMPTS
-        iniset $KEYSTONE_CONF security_compliance lockout_duration $KEYSTONE_LOCKOUT_DURATION
-        iniset $KEYSTONE_CONF security_compliance unique_last_password_count $KEYSTONE_UNIQUE_LAST_PASSWORD_COUNT
-    fi
+    echo noop
 }
 
 # init_keystone() - Initialize databases, etc.
 function init_keystone {
-    kubectl create secret generic keystone-config --from-file=/etc/keystone/keystone.conf -n openstack
-	# NOTE(mnaser): Permissions here are bad but it's temporary so we don't care as much.
-	sudo chmod -Rv 777 /etc/keystone
-
-	if [[ "$RECREATE_KEYSTONE_DB" == True ]]; then
-		# (Re)create keystone database
-		recreate_database keystone
-	fi
+	echo noop
 }
 export -f init_keystone
 
@@ -150,12 +58,6 @@ function start_keystone {
 
 	if ! wait_for_service $SERVICE_TIMEOUT $service_uri; then
 		die $LINENO "keystone did not start"
-	fi
-
-	# Start proxies if enabled
-	if is_service_enabled tls-proxy; then
-		start_tls_proxy keystone-service '*' $KEYSTONE_SERVICE_PORT $KEYSTONE_SERVICE_HOST $KEYSTONE_SERVICE_PORT_INT
-		start_tls_proxy keystone-auth '*' $KEYSTONE_AUTH_PORT $KEYSTONE_AUTH_HOST $KEYSTONE_AUTH_PORT_INT
 	fi
 
 	# (re)start memcached to make sure we have a clean memcache.
