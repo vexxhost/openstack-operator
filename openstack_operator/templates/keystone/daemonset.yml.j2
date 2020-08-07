@@ -100,7 +100,7 @@ spec:
         env:
         {% if 'sentryDSN' in spec %}
         - name: SENTRY_DSN
-          value: spec['sentryDSN']
+          value: {{ spec['sentryDSN'] }}
         {% endif %}
         {% for v in env %}
         - name: "{{ v.name }}"
