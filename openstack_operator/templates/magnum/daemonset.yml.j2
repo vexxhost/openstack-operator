@@ -54,6 +54,10 @@ spec:
         imagePullPolicy: Always
         {% if env is defined and env|length %}
         env:
+        {% if 'sentryDSN' in spec %}
+        - name: SENTRY_DSN
+          value: {{ spec.sentryDSN }}
+        {% endif %}
         {% for v in env %}
         - name: "{{ v.name }}"
           value: "{{ v.value }}"

@@ -1,3 +1,4 @@
+#!/usr/local/bin/python
 # Copyright (c) 2020 VEXXHOST, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,13 +14,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM vexxhost/python-builder AS builder
+import pkg_resources
 
-FROM vexxhost/python-base AS magnum-api
-COPY magnum-api-wsgi /usr/local/bin/magnum-api-wsgi
-EXPOSE 9511
-ENV UWSGI_HTTP_SOCKET=:9511 UWSGI_WSGI_FILE=/usr/local/bin/magnum-api-wsgi
-CMD ["/usr/local/bin/uwsgi","--ini","/etc/uwsgi/uwsgi.ini"]
+import sentry_sdk
 
-FROM vexxhost/python-base AS magnum-conductor
-CMD ["/usr/local/bin/magnum-conductor"]
+from magnum.api.app import build_wsgi_app
+from sentry_sdk.integrations import wsgi
+
+
+VERSION = pkg_resources.get_distribution("magnum").version
+
+sentry_sdk.init(
+    release="magnum@%s" % VERSION,
+    traces_sample_rate=0.1
+)
+
+application = build_wsgi_app()
+application = wsgi.SentryWsgiMiddleware(application)
