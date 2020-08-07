@@ -21,6 +21,7 @@ server for the installation.
 
 
 from openstack_operator import database
+from openstack_operator import identity
 from openstack_operator import utils
 
 
@@ -63,9 +64,20 @@ def create_or_resume(name, spec, **_):
     utils.create_or_update('heat/cronjob-purge-deleted.yml.j2',
                            name=name, spec=spec)
 
+    api_url = cfn_url = None
     if "ingress" in spec:
         utils.create_or_update('heat/ingress.yml.j2',
                                name=name, spec=spec)
+        api_url = spec["ingress"]["host"]["api"]
+        cfn_url = spec["ingress"]["host"]["api-cfn"]
+
+    # Create service and endpoints
+    identity.ensure_service(name="heat-api", service_type="orchestration",
+                            url=api_url, path="/v1/$(project_id)s",
+                            desc="Heat Orchestration Service")
+    identity.ensure_service(name="heat-api-cfn", service_type="cloudformation",
+                            url=cfn_url, path="/v1",
+                            desc="Heat CloudFormation Service")
 
 
 def update(name, spec, **_):
