@@ -42,7 +42,7 @@ def ensure_service(name, service_type, desc, url=None, path=""):
             "http://" + name + ".openstack.svc.cluster.local" + path
 
         if url is not None:
-            public_url = "http://" + url + path
+            public_url = "https://" + url + path
         utils.create_or_update('identity/endpoint.yml.j2',
                                service=service_type, interface='internal',
                                url=internal_url)
