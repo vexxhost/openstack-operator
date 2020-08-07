@@ -2,3 +2,4 @@ uWSGI
 keystone
 PyMySQL
 python-memcached
+sentry-sdk
