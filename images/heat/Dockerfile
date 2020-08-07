@@ -16,15 +16,18 @@ FROM vexxhost/python-builder AS builder
 FROM vexxhost/python-base AS heat-api-base
 
 FROM heat-api-base AS heat-api
+COPY heat-wsgi-api /usr/local/bin/heat-wsgi-api
 EXPOSE 8004
 ENV UWSGI_HTTP_SOCKET=:8004 UWSGI_WSGI_FILE=/usr/local/bin/heat-wsgi-api
 CMD ["/usr/local/bin/uwsgi","--ini","/etc/uwsgi/uwsgi.ini"]
 
 FROM heat-api-base AS heat-api-cfn
+COPY heat-wsgi-api-cfn /usr/local/bin/heat-wsgi-api-cfn
 EXPOSE 8000
 ENV UWSGI_HTTP_SOCKET=:8000 UWSGI_WSGI_FILE=/usr/local/bin/heat-wsgi-api-cfn
 CMD ["/usr/local/bin/uwsgi","--ini","/etc/uwsgi/uwsgi.ini"]
 
 FROM heat-api-base AS heat-engine
+COPY heat-engine /usr/local/bin/heat-engine
 RUN ln -s /usr/local/etc/heat /etc/heat
 CMD ["/usr/local/bin/heat-engine"]

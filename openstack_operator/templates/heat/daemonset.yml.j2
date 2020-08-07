@@ -70,6 +70,10 @@ spec:
         image: vexxhost/heat-{{ component }}:latest
         imagePullPolicy: Always
         env:
+        {% if 'sentryDSN' in spec %}
+        - name: SENTRY_DSN
+          value: {{ spec.sentryDSN }}
+        {% endif %}
         - name: OS_DEFAULT__HOST
           valueFrom:
             fieldRef:
