@@ -1,3 +1,4 @@
+#!/usr/local/bin/python
 # Copyright (c) 2020 VEXXHOST, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,11 +14,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM vexxhost/python-builder AS builder
-FROM vexxhost/python-base
+import sentry_sdk
 
-COPY keystone-wsgi-public /usr/local/bin/keystone-wsgi-public
+from keystone.server.wsgi import initialize_public_application
+from sentry_sdk.integrations import wsgi
 
-EXPOSE 5000
-ENV UWSGI_HTTP_SOCKET=:5000 UWSGI_WSGI_FILE=/usr/local/bin/keystone-wsgi-public
-CMD ["/usr/local/bin/uwsgi", "--ini", "/etc/uwsgi/uwsgi.ini"]
+sentry_sdk.init(traces_sample_rate=0.1)
+
+application = initialize_public_application()
+application = wsgi.SentryWsgiMiddleware(application)
