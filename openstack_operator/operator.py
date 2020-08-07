@@ -20,6 +20,8 @@ the appropriate deployments, an instance of Keystone, Heat and Horizon
 """
 
 import os
+import pkg_resources
+
 import kopf
 import sentry_sdk
 from sentry_sdk.integrations import aiohttp
@@ -36,8 +38,10 @@ from openstack_operator import utils
 
 
 OPERATOR_CONFIGMAP = "operator-config"
+VERSION = pkg_resources.get_distribution("openstack_operator").version
 
 sentry_sdk.init(
+    release="openstack-operator@%s" % VERSION,
     integrations=[aiohttp.AioHttpIntegration()],
     traces_sample_rate=1.0
 )

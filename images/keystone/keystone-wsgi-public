@@ -14,12 +14,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import pkg_resources
+
 import sentry_sdk
 
 from keystone.server.wsgi import initialize_public_application
 from sentry_sdk.integrations import wsgi
 
-sentry_sdk.init(traces_sample_rate=0.1)
+VERSION = pkg_resources.get_distribution("keystone").version
+
+sentry_sdk.init(
+    release="keystone@%s" % VERSION,
+    traces_sample_rate=0.1
+)
 
 application = initialize_public_application()
 application = wsgi.SentryWsgiMiddleware(application)
