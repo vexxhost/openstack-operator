@@ -1,4 +1,5 @@
 uWSGI
 python-memcached
 PyMySQL
+sentry-sdk
 git+https://opendev.org/openstack/magnum@stable/ussuri
