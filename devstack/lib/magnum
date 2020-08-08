@@ -113,13 +113,6 @@ function create_magnum_accounts {
 
     create_service_user "magnum" "admin"
 
-    get_or_create_service "magnum" "container-infra" "Container Infrastructure Management Service"
-    get_or_create_endpoint "container-infra" \
-        "$REGION_NAME" \
-        "$MAGNUM_SERVICE_PROTOCOL://$MAGNUM_SERVICE_HOST/magnum-api/v1" \
-        "$MAGNUM_SERVICE_PROTOCOL://$MAGNUM_SERVICE_HOST/magnum-api/v1" \
-        "$MAGNUM_SERVICE_PROTOCOL://$MAGNUM_SERVICE_HOST/magnum-api/v1"
-
     # Create for Kubernetes Keystone auth
     get_or_create_role k8s_admin
     get_or_create_role k8s_developer
