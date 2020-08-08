@@ -17,8 +17,6 @@
 This module contains a few common functions for identity management
 """
 
-import kopf
-
 from openstack_operator import utils
 
 
@@ -32,22 +30,19 @@ def ensure_service(name, service_type, desc, url=None, path=""):
     path: sub path of endpoint
     """
 
-    try:
-        # Create or resume service
-        utils.create_or_update('identity/service.yml.j2', name=name,
-                               type=service_type, description=desc)
+    # Create or resume service
+    utils.create_or_update('identity/service.yml.j2', name=name,
+                           type=service_type, description=desc)
 
-        # Create or resume endpoints
-        internal_url = public_url = \
-            "http://" + name + ".openstack.svc.cluster.local" + path
+    # Create or resume endpoints
+    internal_url = public_url = \
+        "http://" + name + ".openstack.svc.cluster.local" + path
 
-        if url is not None:
-            public_url = "https://" + url + path
-        utils.create_or_update('identity/endpoint.yml.j2',
-                               service=service_type, interface='internal',
-                               url=internal_url)
-        utils.create_or_update('identity/endpoint.yml.j2',
-                               service=service_type, interface='public',
-                               url=public_url)
-    except Exception as ex:
-        raise kopf.TemporaryError(str(ex), delay=5)
+    if url is not None:
+        public_url = "https://" + url + path
+    utils.create_or_update('identity/endpoint.yml.j2',
+                           service=service_type, interface='internal',
+                           url=internal_url)
+    utils.create_or_update('identity/endpoint.yml.j2',
+                           service=service_type, interface='public',
+                           url=public_url)

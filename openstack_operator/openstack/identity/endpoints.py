@@ -25,7 +25,10 @@ from openstack_operator import utils
 def _get_service_by_type(conn, service_type):
     """Get a service from Keystone based on service type."""
 
-    services = conn.search_services(filters={"type": service_type})
+    try:
+        services = conn.search_services(filters={"type": service_type})
+    except Exception as ex:
+        raise kopf.TemporaryError(str(ex), delay=5)
 
     if len(services) > 1:
         raise RuntimeError("Multiple services with type: %s" % service_type)
