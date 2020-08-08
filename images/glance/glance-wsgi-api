@@ -1,3 +1,4 @@
+#!/usr/local/bin/python
 # Copyright (c) 2020 VEXXHOST, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,11 +14,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM vexxhost/python-builder as builder
-FROM vexxhost/python-base AS glance-api
+import pkg_resources
 
-COPY glance-wsgi-api /usr/local/bin/glance-wsgi-api
+import sentry_sdk
 
-EXPOSE 9292
-ENV UWSGI_HTTP_SOCKET=:9292 UWSGI_WSGI_FILE=/usr/local/bin/glance-wsgi-api
-CMD ["/usr/local/bin/uwsgi", "--ini", "/etc/uwsgi/uwsgi.ini"]
+from glance.common.wsgi_app import init_app
+from sentry_sdk.integrations import wsgi
+
+VERSION = pkg_resources.get_distribution("glance").version
+
+sentry_sdk.init(
+    release="glance@%s" % VERSION,
+    traces_sample_rate=0.1
+)
+
+application = init_app()
+application = wsgi.SentryWsgiMiddleware(application)

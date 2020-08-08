@@ -61,6 +61,10 @@ spec:
         image: vexxhost/glance-api:latest
         imagePullPolicy: Always
         env:
+        {% if 'sentryDSN' in spec %}
+        - name: SENTRY_DSN
+          value: {{ spec.sentryDSN }}
+        {% endif %}
         {% for v in env %}
         - name: "{{ v.name }}"
           value: "{{ v.value }}"
