@@ -59,10 +59,6 @@ function start_keystone {
 	if ! wait_for_service $SERVICE_TIMEOUT $service_uri; then
 		die $LINENO "keystone did not start"
 	fi
-
-	# (re)start memcached to make sure we have a clean memcache.
-	kubectl rollout restart statefulset/memcached-keystone
-	sleep 10
 }
 export -f start_keystone
 

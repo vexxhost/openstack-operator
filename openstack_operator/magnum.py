@@ -23,6 +23,8 @@ from openstack_operator import database
 from openstack_operator import identity
 from openstack_operator import utils
 
+MEMCACHED = True
+
 
 def create_or_resume(name, spec, **_):
     """Create and re-sync any Magnum instances
@@ -34,9 +36,6 @@ def create_or_resume(name, spec, **_):
     if "mysql" not in spec:
         spec["mysql"] = {}
     database.ensure_mysql_cluster("magnum", spec["mysql"])
-
-    # deploy memcached
-    utils.create_or_update('magnum/memcached.yml.j2', spec=spec)
 
     # deploy rabbitmq
     if not utils.ensure_secret("openstack", "magnum-rabbitmq"):

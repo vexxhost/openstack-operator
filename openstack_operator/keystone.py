@@ -27,6 +27,8 @@ from openstack_operator import database
 from openstack_operator import filters
 from openstack_operator import utils
 
+MEMCACHED = True
+
 TOKEN_EXPIRATION = 86400
 FERNET_ROTATION_INTERVAL = 3600
 ACTIVE_KEYS = int(TOKEN_EXPIRATION / FERNET_ROTATION_INTERVAL)
@@ -113,7 +115,6 @@ def create_or_resume(name, spec, **_):
     db_config = database.ensure_mysql_cluster("keystone", spec["mysql"])
 
     # deploy memcached
-    utils.create_or_update('keystone/memcached.yml.j2', spec=spec)
 
     # keystone config
     utils.create_or_update('keystone/secret-config.yml.j2',

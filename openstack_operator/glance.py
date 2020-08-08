@@ -23,6 +23,8 @@ from openstack_operator import database
 from openstack_operator import identity
 from openstack_operator import utils
 
+MEMCACHED = True
+
 
 def create_or_resume(name, spec, **_):
     """Create and re-sync a glance instance
@@ -36,9 +38,6 @@ def create_or_resume(name, spec, **_):
         database.ensure_mysql_cluster("glance", {})
     else:
         database.ensure_mysql_cluster("glance", spec["mysql"])
-
-    # deploy memcached
-    utils.create_or_update('glance/memcached.yml.j2', spec=spec)
 
     # deploy glance api
     utils.create_or_update('glance/daemonset.yml.j2',

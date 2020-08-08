@@ -16,17 +16,14 @@
 apiVersion: infrastructure.vexxhost.cloud/v1alpha1
 kind: Memcached
 metadata:
-  name: magnum
+  name: {{ name }}
   namespace: openstack
   labels:
-    {{ labels("magnum") | indent(4) }}
+    {{ labels(name) | indent(4) }}
 spec:
   megabytes: 128
-{% if 'nodeSelector' in spec %}
   nodeSelector:
-    {{ spec.nodeSelector | to_yaml | indent(4) }}
-{% endif %}
-{% if 'tolerations' in spec %}
+    node-role.kubernetes.io/master: ""
   tolerations:
-    {{ spec.tolerations | to_yaml | indent(4) }}
-{% endif %}
+  - key: node-role.kubernetes.io/master
+    effect: NoSchedule

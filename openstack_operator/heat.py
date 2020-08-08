@@ -24,6 +24,8 @@ from openstack_operator import database
 from openstack_operator import identity
 from openstack_operator import utils
 
+MEMCACHED = True
+
 
 def create_or_resume(name, spec, **_):
     """Create and re-sync any Heat instances
@@ -33,9 +35,6 @@ def create_or_resume(name, spec, **_):
         database.ensure_mysql_cluster("heat", {})
     else:
         database.ensure_mysql_cluster("heat", spec["mysql"])
-
-    # deploy memcached
-    utils.create_or_update('heat/memcached.yml.j2', spec=spec)
 
     # deploy rabbitmq
     if not utils.ensure_secret("openstack", "heat-rabbitmq"):

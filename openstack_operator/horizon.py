@@ -21,6 +21,8 @@ the appropriate deployments, Mcrouter, pod monitors and Prometheus rules.
 
 from openstack_operator import utils
 
+MEMCACHED = True
+
 
 def create_secret():
     """Create a new horizon secret for secretKey"""
@@ -48,8 +50,6 @@ def create_or_resume(name, spec, **_):
                            config_hash=config_hash, name=name,
                            spec=spec)
     utils.create_or_update('horizon/service.yml.j2',
-                           name=name, spec=spec)
-    utils.create_or_update('horizon/memcached.yml.j2',
                            name=name, spec=spec)
     if "ingress" in spec:
         utils.create_or_update('horizon/ingress.yml.j2',

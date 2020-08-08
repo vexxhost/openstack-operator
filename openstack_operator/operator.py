@@ -19,6 +19,7 @@ the appropriate deployments, an instance of Keystone, Heat and Horizon
  for the installation.
 """
 
+import functools
 import os
 import pkg_resources
 
@@ -51,7 +52,42 @@ def operator_configmap(namespace, name, **_):
     """Filter on the operator's ConfigMap."""
 
     return namespace == os.getenv('OPERATOR_NAMESPACE', 'default') \
-        and name == OPERATOR_CONFIGMAP
+        and name == "operator-config"
+
+
+async def deploy_memcached(item, **_):
+    """
+    Deploy a generic instance of Memcached
+
+    This function deploys a generic instance of Memcached with sane defaults,
+    it's meant to be here to be consumed/called by the function below.
+    """
+    utils.create_or_update('operator/memcached.yml.j2', name=item, adopt=True)
+
+
+@kopf.on.resume('', 'v1', 'configmaps', when=operator_configmap)
+@kopf.on.create('', 'v1', 'configmaps', when=operator_configmap)
+@kopf.on.update('', 'v1', 'configmaps', when=operator_configmap)
+async def deploy_memcacheds(body, **_):
+    """
+    Deploy multiple Memcached instances for OpenStack services
+
+    This function makes sure that Memcached is deployed for all services which
+    use it when when the operator sees any changes to the configuration.
+    """
+    fns = {}
+    services = utils.to_dict(body['data']['operator-config.yaml']).keys()
+
+    for entry_point in pkg_resources.iter_entry_points('operators'):
+        if entry_point.name not in services:
+            continue
+
+        module = entry_point.load()
+        if hasattr(module, 'MEMCACHED') and module.MEMCACHED:
+            fns[entry_point.name] = \
+                functools.partial(deploy_memcached, item=entry_point.name)
+
+    await kopf.execute(fns=fns)
 
 
 @kopf.on.resume('', 'v1', 'configmaps', when=operator_configmap)

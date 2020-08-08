@@ -42,8 +42,7 @@ function install_horizon {
 
 # start_horizon() - Start running processes
 function start_horizon {
-	kubectl rollout restart statefulset/memcached-horizon
-	sleep 10
+	echo noop
 }
 
 # stop_horizon() - Stop running processes
