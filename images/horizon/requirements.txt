@@ -1,5 +1,6 @@
 uWSGI
 python-memcached
+sentry-sdk
 git+https://opendev.org/openstack/horizon@stable/ussuri
 git+https://opendev.org/openstack/heat-dashboard@stable/ussuri
 git+https://opendev.org/openstack/designate-dashboard@stable/ussuri
