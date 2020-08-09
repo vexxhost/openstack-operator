@@ -285,3 +285,13 @@ def get_backup_schedule(name):
     if name not in BACKUP_SCHEDULE:
         return "0 0 * * * *"
     return BACKUP_SCHEDULE[name]
+
+
+async def deploy_memcached(item, **_):
+    """
+    Deploy a generic instance of Memcached
+
+    This function deploys a generic instance of Memcached with sane defaults,
+    it's meant to be here to be consumed/called by the serices.
+    """
+    create_or_update('operator/memcached.yml.j2', name=item, adopt=True)

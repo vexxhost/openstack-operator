@@ -55,16 +55,6 @@ def operator_configmap(namespace, name, **_):
         and name == "operator-config"
 
 
-async def deploy_memcached(item, **_):
-    """
-    Deploy a generic instance of Memcached
-
-    This function deploys a generic instance of Memcached with sane defaults,
-    it's meant to be here to be consumed/called by the function below.
-    """
-    utils.create_or_update('operator/memcached.yml.j2', name=item, adopt=True)
-
-
 @kopf.on.resume('', 'v1', 'configmaps', when=operator_configmap)
 @kopf.on.create('', 'v1', 'configmaps', when=operator_configmap)
 @kopf.on.update('', 'v1', 'configmaps', when=operator_configmap)
@@ -85,7 +75,8 @@ async def deploy_memcacheds(body, **_):
         module = entry_point.load()
         if hasattr(module, 'MEMCACHED') and module.MEMCACHED:
             fns[entry_point.name] = \
-                functools.partial(deploy_memcached, item=entry_point.name)
+                functools.partial(utils.deploy_memcached,
+                                  item=entry_point.name)
 
     await kopf.execute(fns=fns)
 
