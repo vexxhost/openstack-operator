@@ -19,6 +19,11 @@
       - name: controller
         label: ubuntu-bionic-expanded-vexxhost
     vars:
+      devstack_local_conf:
+        test-config:
+          $TEMPEST_CONFIG:
+            identity-feature-enabled:
+              application_credentials: true
       devstack_services:
         etcd3: false
         horizon: true
