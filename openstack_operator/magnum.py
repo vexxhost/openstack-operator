@@ -60,6 +60,9 @@ def create_or_resume(name, spec, **_):
                                name=name, spec=spec)
         url = spec["ingress"]["host"]
 
+    # Create application credential
+    identity.ensure_application_credential(name="magnum")
+
     # Create service and endpoints
     if "endpoint" not in spec:
         spec["endpoint"] = True

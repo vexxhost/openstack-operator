@@ -110,13 +110,7 @@ function configure_magnum {
 # ------------------------------------------------------------------
 # SERVICE_PROJECT_NAME  magnum         service
 function create_magnum_accounts {
-
-    create_service_user "magnum" "admin"
-
-    # Create for Kubernetes Keystone auth
-    get_or_create_role k8s_admin
-    get_or_create_role k8s_developer
-    get_or_create_role k8s_viewer
+    echo noop
 }
 
 # create_magnum_conf() - Create a new magnum.conf file
@@ -154,22 +148,16 @@ function create_magnum_conf {
 
     iniset $MAGNUM_CONF oslo_policy policy_file $MAGNUM_POLICY
 
-    iniset $MAGNUM_CONF keystone_auth auth_type password
-    iniset $MAGNUM_CONF keystone_auth username magnum
-    iniset $MAGNUM_CONF keystone_auth password $SERVICE_PASSWORD
-    iniset $MAGNUM_CONF keystone_auth project_name $SERVICE_PROJECT_NAME
-    iniset $MAGNUM_CONF keystone_auth project_domain_id default
-    iniset $MAGNUM_CONF keystone_auth user_domain_id default
-
-    configure_auth_token_middleware $MAGNUM_CONF magnum
-
-    iniset $MAGNUM_CONF keystone_auth auth_url $KEYSTONE_AUTH_URI_V3
-
     # FIXME(pauloewerton): keystone_authtoken section is deprecated. Remove it
     # after deprecation period.
-    iniset $MAGNUM_CONF keystone_authtoken www_authenticate_uri $KEYSTONE_SERVICE_URI_V3
-    iniset $MAGNUM_CONF keystone_authtoken auth_url $KEYSTONE_AUTH_URI_V3
-    iniset $MAGNUM_CONF keystone_authtoken auth_version v3
+    kubernetes_ensure_resource secret/magnum-application-credential
+    MAGNUM_APPLICATION_CREDENTIAL_SECRET=$(get_data_from_secret magnum-application-credential openstack secret)
+    MAGNUM_APPLICATION_CREDENTIAL_ID=$(get_data_from_secret magnum-application-credential openstack id)
+    iniset $MAGNUM_CONF keystone_authtoken auth_url $KEYSTONE_SERVICE_URI
+    iniset $MAGNUM_CONF keystone_authtoken auth_type v3applicationcredential
+    iniset $MAGNUM_CONF keystone_authtoken application_credential_id $MAGNUM_APPLICATION_CREDENTIAL_ID
+    iniset $MAGNUM_CONF keystone_authtoken application_credential_secret $MAGNUM_APPLICATION_CREDENTIAL_SECRET
+
     iniset $MAGNUM_CONF keystone_authtoken memcached_servers "mcrouter-memcached-magnum:11211"
     if is_fedora || is_suse; then
         # magnum defaults to /usr/local/bin, but fedora and suse pip like to
