@@ -127,6 +127,7 @@ rules:
 - apiGroups:
   - identity.openstack.org
   resources:
+  - applicationcredentials
   - services
   - keystones
   - endpoints
@@ -141,6 +142,7 @@ rules:
 - apiGroups:
   - identity.openstack.org
   resources:
+  - applicationcredentials/status
   - services/status
   - keystones/status
   - endpoints/status

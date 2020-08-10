@@ -16,24 +16,6 @@
 
 # install_keystone() - Collect source and prepare
 function install_keystone {
-	echo noop
-}
-export -f install_keystone
-
-# configure_keystone() - Set config files, create data dirs, etc
-function configure_keystone {
-    echo noop
-}
-
-# init_keystone() - Initialize databases, etc.
-function init_keystone {
-	echo noop
-}
-export -f init_keystone
-
-# start_keystone() - Start running processes
-function start_keystone {
-
 	# rollout keystone
 	kubernetes_rollout_restart daemonset/keystone
 	kubernetes_rollout_status daemonset/keystone
@@ -59,6 +41,23 @@ function start_keystone {
 	if ! wait_for_service $SERVICE_TIMEOUT $service_uri; then
 		die $LINENO "keystone did not start"
 	fi
+}
+export -f install_keystone
+
+# configure_keystone() - Set config files, create data dirs, etc
+function configure_keystone {
+    echo noop
+}
+
+# init_keystone() - Initialize databases, etc.
+function init_keystone {
+	echo noop
+}
+export -f init_keystone
+
+# start_keystone() - Start running processes
+function start_keystone {
+	echo noop
 }
 export -f start_keystone
 

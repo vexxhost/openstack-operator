@@ -37,6 +37,14 @@ from pykube.objects import Service
 from pykube.objects import StatefulSet
 
 
+class IdentityApplicationCredential(APIObject):
+    """ApplicationCredential Kubernetes object"""
+
+    version = "identity.openstack.org/v1alpha1"
+    endpoint = "applicationcredentials"
+    kind = "ApplicationCredential"
+
+
 class IdentityService(APIObject):
     """Service Kubernetes object"""
 
@@ -124,6 +132,7 @@ MAPPING = {
         "Ingress": Ingress
     },
     "identity.openstack.org/v1alpha1": {
+        "ApplicationCredential": IdentityApplicationCredential,
         "Service": IdentityService,
         "Endpoint": IdentityEndpoint
     },
