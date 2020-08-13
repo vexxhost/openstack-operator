@@ -24,7 +24,7 @@ spec:
         env:
 {{- with .Values.sentryDSN }}
         - name: SENTRY_DSN
-          value: {{ .Values.sentryDSN }}
+          value: {{ . }}
 {{- end }}
         - name: OPERATOR_NAMESPACE
           valueFrom:
