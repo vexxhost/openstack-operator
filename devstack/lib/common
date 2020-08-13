@@ -59,6 +59,12 @@ function proxy_pass_to_kubernetes {
 	local ip=$(get_kubernetes_service_ip $svc)
 	local apache_conf=$(apache_site_config_for $conf)
 
+    enable_apache_mod proxy
+    enable_apache_mod proxy_http
+
+    echo "KeepAlive Off" | sudo tee $apache_conf
+    echo "SetEnv proxy-sendchunked 1" | sudo tee -a $apache_conf
+
 	echo "ProxyPass \"${url}\" \"http://${ip}/\"" | sudo tee $apache_conf
 
 	enable_apache_site $conf
