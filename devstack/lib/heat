@@ -139,17 +139,21 @@ function configure_heat {
         iniset $HEAT_CONF DEFAULT deferred_auth_method $HEAT_DEFERRED_AUTH
     fi
 
-
-	configure_auth_token_middleware $HEAT_CONF heat
+    kubernetes_ensure_resource secret/heat-application-credential
+    export HEAT_APPLICATION_CREDENTIAL_SECRET=$(get_data_from_secret heat-application-credential openstack secret)
+    export HEAT_APPLICATION_CREDENTIAL_ID=$(get_data_from_secret heat-application-credential openstack id)
+    iniset $HEAT_CONF keystone_authtoken auth_url $KEYSTONE_AUTH_URI_V3
+    iniset $HEAT_CONF keystone_authtoken auth_type v3applicationcredential
+    iniset $HEAT_CONF keystone_authtoken application_credential_id $HEAT_APPLICATION_CREDENTIAL_ID
+    iniset $HEAT_CONF keystone_authtoken application_credential_secret $HEAT_APPLICATION_CREDENTIAL_SECRET
 
     # If HEAT_DEFERRED_AUTH is unset or explicitly set to trusts, configure
     # the section for the client plugin associated with the trustee
     if [ -z "$HEAT_DEFERRED_AUTH" -o "trusts" == "$HEAT_DEFERRED_AUTH" ]; then
-        iniset $HEAT_CONF trustee auth_type password
+        iniset $HEAT_CONF trustee auth_type v3applicationcredential
         iniset $HEAT_CONF trustee auth_url $KEYSTONE_AUTH_URI_V3
-        iniset $HEAT_CONF trustee username $HEAT_TRUSTEE_USER
-        iniset $HEAT_CONF trustee password $HEAT_TRUSTEE_PASSWORD
-        iniset $HEAT_CONF trustee user_domain_id $HEAT_TRUSTEE_DOMAIN
+        iniset $HEAT_CONF trustee application_credential_id $HEAT_APPLICATION_CREDENTIAL_ID
+        iniset $HEAT_CONF trustee application_credential_secret $HEAT_APPLICATION_CREDENTIAL_SECRET
     fi
 
     # clients_keystone
@@ -261,14 +265,6 @@ function stop_heat {
 function create_heat_accounts {
     if [[ "$HEAT_STANDALONE" != "True" ]]; then
 
-        local heat_api_service_url
-        local heat_cfn_api_service_url
-
-	heat_api_service_url="$SERVICE_PROTOCOL://$HEAT_API_HOST/heat-api/v1/\$(project_id)s"
-	heat_cfn_api_service_url="$SERVICE_PROTOCOL://$HEAT_API_CFN_HOST/heat-api-cfn/v1"
-
-        create_service_user "heat" "admin"
-
         # heat_stack_user role is for users created by Heat
         get_or_create_role "heat_stack_user"
     fi
@@ -316,6 +312,7 @@ function configure_tempest_for_heat {
     source $TOP_DIR/openrc admin admin
     iniset $TEMPEST_CONFIG heat_plugin admin_username $OS_USERNAME
     iniset $TEMPEST_CONFIG heat_plugin admin_password $OS_PASSWORD
+
     if [[ -e /etc/ci/mirror_info.sh ]]; then
         source /etc/ci/mirror_info.sh
     fi
