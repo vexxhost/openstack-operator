@@ -46,3 +46,11 @@ def ensure_service(name, service_type, desc, url=None, path=""):
     utils.create_or_update('identity/endpoint.yml.j2',
                            service=service_type, interface='public',
                            url=public_url)
+
+
+def ensure_application_credential(name):
+    """Create or update applicationcredentials
+    """
+
+    utils.create_or_update('identity/applicationcredential.yml.j2',
+                           name=name)
