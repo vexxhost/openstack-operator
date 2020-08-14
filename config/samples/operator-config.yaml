@@ -4,6 +4,7 @@ metadata:
   name: operator-config
 data:
   operator-config.yaml: |
+    barbican: {}
     ceilometer:
       dbUri: "sqlite:///:memory:"
     horizon:

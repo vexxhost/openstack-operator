@@ -7,6 +7,8 @@
     run: playbooks/functional/run.yaml
     post-run: playbooks/functional/post.yaml
     required-projects:
+    - openstack/barbican
+    - openstack/barbican-tempest-plugin
     - openstack/devstack-plugin-ceph
     - openstack/heat
     - openstack/heat-tempest-plugin
@@ -34,19 +36,21 @@
         heat: https://github.com/openstack/heat
         magnum: https://github.com/openstack/magnum
         devstack-plugin-ceph: https://github.com/openstack/devstack-plugin-ceph
+        barbican: https://github.com/openstack/barbican
       devstack_source_dirs:
       - src/opendev.org/openstack
       - src/opendev.org/vexxhost
       tox_envlist: all
-      tempest_test_regex: (\[.*\bsmoke\b.*\]|(^heat_tempest_plugin.tests.api)|(^tempest_horizon.tests.scenario))
-      tempest_black_regex: ^tempest.scenario.test_network_basic_ops
+      tempest_test_regex: (\[.*\bsmoke\b.*\]|(^heat_tempest_plugin.tests.api)|(^tempest_horizon.tests.scenario)|(^barbican_tempest_plugin.tests.api)|(^barbican_tempest_plugin.tests.scenario))
+      tempest_black_regex: (^tempest.scenario.test_network_basic_ops|barbican_tempest_plugin.tests.scenario.(test_image_signing.ImageSigningTest.test_signed_image_upload_boot_failure|test_volume_encryption.VolumeEncryptionTest.test_encrypted_cinder_volumes_cryptsetup))
       tempest_plugins:
+      - barbican-tempest-plugin
       - heat-tempest-plugin
       - magnum-tempest-plugin
       - tempest-horizon
       devstack_localrc:
-        TEMPEST_PLUGINS: /opt/stack/heat-tempest-plugin /opt/stack/magnum-tempest-plugin
-          /opt/stack/tempest-horizon
+        TEMPEST_PLUGINS: /opt/stack/barbican-tempest-plugin /opt/stack/heat-tempest-plugin
+          /opt/stack/magnum-tempest-plugin /opt/stack/tempest-horizon
       docker_use_buildset_registry: true
       minikube_dns_resolvers: [1.1.1.1, 8.8.8.8]
       ensure_kubernetes_minikube_addons: [metrics-server]
@@ -56,53 +60,57 @@
       jobs:
       - openstack-operator:functional:
           dependencies:
-          - name: openstack-operator:images:build:heat
-            soft: true
-          - name: openstack-operator:images:build:ceilometer
-            soft: true
-          - name: openstack-operator:images:build:rabbitmq
-            soft: true
-          - name: openstack-operator:images:build:keystone
+          - name: openstack-operator:images:build:mcrouter-exporter
             soft: true
           - name: openstack-operator:images:build:horizon
             soft: true
+          - name: openstack-operator:images:build:magnum
+            soft: true
+          - name: openstack-operator:images:build:glance
+            soft: true
+          - name: openstack-operator:images:build:rabbitmq
+            soft: true
+          - name: openstack-operator:images:build:ceilometer
+            soft: true
+          - name: openstack-operator:images:build:memcached-exporter
+            soft: true
           - name: openstack-operator:images:build:memcached
+            soft: true
+          - name: openstack-operator:images:build:keystone
             soft: true
           - name: openstack-operator:images:build:mcrouter
             soft: true
           - openstack-operator:images:build:openstack-operator
-          - name: openstack-operator:images:build:glance
+          - name: openstack-operator:images:build:barbican
             soft: true
-          - name: openstack-operator:images:build:mcrouter-exporter
-            soft: true
-          - name: openstack-operator:images:build:memcached-exporter
-            soft: true
-          - name: openstack-operator:images:build:magnum
+          - name: openstack-operator:images:build:heat
             soft: true
     gate:
       jobs:
       - openstack-operator:functional:
           dependencies:
-          - name: openstack-operator:images:upload:heat
-            soft: true
-          - name: openstack-operator:images:upload:ceilometer
-            soft: true
-          - name: openstack-operator:images:upload:rabbitmq
-            soft: true
-          - name: openstack-operator:images:upload:keystone
+          - name: openstack-operator:images:upload:mcrouter-exporter
             soft: true
           - name: openstack-operator:images:upload:horizon
             soft: true
+          - name: openstack-operator:images:upload:magnum
+            soft: true
+          - name: openstack-operator:images:upload:glance
+            soft: true
+          - name: openstack-operator:images:upload:rabbitmq
+            soft: true
+          - name: openstack-operator:images:upload:ceilometer
+            soft: true
+          - name: openstack-operator:images:upload:memcached-exporter
+            soft: true
           - name: openstack-operator:images:upload:memcached
+            soft: true
+          - name: openstack-operator:images:upload:keystone
             soft: true
           - name: openstack-operator:images:upload:mcrouter
             soft: true
           - openstack-operator:images:upload:openstack-operator
-          - name: openstack-operator:images:upload:glance
+          - name: openstack-operator:images:upload:barbican
             soft: true
-          - name: openstack-operator:images:upload:mcrouter-exporter
-            soft: true
-          - name: openstack-operator:images:upload:memcached-exporter
-            soft: true
-          - name: openstack-operator:images:upload:magnum
+          - name: openstack-operator:images:upload:heat
             soft: true

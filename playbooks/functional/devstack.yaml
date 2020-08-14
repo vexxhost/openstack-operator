@@ -60,6 +60,7 @@
     - name: Copy Zuul repo into devstack working directory
       become: true
       command: rsync -av src/opendev.org/vexxhost/openstack-operator /opt/stack
+
     - name: Copy heat repo into devstack working directory
       git:
         repo: https://github.com/openstack/heat
@@ -80,6 +81,18 @@
     - name: Override magnum plugin.sh
       become: true
       command: rsync -av src/opendev.org/vexxhost/openstack-operator/devstack/plugin-magnum.sh /opt/stack/magnum/devstack/plugin.sh
+
+    - name: Copy barbican repo into devstack working directory
+      git:
+        repo: https://github.com/openstack/barbican
+        dest: /opt/stack/barbican
+      become: true
+    - name: Override barbican lib functions
+      become: true
+      command: rsync -av src/opendev.org/vexxhost/openstack-operator/devstack/lib/barbican /opt/stack/magnum/devstack/lib/barbican
+    - name: Override barbican plugin.sh
+      become: true
+      command: rsync -av src/opendev.org/vexxhost/openstack-operator/devstack/plugin-barbican.sh /opt/stack/barbican/devstack/plugin.sh
 
 # Changes that run through devstack-tempest are likely to have an impact on
 # the devstack part of the job, so we keep devstack in the main play to
