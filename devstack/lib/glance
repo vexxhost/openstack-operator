@@ -45,7 +45,14 @@ function configure_glance {
     iniset $GLANCE_API_CONF DEFAULT use_syslog $SYSLOG
     iniset $GLANCE_API_CONF oslo_concurrency lock_path $GLANCE_LOCK_DIR
     iniset $GLANCE_API_CONF paste_deploy flavor keystone
-    configure_keystone_authtoken_middleware $GLANCE_API_CONF glance
+    kubernetes_ensure_resource secret/glance-application-credential
+    GLANCE_APPLICATION_CREDENTIAL_SECRET=$(get_data_from_secret glance-application-credential openstack secret)
+    GLANCE_APPLICATION_CREDENTIAL_ID=$(get_data_from_secret glance-application-credential openstack id)
+    iniset $GLANCE_API_CONF keystone_authtoken auth_url $KEYSTONE_AUTH_URI_V3
+    iniset $GLANCE_API_CONF keystone_authtoken auth_type v3applicationcredential
+    iniset $GLANCE_API_CONF keystone_authtoken application_credential_id $GLANCE_APPLICATION_CREDENTIAL_ID
+    iniset $GLANCE_API_CONF keystone_authtoken application_credential_secret $GLANCE_APPLICATION_CREDENTIAL_SECRET
+
     iniset $GLANCE_API_CONF oslo_messaging_notifications driver messagingv2
     iniset_rpc_backend glance $GLANCE_API_CONF
     if [ "$VIRT_DRIVER" = 'xenserver' ]; then
@@ -122,7 +129,7 @@ function configure_glance {
 
 # create_glance_accounts() - Set up common required glance accounts
 function create_glance_accounts {
-    create_service_user "glance"
+    echo noop
 }
 export -f create_glance_accounts
 
