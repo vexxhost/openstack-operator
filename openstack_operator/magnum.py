@@ -61,9 +61,13 @@ def create_or_resume(name, spec, **_):
         url = spec["ingress"]["host"]
 
     # Create service and endpoints
-    identity.ensure_service(name="magnum-api", path="/v1",
-                            service_type="container-infra", url=url,
-                            desc="Container Infrastructure Management Service")
+    if "endpoint" not in spec:
+        spec["endpoint"] = True
+    if spec["endpoint"]:
+        identity.ensure_service(name="magnum-api", path="/v1",
+                                service_type="container-infra", url=url,
+                                desc="Container Infrastructure \
+                                    Management Service")
 
 
 def update(name, spec, **_):

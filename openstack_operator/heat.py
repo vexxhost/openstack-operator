@@ -74,12 +74,17 @@ def create_or_resume(name, spec, **_):
     identity.ensure_application_credential(name="heat")
 
     # Create service and endpoints
-    identity.ensure_service(name="heat-api", service_type="orchestration",
-                            url=api_url, path="/v1/$(project_id)s",
-                            desc="Heat Orchestration Service")
-    identity.ensure_service(name="heat-api-cfn", service_type="cloudformation",
-                            url=cfn_url, path="/v1",
-                            desc="Heat CloudFormation Service")
+    if "endpoint" not in spec:
+        spec["endpoint"] = True
+    if spec["endpoint"]:
+        identity.ensure_service(name="heat-api",
+                                service_type="orchestration",
+                                url=api_url, path="/v1/$(project_id)s",
+                                desc="Heat Orchestration Service")
+        identity.ensure_service(name="heat-api-cfn",
+                                service_type="cloudformation",
+                                url=cfn_url, path="/v1",
+                                desc="Heat CloudFormation Service")
 
 
 def update(name, spec, **_):
