@@ -1,0 +1,8 @@
+uWSGI
+boto3
+PyMySQL
+python-memcached
+sentry-sdk
+git+https://opendev.org/openstack/cinder@stable/ussuri
+https://github.com/ceph/ceph/archive/v15.2.4.tar.gz#egg=rados&subdirectory=src/pybind/rados
+https://github.com/ceph/ceph/archive/v15.2.4.tar.gz#egg=rbd&subdirectory=src/pybind/rbd

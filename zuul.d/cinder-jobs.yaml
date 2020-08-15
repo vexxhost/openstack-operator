@@ -1,0 +1,51 @@
+- job:
+    name: openstack-operator:images:build:cinder
+    parent: vexxhost-build-docker-image
+    provides: openstack-operator:image:cinder
+    nodeset: &id001
+      nodes:
+      - name: ubuntu-bionic
+        label: ubuntu-bionic-vexxhost
+    vars: &id002
+      docker_images:
+      - context: images/cinder
+        repository: vexxhost/cinder-base
+        target: cinder-base
+      - context: images/cinder
+        repository: vexxhost/cinder-api
+        target: cinder-api
+      - context: images/cinder
+        repository: vexxhost/cinder-volume
+        target: cinder-volume
+      - context: images/cinder
+        repository: vexxhost/cinder-scheduler
+        target: cinder-scheduler
+    dependencies:
+    - openstack-operator:images:build:openstack-operator
+    files: &id003
+    - ^images/cinder/.*
+- job:
+    name: openstack-operator:images:upload:cinder
+    parent: vexxhost-upload-docker-image
+    provides: openstack-operator:image:cinder
+    nodeset: *id001
+    vars: *id002
+    dependencies:
+    - openstack-operator:images:upload:openstack-operator
+    files: *id003
+- job:
+    name: openstack-operator:images:promote:cinder
+    parent: vexxhost-promote-docker-image
+    nodeset: *id001
+    vars: *id002
+    files: *id003
+- project:
+    check:
+      jobs:
+      - openstack-operator:images:build:cinder
+    gate:
+      jobs:
+      - openstack-operator:images:upload:cinder
+    promote:
+      jobs:
+      - openstack-operator:images:promote:cinder

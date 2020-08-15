@@ -17,16 +17,20 @@
 This module contains a few common functions for identity management
 """
 
+# pylint: disable=R0913
+
 from openstack_operator import utils
 
 
-def ensure_service(name, service_type, desc, url=None, path=""):
+def ensure_service(name, service_type, desc, url=None,
+                   internal=None, path=""):
     """Create or update service and endpoints
 
     name: service name
     service_type: service type
     desc: service descriptioin
     url: hostname of public endpoint
+    internal: hostname of internal endpoint
     path: sub path of endpoint
     """
 
@@ -35,8 +39,10 @@ def ensure_service(name, service_type, desc, url=None, path=""):
                            type=service_type, description=desc)
 
     # Create or resume endpoints
+    if internal is None:
+        internal = name
     internal_url = public_url = \
-        "http://" + name + ".openstack.svc.cluster.local" + path
+        "http://" + internal + ".openstack.svc.cluster.local" + path
 
     if url is not None:
         public_url = "https://" + url + path

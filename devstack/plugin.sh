@@ -41,11 +41,18 @@ elif [[ "$1" == "stack" && "$2" == "post-config" ]]; then
     --from-file=/etc/glance/glance-api.conf \
     --from-file=/etc/glance/glance-api-paste.ini
 
+    kubectl create secret generic cinder-config -n openstack \
+    --from-file=/etc/cinder/cinder.conf \
+    --from-file=/etc/cinder/api-paste.ini \
+    --from-file=/etc/cinder/rootwrap.conf \
+    --from-file=/etc/cinder/resource_filters.json
+
 	# NOTE(Alex): Permissions here are bad but it's temporary so we don't care as much.
 	sudo chmod -Rv 777 /etc/ceph
     kubectl create secret generic ceph-config -n openstack \
     --from-file=/etc/ceph/ceph.conf \
-	--from-file=/etc/ceph/ceph.client.glance.keyring
+	--from-file=/etc/ceph/ceph.client.glance.keyring \
+	--from-file=/etc/ceph/ceph.client.cinder.keyring
 
 elif [[ "$1" == "stack" && "$2" == "extra" ]]; then
 	:

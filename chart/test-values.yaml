@@ -4,6 +4,7 @@ configMap:
   barbican: {}
   ceilometer:
     dbUri: "sqlite:///:memory:"
+  cinder: {}
   glance: {}
   placement: {}
   neutron: {}

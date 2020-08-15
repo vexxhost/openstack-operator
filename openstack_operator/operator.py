@@ -29,6 +29,7 @@ from sentry_sdk.integrations import aiohttp
 from openstack_operator import barbican
 from openstack_operator import ceilometer
 from openstack_operator import chronyd
+from openstack_operator import cinder
 from openstack_operator import glance
 from openstack_operator import heat
 from openstack_operator import horizon
@@ -108,6 +109,9 @@ def deploy(name, namespace, new, **_):
     if "glance" in config:
         spec = set_service_config(config, "glance")
         glance.create_or_resume("glance", spec)
+    if "cinder" in config:
+        spec = set_service_config(config, "cinder")
+        cinder.create_or_resume("cinder", spec)
     if "magnum" in config:
         spec = set_service_config(config, "magnum")
         magnum.create_or_resume("magnum", spec)

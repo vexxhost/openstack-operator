@@ -1,0 +1,136 @@
+#!/bin/bash
+#
+# Copyright 2020 VEXXHOST, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may
+# not use this file except in compliance with the License. You may obtain
+# a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations
+# under the License.
+
+CINDER_STATE_PATH=/var/lib/cinder
+
+# configure_cinder() - Set config files, create data dirs, etc
+function configure_cinder {
+    sudo install -d -o $STACK_USER -m 755 $CINDER_CONF_DIR
+
+    rm -f $CINDER_CONF
+
+    configure_rootwrap cinder
+    sudo sed -e "s:^filters_path=.*$:filters_path=/usr/local/etc/cinder/rootwrap.d:" -i $CINDER_CONF_DIR/rootwrap.conf
+    cp -p "$CINDER_DIR/etc/cinder/resource_filters.json" "$CINDER_CONF_DIR/resource_filters.json"
+    cp $CINDER_DIR/etc/cinder/api-paste.ini $CINDER_API_PASTE_INI
+
+    kubernetes_ensure_resource secret/cinder-application-credential
+    CINDER_APPLICATION_CREDENTIAL_SECRET=$(get_data_from_secret cinder-application-credential openstack secret)
+    CINDER_APPLICATION_CREDENTIAL_ID=$(get_data_from_secret cinder-application-credential openstack id)
+    iniset $CINDER_CONF keystone_authtoken auth_url $KEYSTONE_AUTH_URI_V3
+    iniset $CINDER_CONF keystone_authtoken auth_type v3applicationcredential
+    iniset $CINDER_CONF keystone_authtoken application_credential_id $CINDER_APPLICATION_CREDENTIAL_ID
+    iniset $CINDER_CONF keystone_authtoken application_credential_secret $CINDER_APPLICATION_CREDENTIAL_SECRET
+
+    iniset $CINDER_CONF DEFAULT debug $ENABLE_DEBUG_LOG_LEVEL
+
+    # NOTE(Alex): operator stuff
+    kubernetes_ensure_resource secret/cinder-mysql
+    CINDER_DATABASE_USER=$(get_data_from_secret cinder-mysql openstack USER)
+    CINDER_DATABASE_PASSWORD=$(get_data_from_secret cinder-mysql openstack PASSWORD)
+    CINDER_DATABASE_NAME=$(get_data_from_secret cinder-mysql openstack DATABASE)
+    iniset $CINDER_CONF database connection "mysql+pymysql://$CINDER_DATABASE_USER:$CINDER_DATABASE_PASSWORD@cinder-mysql-master/$CINDER_DATABASE_NAME?charset=utf8"
+
+    iniset $CINDER_CONF DEFAULT api_paste_config $CINDER_API_PASTE_INI
+    iniset $CINDER_CONF DEFAULT rootwrap_config "$CINDER_CONF_DIR/rootwrap.conf"
+    iniset $CINDER_CONF DEFAULT osapi_volume_extension cinder.api.contrib.standard_extensions
+    iniset $CINDER_CONF DEFAULT osapi_volume_listen $CINDER_SERVICE_LISTEN_ADDRESS
+    iniset $CINDER_CONF DEFAULT state_path $CINDER_STATE_PATH
+    iniset $CINDER_CONF DEFAULT my_ip "$HOST_IP"
+    iniset $CINDER_CONF key_manager backend cinder.keymgr.conf_key_mgr.ConfKeyManager
+    iniset $CINDER_CONF key_manager fixed_key $(openssl rand -hex 16)
+
+    configure_cinder_backend_ceph ceph
+    iniset $CINDER_CONF ceph volume_clear $CINDER_VOLUME_CLEAR
+    iniset $CINDER_CONF DEFAULT enabled_backends ceph
+    iniset $CINDER_CONF DEFAULT default_volume_type ceph
+    configure_cinder_image_volume_cache
+
+    iniset $CINDER_CONF DEFAULT backup_swift_url "$SWIFT_SERVICE_PROTOCOL://$SERVICE_HOST:$SWIFT_DEFAULT_BIND_PORT/v1/AUTH_"
+    iniset $CINDER_CONF oslo_messaging_notifications driver "messagingv2"
+
+    # Get rabbitmq password
+    kubernetes_ensure_resource secret/cinder-rabbitmq
+    CINDER_RABBITMQ_PASSWORD=$(get_data_from_secret cinder-rabbitmq openstack password)
+    CINDER_RABBITMQ_USERNAME=$(get_data_from_secret cinder-rabbitmq openstack username)
+    iniset_k8s_rpc_backend cinder $CINDER_CONF DEFAULT "rabbit://$CINDER_RABBITMQ_USERNAME:$CINDER_RABBITMQ_PASSWORD@rabbitmq-cinder:5672/"
+
+    if [[ -r $CINDER_PLUGINS/$CINDER_DRIVER ]]; then
+        configure_cinder_driver
+    fi
+
+    iniset $CINDER_CONF DEFAULT osapi_volume_workers "$API_WORKERS"
+
+    iniset $CINDER_CONF DEFAULT glance_api_servers "http://glance"
+
+    # Set nova credentials (used for os-assisted-snapshots)
+
+    iniset $CINDER_CONF nova auth_type password
+    iniset $CINDER_CONF nova auth_url $KEYSTONE_SERVICE_URI
+    iniset $CINDER_CONF nova username nova
+    iniset $CINDER_CONF nova password $SERVICE_PASSWORD
+    iniset $CINDER_CONF nova user_domain_name "$SERVICE_DOMAIN_NAME"
+    iniset $CINDER_CONF nova project_name $SERVICE_PROJECT_NAME
+    iniset $CINDER_CONF nova project_domain_name "$SERVICE_DOMAIN_NAME"
+
+    iniset $CINDER_CONF nova region_name "$REGION_NAME"
+    iniset $CINDER_CONF DEFAULT graceful_shutdown_timeout "$SERVICE_GRACEFUL_SHUTDOWN_TIMEOUT"
+
+}
+export -f configure_cinder
+
+
+# init_cinder() - Initialize database and volume group
+function init_cinder {
+    echo noop
+}
+
+# install_cinder() - Collect source and prepare
+function install_cinder {
+    echo noop
+}
+
+# install_cinderclient() - Collect source and prepare
+# NOTE(Alex): I am not sure this function is not overrided if the content is empty.
+#             So I remove this function for now in this override lib file.
+# function install_cinderclient {
+#     echo noop
+# }
+
+function cleanup_cinder {
+    echo noop
+}
+
+# start_cinder() - Start running processes
+function start_cinder {
+
+	kubernetes_rollout_restart daemonset/cinder-api
+    kubernetes_rollout_restart daemonset/cinder-scheduler
+    kubernetes_rollout_restart daemonset/cinder-volume
+
+	kubernetes_rollout_status daemonset/cinder-api
+	kubernetes_rollout_status daemonset/cinder-scheduler
+	kubernetes_rollout_status daemonset/cinder-volume
+
+	proxy_pass_to_kubernetes /volume cinder cinder-wsgi
+
+    sleep 10
+}
+
+# stop_cinder() - Stop running processes
+function stop_cinder {
+    echo noop
+}

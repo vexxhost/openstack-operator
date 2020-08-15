@@ -31,7 +31,7 @@ function kubernetes_rollout_status {
 		kubectl get $resource && break || sleep 1;
 	done
 
-	kubectl rollout status --timeout=60s $resource
+	kubectl rollout status --timeout=300s $resource
 }
 
 function kubernetes_rollout_restart {
@@ -46,8 +46,9 @@ function kubernetes_rollout_restart {
 
 function kubernetes_ensure_resource {
 	local resource="$1"
-	for i in {1..60}; do
-		kubectl get $resource && break || sleep 3;
+	kubectl logs deployment/openstack-operator -n default
+	for i in {1..120}; do
+		kubectl get $resource && break || sleep 5;
 	done
 }
 
