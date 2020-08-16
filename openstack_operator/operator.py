@@ -19,7 +19,6 @@ the appropriate deployments, an instance of Keystone, Heat and Horizon
  for the installation.
 """
 
-import functools
 import os
 import pkg_resources
 
@@ -56,9 +55,7 @@ def operator_configmap(namespace, name, **_):
         and name == "operator-config"
 
 
-@kopf.on.resume('', 'v1', 'configmaps', when=operator_configmap)
-@kopf.on.create('', 'v1', 'configmaps', when=operator_configmap)
-@kopf.on.update('', 'v1', 'configmaps', when=operator_configmap)
+@kopf.on.event('', 'v1', 'configmaps', when=operator_configmap)
 async def deploy_memcacheds(body, **_):
     """
     Deploy multiple Memcached instances for OpenStack services
@@ -66,7 +63,6 @@ async def deploy_memcacheds(body, **_):
     This function makes sure that Memcached is deployed for all services which
     use it when when the operator sees any changes to the configuration.
     """
-    fns = {}
     services = utils.to_dict(body['data']['operator-config.yaml']).keys()
 
     for entry_point in pkg_resources.iter_entry_points('operators'):
@@ -75,11 +71,7 @@ async def deploy_memcacheds(body, **_):
 
         module = entry_point.load()
         if hasattr(module, 'MEMCACHED') and module.MEMCACHED:
-            fns[entry_point.name] = \
-                functools.partial(utils.deploy_memcached,
-                                  item=entry_point.name)
-
-    await kopf.execute(fns=fns)
+            utils.deploy_memcached(entry_point.name)
 
 
 @kopf.on.resume('', 'v1', 'configmaps', when=operator_configmap)
