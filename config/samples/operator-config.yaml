@@ -14,6 +14,7 @@ data:
     heat: {}
     magnum: {}
     chronyd: {}
+    placement: {}
     backup:
       secretName: aws-backup
       url: s3://backups/

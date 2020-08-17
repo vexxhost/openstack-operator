@@ -5,6 +5,7 @@ configMap:
   ceilometer:
     dbUri: "sqlite:///:memory:"
   glance: {}
+  placement: {}
   horizon:
     hostAliases:
     - hostnames:

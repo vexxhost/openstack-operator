@@ -1,0 +1,72 @@
+#!/bin/bash
+#
+# Copyright 2020 VEXXHOST, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may
+# not use this file except in compliance with the License. You may obtain
+# a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations
+# under the License.
+
+function cleanup_placement {
+	echo noop
+}
+export -f cleanup_placement
+
+function create_placement_conf {
+	iniset $PLACEMENT_CONF DEFAULT debug "$ENABLE_DEBUG_LOG_LEVEL"
+	iniset $PLACEMENT_CONF api auth_strategy $PLACEMENT_AUTH_STRATEGY
+
+	kubernetes_ensure_resource secret/placement-mysql
+	PLACEMENT_DATABASE_USER=$(get_data_from_secret placement-mysql openstack USER)
+	PLACEMENT_DATABASE_PASSWORD=$(get_data_from_secret placement-mysql openstack PASSWORD)
+	PLACEMENT_DATABASE_NAME=$(get_data_from_secret placement-mysql openstack DATABASE)
+	iniset $PLACEMENT_CONF placement_database connection "mysql+pymysql://$PLACEMENT_DATABASE_USER:$PLACEMENT_DATABASE_PASSWORD@placement-mysql-master/$PLACEMENT_DATABASE_NAME?charset=utf8"
+
+	kubernetes_ensure_resource secret/placement-application-credential
+	PLACEMENT_APPLICATION_CREDENTIAL_SECRET=$(get_data_from_secret placement-application-credential openstack secret)
+	PLACEMENT_APPLICATION_CREDENTIAL_ID=$(get_data_from_secret placement-application-credential openstack id)
+	iniset $PLACEMENT_CONF keystone_authtoken auth_url $KEYSTONE_AUTH_URI_V3
+	iniset $PLACEMENT_CONF keystone_authtoken auth_type v3applicationcredential
+	iniset $PLACEMENT_CONF keystone_authtoken application_credential_id $PLACEMENT_APPLICATION_CREDENTIAL_ID
+	iniset $PLACEMENT_CONF keystone_authtoken application_credential_secret $PLACEMENT_APPLICATION_CREDENTIAL_SECRET
+}
+export -f create_placement_conf
+
+function configure_placement {
+	sudo install -d -o $STACK_USER $PLACEMENT_CONF_DIR
+	create_placement_conf
+	kubectl create secret generic placement-config --from-file=${PLACEMENT_CONF} -n openstack
+
+	proxy_pass_to_kubernetes /placement placement placement-api
+}
+export -f configure_placement
+
+function init_placement {
+	# NOTE(mnaser): For some reason, DevStack configures Nova to actually
+	#               use the placement service user to talk to it.  Let's
+	#               create the user for now and drop it later.
+	create_service_user "placement" "admin"
+}
+export -f init_placement
+
+function install_placement {
+	echo noop
+}
+export -f install_placement
+
+function start_placement {
+	echo noop
+}
+export -f start_placement
+
+function stop_placement {
+	echo noop
+}
+export -f stop_placement

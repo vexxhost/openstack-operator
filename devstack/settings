@@ -21,4 +21,5 @@ source $DEST/openstack-operator/devstack/lib/barbican
 source $DEST/openstack-operator/devstack/lib/glance
 source $DEST/openstack-operator/devstack/lib/horizon
 source $DEST/openstack-operator/devstack/lib/keystone
+source $DEST/openstack-operator/devstack/lib/placement
 source $DEST/openstack-operator/devstack/lib/rpc_backend

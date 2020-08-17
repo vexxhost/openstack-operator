@@ -35,6 +35,7 @@ from openstack_operator import horizon
 from openstack_operator import keystone
 from openstack_operator import libvirtd_exporter
 from openstack_operator import magnum
+from openstack_operator import placement
 from openstack_operator import utils
 
 
@@ -91,6 +92,9 @@ def deploy(name, namespace, new, **_):
     if "keystone" in config:
         spec = set_service_config(config, "keystone")
         keystone.create_or_resume("keystone", spec)
+    if "placement" in config:
+        spec = set_service_config(config, "placement")
+        placement.create_or_resume("placement", spec)
     if "horizon" in config:
         spec = set_service_config(config, "horizon")
         horizon.create_or_resume("horizon", spec)

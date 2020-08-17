@@ -1,0 +1,42 @@
+- job:
+    name: openstack-operator:images:build:placement
+    parent: vexxhost-build-docker-image
+    provides: openstack-operator:image:placement
+    nodeset: &id001
+      nodes:
+      - name: ubuntu-bionic
+        label: ubuntu-bionic-vexxhost
+    vars: &id002
+      docker_images:
+      - context: images/placement
+        repository: vexxhost/placement
+        target: placement
+    dependencies:
+    - openstack-operator:images:build:openstack-operator
+    files: &id003
+    - ^images/placement/.*
+- job:
+    name: openstack-operator:images:upload:placement
+    parent: vexxhost-upload-docker-image
+    provides: openstack-operator:image:placement
+    nodeset: *id001
+    vars: *id002
+    dependencies:
+    - openstack-operator:images:upload:openstack-operator
+    files: *id003
+- job:
+    name: openstack-operator:images:promote:placement
+    parent: vexxhost-promote-docker-image
+    nodeset: *id001
+    vars: *id002
+    files: *id003
+- project:
+    check:
+      jobs:
+      - openstack-operator:images:build:placement
+    gate:
+      jobs:
+      - openstack-operator:images:upload:placement
+    promote:
+      jobs:
+      - openstack-operator:images:promote:placement
