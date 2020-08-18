@@ -49,6 +49,7 @@
       - magnum-tempest-plugin
       - tempest-horizon
       devstack_localrc:
+        NEUTRON_DEPLOY_MOD_WSGI: True
         TEMPEST_PLUGINS: /opt/stack/barbican-tempest-plugin /opt/stack/heat-tempest-plugin
           /opt/stack/magnum-tempest-plugin /opt/stack/tempest-horizon
       docker_use_buildset_registry: true
@@ -65,6 +66,8 @@
           - name: openstack-operator:images:build:barbican
             soft: true
           - name: openstack-operator:images:build:ceilometer
+            soft: true
+          - name: openstack-operator:images:build:neutron
             soft: true
           - name: openstack-operator:images:build:rabbitmq
             soft: true
@@ -96,6 +99,8 @@
           - name: openstack-operator:images:upload:barbican
             soft: true
           - name: openstack-operator:images:upload:ceilometer
+            soft: true
+          - name: openstack-operator:images:upload:neutron
             soft: true
           - name: openstack-operator:images:upload:rabbitmq
             soft: true

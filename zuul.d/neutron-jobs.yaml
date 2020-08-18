@@ -1,0 +1,48 @@
+- job:
+    name: openstack-operator:images:build:neutron
+    parent: vexxhost-build-docker-image
+    provides: openstack-operator:image:neutron
+    nodeset: &id001
+      nodes:
+      - name: ubuntu-bionic
+        label: ubuntu-bionic-vexxhost
+    vars: &id002
+      docker_images:
+      - context: images/neutron
+        repository: vexxhost/neutron-base
+        target: neutron-base
+      - context: images/neutron
+        repository: vexxhost/neutron-api
+        target: neutron-api
+      - context: images/neutron
+        repository: vexxhost/neutron-rpc-server
+        target: neutron-rpc-server
+    dependencies:
+    - openstack-operator:images:build:openstack-operator
+    files: &id003
+    - ^images/neutron/.*
+- job:
+    name: openstack-operator:images:upload:neutron
+    parent: vexxhost-upload-docker-image
+    provides: openstack-operator:image:neutron
+    nodeset: *id001
+    vars: *id002
+    dependencies:
+    - openstack-operator:images:upload:openstack-operator
+    files: *id003
+- job:
+    name: openstack-operator:images:promote:neutron
+    parent: vexxhost-promote-docker-image
+    nodeset: *id001
+    vars: *id002
+    files: *id003
+- project:
+    check:
+      jobs:
+      - openstack-operator:images:build:neutron
+    gate:
+      jobs:
+      - openstack-operator:images:upload:neutron
+    promote:
+      jobs:
+      - openstack-operator:images:promote:neutron
