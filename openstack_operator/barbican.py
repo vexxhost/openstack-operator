@@ -23,6 +23,8 @@ from openstack_operator import database
 from openstack_operator import identity
 from openstack_operator import utils
 
+MEMCACHED = True
+
 
 def create_or_resume(name, spec, **_):
     """Create and re-sync a barbican instance
@@ -33,9 +35,6 @@ def create_or_resume(name, spec, **_):
         database.ensure_mysql_cluster("barbican", {})
     else:
         database.ensure_mysql_cluster("barbican", spec["mysql"])
-
-    # deploy memcached
-    utils.create_or_update('barbican/memcached.yml.j2', spec=spec)
 
     # deploy barbican api
     utils.create_or_update('barbican/daemonset.yml.j2',
