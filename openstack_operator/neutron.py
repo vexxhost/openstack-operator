@@ -20,6 +20,7 @@ service.
 """
 
 from openstack_operator import database
+from openstack_operator import identity
 from openstack_operator import utils
 
 MEMCACHED = True
@@ -36,3 +37,5 @@ def create_or_resume(spec, **_):
 
     utils.create_or_update('neutron/daemonset.yml.j2', spec=spec)
     utils.create_or_update('neutron/service.yml.j2')
+
+    identity.ensure_application_credential(name="neutron")
