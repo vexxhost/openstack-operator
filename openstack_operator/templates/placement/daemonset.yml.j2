@@ -67,16 +67,11 @@ spec:
         securityContext:
           runAsUser: 1001
         volumeMounts:
-        - name: ceph
-          mountPath: /etc/ceph
         - name: config
           mountPath: /etc/placement
         - name: uwsgi-config
           mountPath: /etc/uwsgi
       volumes:
-      - name: ceph
-        secret:
-          secretName: ceph-config
       - name: config
         secret:
           secretName: placement-config
