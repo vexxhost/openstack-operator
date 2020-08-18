@@ -19,6 +19,7 @@ This code takes care of doing the operations of the OpenStack Neutron API
 service.
 """
 
+from openstack_operator import database
 from openstack_operator import utils
 
 MEMCACHED = True
@@ -30,6 +31,8 @@ def create_or_resume(spec, **_):
     This function is called when a new resource is created but also when we
     start the service up for the first time.
     """
+
+    database.ensure_mysql_cluster("neutron")
 
     utils.create_or_update('neutron/daemonset.yml.j2', spec=spec)
     utils.create_or_update('neutron/service.yml.j2')

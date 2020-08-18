@@ -20,8 +20,11 @@ This module contains a few common functions for database management
 from openstack_operator import utils
 
 
-def ensure_mysql_cluster(name, spec):
+def ensure_mysql_cluster(name, spec=None):
     """Create or update mysql cluster"""
+
+    if spec is None:
+        spec = {}
 
     config = utils.get_secret("openstack", name + "-mysql")
     if config is None:

@@ -15,7 +15,7 @@
 # under the License.
 
 function init_mutnauq {
-	recreate_database $Q_DB_NAME
+	echo noop
 }
 export -f init_mutnauq
 
@@ -39,3 +39,77 @@ function start_neutron_service_and_check {
 	fi
 }
 export -f start_neutron_service_and_check
+
+function _configure_neutron_common {
+	_create_neutron_conf_dir
+
+	# Uses oslo config generator to generate core sample configuration files
+	(cd $NEUTRON_DIR && exec ./tools/generate_config_file_samples.sh)
+
+	cp $NEUTRON_DIR/etc/neutron.conf.sample $NEUTRON_CONF
+
+	Q_POLICY_FILE=$NEUTRON_CONF_DIR/policy.json
+
+	# allow neutron user to administer neutron to match neutron account
+	# NOTE(amotoki): This is required for nova works correctly with neutron.
+	if [ -f $NEUTRON_DIR/etc/policy.json ]; then
+		cp $NEUTRON_DIR/etc/policy.json $Q_POLICY_FILE
+		sed -i 's/"context_is_admin":  "role:admin"/"context_is_admin":  "role:admin or user_name:neutron"/g' $Q_POLICY_FILE
+	else
+		echo '{"context_is_admin":  "role:admin or user_name:neutron"}' > $Q_POLICY_FILE
+	fi
+
+	# Set plugin-specific variables ``Q_DB_NAME``, ``Q_PLUGIN_CLASS``.
+	# For main plugin config file, set ``Q_PLUGIN_CONF_PATH``, ``Q_PLUGIN_CONF_FILENAME``.
+	neutron_plugin_configure_common
+
+	if [[ "$Q_PLUGIN_CONF_PATH" == '' || "$Q_PLUGIN_CONF_FILENAME" == '' || "$Q_PLUGIN_CLASS" == '' ]]; then
+		die $LINENO "Neutron plugin not set.. exiting"
+	fi
+
+	# If needed, move config file from ``$NEUTRON_DIR/etc/neutron`` to ``NEUTRON_CONF_DIR``
+	mkdir -p /$Q_PLUGIN_CONF_PATH
+	Q_PLUGIN_CONF_FILE=$Q_PLUGIN_CONF_PATH/$Q_PLUGIN_CONF_FILENAME
+	# NOTE(hichihara): Some neutron vendor plugins were already decomposed and
+	# there is no config file in Neutron tree. They should prepare the file in each plugin.
+	if [ -f "$NEUTRON_DIR/$Q_PLUGIN_CONF_FILE.sample" ]; then
+		cp "$NEUTRON_DIR/$Q_PLUGIN_CONF_FILE.sample" /$Q_PLUGIN_CONF_FILE
+	elif [ -f $NEUTRON_DIR/$Q_PLUGIN_CONF_FILE ]; then
+		cp $NEUTRON_DIR/$Q_PLUGIN_CONF_FILE /$Q_PLUGIN_CONF_FILE
+	fi
+
+	kubernetes_ensure_resource secret/neutron-mysql
+	NEUTRON_DATABASE_USER=$(get_data_from_secret neutron-mysql openstack USER)
+	NEUTRON_DATABASE_PASSWORD=$(get_data_from_secret neutron-mysql openstack PASSWORD)
+	NEUTRON_DATABASE_NAME=$(get_data_from_secret neutron-mysql openstack DATABASE)
+	iniset $NEUTRON_CONF database connection "mysql+pymysql://$NEUTRON_DATABASE_USER:$NEUTRON_DATABASE_PASSWORD@neutron-mysql-master/$NEUTRON_DATABASE_NAME?charset=utf8"
+
+	iniset $NEUTRON_CONF DEFAULT state_path $DATA_DIR/neutron
+	iniset $NEUTRON_CONF DEFAULT use_syslog $SYSLOG
+	iniset $NEUTRON_CONF DEFAULT bind_host $Q_LISTEN_ADDRESS
+	iniset $NEUTRON_CONF oslo_concurrency lock_path $DATA_DIR/neutron/lock
+
+	# NOTE(freerunner): Need to adjust Region Name for nova in multiregion installation
+	iniset $NEUTRON_CONF nova region_name $REGION_NAME
+
+	if [ "$VIRT_DRIVER" = 'fake' ]; then
+		# Disable arbitrary limits
+		iniset $NEUTRON_CONF quotas quota_network -1
+		iniset $NEUTRON_CONF quotas quota_subnet -1
+		iniset $NEUTRON_CONF quotas quota_port -1
+		iniset $NEUTRON_CONF quotas quota_security_group -1
+		iniset $NEUTRON_CONF quotas quota_security_group_rule -1
+	fi
+
+	# Format logging
+	setup_logging $NEUTRON_CONF
+
+	if is_service_enabled tls-proxy && [ "$NEUTRON_DEPLOY_MOD_WSGI" == "False" ]; then
+		# Set the service port for a proxy to take the original
+		iniset $NEUTRON_CONF DEFAULT bind_port "$Q_PORT_INT"
+		iniset $NEUTRON_CONF oslo_middleware enable_proxy_headers_parsing True
+	fi
+
+	_neutron_setup_rootwrap
+}
+export -f _configure_neutron_common
