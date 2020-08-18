@@ -31,7 +31,7 @@ function kubernetes_rollout_status {
 		kubectl get $resource && break || sleep 1;
 	done
 
-	kubectl rollout status $resource
+	kubectl rollout status --timeout=60s $resource
 }
 
 function kubernetes_rollout_restart {
