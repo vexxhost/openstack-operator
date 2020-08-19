@@ -15,6 +15,7 @@ data:
     magnum: {}
     chronyd: {}
     placement: {}
+    neutron: {}
     backup:
       secretName: aws-backup
       url: s3://backups/

@@ -1,0 +1,5 @@
+uWSGI
+PyMySQL
+python-memcached
+sentry-sdk
+git+https://opendev.org/openstack/neutron@stable/ussuri

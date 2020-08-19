@@ -6,6 +6,7 @@ configMap:
     dbUri: "sqlite:///:memory:"
   glance: {}
   placement: {}
+  neutron: {}
   horizon:
     hostAliases:
     - hostnames:

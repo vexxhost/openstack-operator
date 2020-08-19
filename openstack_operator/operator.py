@@ -35,6 +35,7 @@ from openstack_operator import horizon
 from openstack_operator import keystone
 from openstack_operator import libvirtd_exporter
 from openstack_operator import magnum
+from openstack_operator import neutron
 from openstack_operator import placement
 from openstack_operator import utils
 
@@ -94,7 +95,10 @@ def deploy(name, namespace, new, **_):
         keystone.create_or_resume("keystone", spec)
     if "placement" in config:
         spec = set_service_config(config, "placement")
-        placement.create_or_resume("placement", spec)
+        neutron.create_or_resume(spec)
+    if "neutron" in config:
+        spec = set_service_config(config, "neutron")
+        placement.create_or_resume("neutron", spec)
     if "horizon" in config:
         spec = set_service_config(config, "horizon")
         horizon.create_or_resume("horizon", spec)
@@ -114,16 +118,10 @@ def deploy(name, namespace, new, **_):
         spec = config["ceilometer"]
         ceilometer.create_or_resume(spec)
 
-    if "chronyd" in config:
-        spec = config["chronyd"]
-    else:
-        spec = {}
+    spec = config.get("chronyd", {})
     chronyd.create_or_resume(spec)
 
-    if "libvirtd-exporter" in config:
-        spec = config["libvirtd-exporter"]
-    else:
-        spec = {}
+    spec = config.get("libvirtd_exporter", {})
     libvirtd_exporter.create_or_resume(spec)
 
 
