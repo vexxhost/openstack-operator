@@ -87,6 +87,26 @@ function start_neutron_service_and_check {
 }
 export -f start_neutron_service_and_check
 
+function start_mutnauq_l2_agent {
+	kubernetes_rollout_restart daemonset/neutron-openvswitch-agent
+	kubernetes_rollout_status daemonset/neutron-openvswitch-agent
+
+	if is_provider_network && [[ $Q_AGENT == "openvswitch" ]]; then
+		sudo ovs-vsctl --no-wait -- --may-exist add-port $OVS_PHYSICAL_BRIDGE $PUBLIC_INTERFACE
+		sudo ip link set $OVS_PHYSICAL_BRIDGE up
+		sudo ip link set br-int up
+		sudo ip link set $PUBLIC_INTERFACE up
+		if is_ironic_hardware; then
+			for IP in $(ip addr show dev $PUBLIC_INTERFACE | grep ' inet ' | awk '{print $2}'); do
+				sudo ip addr del $IP dev $PUBLIC_INTERFACE
+				sudo ip addr add $IP dev $OVS_PHYSICAL_BRIDGE
+			done
+			sudo ip route replace $FIXED_RANGE via $NETWORK_GATEWAY dev $OVS_PHYSICAL_BRIDGE
+		fi
+	fi
+}
+export -f start_neutron_agents
+
 function _configure_neutron_common {
 	_create_neutron_conf_dir
 

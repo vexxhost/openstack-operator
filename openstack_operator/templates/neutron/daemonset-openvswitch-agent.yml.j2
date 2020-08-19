@@ -1,0 +1,97 @@
+---
+# Copyright 2020 VEXXHOST, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: neutron-openvswitch-agent
+  namespace: openstack
+  labels:
+    {{ labels("neutron", component="openvswitch-agent") | indent(4) }}
+spec:
+  updateStrategy:
+    rollingUpdate:
+      maxUnavailable: 1
+    type: RollingUpdate
+  selector:
+    matchLabels:
+      {{ labels("neutron", component="openvswitch-agent") | indent(6) }}
+  template:
+    metadata:
+      labels:
+        {{ labels("neutron", component="openvswitch-agent") | indent(8) }}
+    spec:
+      automountServiceAccountToken: false
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
+      initContainers:
+      # TODO(mnaser): This should parse the configuration file and then create
+      #               the bridges as needed.
+      - name: create-bridge
+        image: vexxhost/neutron-openvswitch-agent:latest
+        imagePullPolicy: Always
+        command:
+        - ovs-vsctl
+        - --may-exist
+        - add-br
+        - br-ex
+        volumeMounts:
+        - name: config
+          mountPath: /etc/neutron
+        - name: ml2-config
+          mountPath: /etc/neutron/plugins/ml2
+        - name: host-run-ovs
+          mountPath: /run/openvswitch
+      containers:
+      - name: agent
+        image: vexxhost/neutron-openvswitch-agent:latest
+        imagePullPolicy: Always
+        env:
+        {% if 'sentryDSN' in spec %}
+        - name: SENTRY_DSN
+          value: {{ spec.sentryDSN }}
+        {% endif %}
+        - name: OS_OVS__LOCAL_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.hostIP
+        securityContext:
+          # NOTE(mnaser): We need to revisit this
+          privileged: true
+        volumeMounts:
+        - name: config
+          mountPath: /etc/neutron
+        - name: ml2-config
+          mountPath: /etc/neutron/plugins/ml2
+        - name: host-run-ovs
+          mountPath: /run/openvswitch
+      volumes:
+      - name: config
+        secret:
+          secretName: neutron-config
+      - name: ml2-config
+        secret:
+          secretName: neutron-ml2-config
+      - name: host-run-ovs
+        hostPath:
+          path: /run/openvswitch
+      tolerations:
+      - key: node-role.kubernetes.io/master
+        effect: NoSchedule
+{% if 'hostAliases' in spec %}
+      hostAliases:
+        {{ spec.hostAliases | to_yaml | indent(8) }}
+{% endif %}
+

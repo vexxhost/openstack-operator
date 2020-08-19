@@ -33,8 +33,8 @@ def _get_service(conn, name, service_type):
     try:
         services = conn.search_services(name_or_id=name,
                                         filters={"type": service_type})
-    except ConnectionRefusedError:
-        raise kopf.TemporaryError("Keystone is not up yet", delay=5)
+    except ConnectionRefusedError as ex:
+        raise kopf.TemporaryError(str(ex), delay=5)
 
     if len(services) > 1:
         raise RuntimeError("Found multiple services with name and type")

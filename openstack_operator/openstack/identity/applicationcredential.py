@@ -54,6 +54,18 @@ def create_or_resume(name, **_):
             'identity/secret-applicationcredential.yml.j2',
             name=name, secret=credential.secret,
             id=credential.id, adopt=True)
+        return
+
+    # NOTE(Alex): Sometimes, double POST application_credential requests
+    # are made to keystone API at the "same time".
+    # The credential secret is not created in this case.
+    # The following codes should fix this case.
+    if utils.get_secret(name=name+"-application-credential",
+                        namespace="openstack") is None:
+        utils.create_or_update(
+            'identity/secret-applicationcredential.yml.j2',
+            name=name, secret=credential.secret,
+            id=credential.id, adopt=True)
 
 
 @kopf.on.delete('identity.openstack.org', 'v1alpha1', 'applicationcredentials')

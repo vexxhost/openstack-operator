@@ -25,3 +25,7 @@ CMD ["/usr/local/bin/uwsgi", "--ini", "/etc/uwsgi/uwsgi.ini"]
 FROM neutron-base AS neutron-rpc-server
 COPY neutron-rpc-server /usr/local/bin/neutron-rpc-server
 CMD ["/usr/local/bin/neutron-rpc-server"]
+
+FROM neutron-base AS neutron-openvswitch-agent
+COPY neutron-openvswitch-agent /usr/local/bin/neutron-openvswitch-agent
+CMD ["/usr/local/bin/neutron-openvswitch-agent", "--config-file", "/etc/neutron/neutron.conf", "--config-file", "/etc/neutron/plugins/ml2/ml2_conf.ini"]

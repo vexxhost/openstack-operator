@@ -1,2 +1,4 @@
 gcc [compile]
 libc-dev [compile]
+sudo
+openvswitch-common

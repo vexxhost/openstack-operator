@@ -40,7 +40,9 @@ def create_or_resume(spec, **_):
     database.ensure_mysql_cluster("neutron")
 
     utils.create_or_update('neutron/rabbitmq.yml.j2')
-    utils.create_or_update('neutron/daemonset.yml.j2', spec=spec)
+    utils.create_or_update('neutron/daemonset-server.yml.j2', spec=spec)
+    utils.create_or_update('neutron/daemonset-openvswitch-agent.yml.j2',
+                           spec=spec)
     utils.create_or_update('neutron/service.yml.j2')
 
     identity.ensure_application_credential(name="neutron")

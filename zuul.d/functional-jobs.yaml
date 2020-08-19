@@ -50,7 +50,8 @@
       - magnum-tempest-plugin
       - tempest-horizon
       devstack_localrc:
-        NEUTRON_DEPLOY_MOD_WSGI: True
+        NEUTRON_DEPLOY_MOD_WSGI: true
+        Q_USE_ROOTWRAP: false
         TEMPEST_PLUGINS: /opt/stack/barbican-tempest-plugin /opt/stack/heat-tempest-plugin
           /opt/stack/magnum-tempest-plugin /opt/stack/tempest-horizon
       docker_use_buildset_registry: true
