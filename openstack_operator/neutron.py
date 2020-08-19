@@ -44,3 +44,14 @@ def create_or_resume(spec, **_):
     utils.create_or_update('neutron/service.yml.j2')
 
     identity.ensure_application_credential(name="neutron")
+
+    url = None
+    if "ingress" in spec:
+        utils.create_or_update('neutron/ingress.yml.j2', spec=spec)
+        url = spec["ingress"]["host"]
+
+    if "endpoint" not in spec:
+        spec["endpoint"] = True
+    if spec["endpoint"]:
+        identity.ensure_service(name="neutron", service_type="network",
+                                url=url, desc="Neutron Service")

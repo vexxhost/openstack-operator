@@ -56,6 +56,11 @@ function configure_mutnauq {
 }
 export -f configure_mutnauq
 
+function create_mutnauq_accounts {
+	# NOTE(mnaser): We'll have to drop all uses of this at some point
+	create_service_user "neutron"
+}
+
 function init_mutnauq {
 	echo noop
 }
