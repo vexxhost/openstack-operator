@@ -18,6 +18,8 @@ kind: Service
 metadata:
   name: neutron
   namespace: openstack
+  labels:
+    {{ labels("neutron", component="server") | indent(4) }}
 spec:
   ports:
   - name: neutron
@@ -25,4 +27,4 @@ spec:
     protocol: TCP
     targetPort: neutron
   selector:
-    {{ labels("neutron") | indent(4) }}
+    {{ labels("neutron", component="server") | indent(4) }}

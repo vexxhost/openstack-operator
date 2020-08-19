@@ -18,6 +18,8 @@ kind: Rabbitmq
 metadata:
   name: neutron
   namespace: openstack
+  labels:
+    {{ labels("neutron") | indent(4) }}
 spec:
   authSecret: neutron-rabbitmq
   nodeSelector:

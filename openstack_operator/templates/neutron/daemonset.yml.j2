@@ -19,7 +19,7 @@ metadata:
   name: neutron
   namespace: openstack
   labels:
-    {{ labels("neutron") | indent(4) }}
+    {{ labels("neutron", component="server") | indent(4) }}
 spec:
   updateStrategy:
     rollingUpdate:
@@ -27,11 +27,11 @@ spec:
     type: RollingUpdate
   selector:
     matchLabels:
-      {{ labels("neutron") | indent(6) }}
+      {{ labels("neutron", component="server") | indent(6) }}
   template:
     metadata:
       labels:
-        {{ labels("neutron") | indent(8) }}
+        {{ labels("neutron", component="server") | indent(8) }}
     spec:
       automountServiceAccountToken: false
       initContainers:
