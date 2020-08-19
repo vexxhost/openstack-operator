@@ -96,10 +96,10 @@ def deploy(name, namespace, new, **_):
         keystone.create_or_resume("keystone", spec)
     if "placement" in config:
         spec = set_service_config(config, "placement")
-        neutron.create_or_resume(spec)
+        placement.create_or_resume("placement", spec)
     if "neutron" in config:
         spec = set_service_config(config, "neutron")
-        placement.create_or_resume("neutron", spec)
+        neutron.create_or_resume(spec)
     if "horizon" in config:
         spec = set_service_config(config, "horizon")
         horizon.create_or_resume("horizon", spec)
