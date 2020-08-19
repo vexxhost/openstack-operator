@@ -2,3 +2,9 @@ gcc [compile]
 libc-dev [compile]
 sudo
 openvswitch-common
+procps
+iptables
+keepalived
+haproxy
+dnsmasq
+radvd

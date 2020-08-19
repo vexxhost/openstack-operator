@@ -16,12 +16,6 @@
 
 - hosts: all
   tasks:
-    - name: Get Memcached IP address
-      command: kubectl get svc/mcrouter-memcached-devstack -o=jsonpath='{.spec.clusterIP}'
-      register: _memcached_ip
-    - name: Get RabbitMQ IP address
-      command: kubectl get svc/rabbitmq-sample -o=jsonpath='{.spec.clusterIP}'
-      register: _rabbitmq_ip
     # NOTE(mnaser): We need to rewrite the devstack local.conf because it happens
     #               inside pre.yaml right now.  This should all be gone once the
     #               operator can deploy OpenStack entirely by itself.
@@ -48,8 +42,6 @@
         _devstack_localrc: "{{ devstack_localrc }}"
         _devstack_localrc_extra:
           CELLSV2_SETUP: singleconductor
-          MEMCACHE_SERVERS: "{{ _memcached_ip.stdout }}:11211"
-          RABBIT_HOST: "{{ _rabbitmq_ip.stdout }}"
           DATABASE_HOST: "{{ hostvars['controller']['nodepool']['private_ipv4'] }}"
           ERROR_ON_CLONE: True
     - name: Re-write local.conf

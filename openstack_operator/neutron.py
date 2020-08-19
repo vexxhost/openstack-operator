@@ -43,6 +43,10 @@ def create_or_resume(spec, **_):
     utils.create_or_update('neutron/daemonset-server.yml.j2', spec=spec)
     utils.create_or_update('neutron/daemonset-openvswitch-agent.yml.j2',
                            spec=spec)
+    utils.create_or_update('neutron/daemonset-l3-agent.yml.j2', spec=spec)
+    utils.create_or_update('neutron/daemonset-dhcp-agent.yml.j2', spec=spec)
+    utils.create_or_update('neutron/daemonset-metadata-agent.yml.j2',
+                           spec=spec)
     utils.create_or_update('neutron/service.yml.j2')
 
     identity.ensure_application_credential(name="neutron")

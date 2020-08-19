@@ -30,7 +30,7 @@
         c-bak: false
         etcd3: false
         horizon: true
-        rabbit: false
+        rabbit: true
         tls-proxy: false
       devstack_plugins:
         openstack-operator: https://opendev.org/vexxhost/openstack-operator
@@ -43,7 +43,7 @@
       - src/opendev.org/vexxhost
       tox_envlist: all
       tempest_test_regex: (\[.*\bsmoke\b.*\]|(^heat_tempest_plugin.tests.api)|(^tempest_horizon.tests.scenario)|(^barbican_tempest_plugin.tests.api)|(^barbican_tempest_plugin.tests.scenario))
-      tempest_black_regex: (^tempest.scenario.test_network_basic_ops|barbican_tempest_plugin.tests.scenario.(test_image_signing.ImageSigningTest.test_signed_image_upload_boot_failure|test_volume_encryption.VolumeEncryptionTest.test_encrypted_cinder_volumes_cryptsetup))
+      tempest_black_regex: (^tempest.scenario.test_network_basic_ops|barbican_tempest_plugin.tests.scenario.(test_certificate_validation|test_image_signing.ImageSigningTest.test_signed_image_upload_boot_failure|test_volume_encryption.VolumeEncryptionTest.test_encrypted_cinder_volumes_cryptsetup))
       tempest_plugins:
       - barbican-tempest-plugin
       - heat-tempest-plugin

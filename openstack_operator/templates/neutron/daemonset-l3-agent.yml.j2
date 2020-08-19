@@ -1,0 +1,89 @@
+---
+# Copyright 2020 VEXXHOST, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: neutron-l3-agent
+  namespace: openstack
+  labels:
+    {{ labels("neutron", component="l3-agent") | indent(4) }}
+spec:
+  updateStrategy:
+    rollingUpdate:
+      maxUnavailable: 1
+    type: RollingUpdate
+  selector:
+    matchLabels:
+      {{ labels("neutron", component="l3-agent") | indent(6) }}
+  template:
+    metadata:
+      labels:
+        {{ labels("neutron", component="l3-agent") | indent(8) }}
+    spec:
+      automountServiceAccountToken: false
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
+      containers:
+      - name: agent
+        image: vexxhost/neutron-l3-agent:latest
+        imagePullPolicy: Always
+        env:
+        {% if 'sentryDSN' in spec %}
+        - name: SENTRY_DSN
+          value: {{ spec.sentryDSN }}
+        {% endif %}
+        securityContext:
+          # NOTE(mnaser): We need to revisit this
+          privileged: true
+        volumeMounts:
+        - name: config
+          mountPath: /etc/neutron
+        - name: ml2-config
+          mountPath: /etc/neutron/plugins/ml2
+        - name: state
+          mountPath: /var/lib/neutron
+        - name: host-run-ovs
+          mountPath: /run/openvswitch
+        - name: host-run-netns
+          mountPath: /run/netns
+          mountPropagation: Bidirectional
+      volumes:
+      - name: config
+        secret:
+          secretName: neutron-config
+      - name: ml2-config
+        secret:
+          secretName: neutron-ml2-config
+      - name: state
+        hostPath:
+          path: /var/lib/neutron
+          type: DirectoryOrCreate
+      - name: host-run-ovs
+        hostPath:
+          path: /run/openvswitch
+      - name: host-run-netns
+        hostPath:
+          path: /run/netns
+      nodeSelector:
+        node-role.kubernetes.io/master: ""
+      tolerations:
+      - key: node-role.kubernetes.io/master
+        effect: NoSchedule
+{% if 'hostAliases' in spec %}
+      hostAliases:
+        {{ spec.hostAliases | to_yaml | indent(8) }}
+{% endif %}
+

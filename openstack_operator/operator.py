@@ -36,6 +36,7 @@ from openstack_operator import horizon
 from openstack_operator import keystone
 from openstack_operator import libvirtd_exporter
 from openstack_operator import magnum
+from openstack_operator import nova
 from openstack_operator import neutron
 from openstack_operator import placement
 from openstack_operator import utils
@@ -100,6 +101,9 @@ def deploy(name, namespace, new, **_):
     if "neutron" in config:
         spec = set_service_config(config, "neutron")
         neutron.create_or_resume(spec)
+    if "nova" in config:
+        spec = set_service_config(config, "nova")
+        nova.create_or_resume()
     if "horizon" in config:
         spec = set_service_config(config, "horizon")
         horizon.create_or_resume("horizon", spec)

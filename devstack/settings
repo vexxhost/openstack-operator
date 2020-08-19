@@ -23,5 +23,6 @@ source $DEST/openstack-operator/devstack/lib/glance
 source $DEST/openstack-operator/devstack/lib/horizon
 source $DEST/openstack-operator/devstack/lib/keystone
 source $DEST/openstack-operator/devstack/lib/neutron-legacy
+source $DEST/openstack-operator/devstack/lib/nova
 source $DEST/openstack-operator/devstack/lib/placement
 source $DEST/openstack-operator/devstack/lib/rpc_backend
