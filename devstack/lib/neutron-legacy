@@ -14,6 +14,48 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+function configure_mutnauq {
+	_configure_neutron_common
+
+	kubernetes_ensure_resource secret/neutron-rabbitmq
+	NEUTRON_RABBITMQ_USERNAME=$(get_data_from_secret neutron-rabbitmq openstack username)
+	NEUTRON_RABBITMQ_PASSWORD=$(get_data_from_secret neutron-rabbitmq openstack password)
+	iniset $NEUTRON_CONF DEFAULT transport_url "rabbit://$NEUTRON_RABBITMQ_USERNAME:$NEUTRON_RABBITMQ_PASSWORD@rabbitmq-neutron.openstack.svc.cluster.local:5672/"
+
+	if is_service_enabled q-metering; then
+		_configure_neutron_metering
+	fi
+	if is_service_enabled q-agt q-svc; then
+		_configure_neutron_service
+	fi
+	if is_service_enabled q-agt; then
+		_configure_neutron_plugin_agent
+	fi
+	if is_service_enabled q-dhcp; then
+		_configure_neutron_dhcp_agent
+	fi
+	if is_service_enabled q-l3; then
+		_configure_neutron_l3_agent
+	fi
+	if is_service_enabled q-meta; then
+		_configure_neutron_metadata_agent
+	fi
+
+	if [[ "$Q_DVR_MODE" != "legacy" ]]; then
+		_configure_dvr
+	fi
+	if is_service_enabled ceilometer; then
+		_configure_neutron_ceilometer_notifications
+	fi
+
+	iniset $NEUTRON_CONF DEFAULT api_workers "$API_WORKERS"
+	# devstack is not a tool for running uber scale OpenStack
+	# clouds, therefore running without a dedicated RPC worker
+	# for state reports is more than adequate.
+	iniset $NEUTRON_CONF DEFAULT rpc_state_report_workers 0
+}
+export -f configure_mutnauq
+
 function init_mutnauq {
 	echo noop
 }
