@@ -63,8 +63,17 @@ function create_nova_conf {
 			iniset $NOVA_CONF filter_scheduler track_instance_changes False
 		fi
 
-		iniset $NOVA_CONF database connection `database_connection_url $db`
-		iniset $NOVA_CONF api_database connection `database_connection_url nova_api`
+		kubernetes_ensure_resource secret/nova-cell1-mysql
+		NOVA_CELL1_DATABASE_USER=$(get_data_from_secret nova-cell1-mysql openstack USER)
+		NOVA_CELL1_DATABASE_PASSWORD=$(get_data_from_secret nova-cell1-mysql openstack PASSWORD)
+		NOVA_CELL1_DATABASE_NAME=$(get_data_from_secret nova-cell1-mysql openstack DATABASE)
+		iniset $NOVA_CONF database connection "mysql+pymysql://$NOVA_CELL1_DATABASE_USER:$NOVA_CELL1_DATABASE_PASSWORD@nova-cell1-mysql-master.openstack.svc/$NOVA_CELL1_DATABASE_NAME?charset=utf8"
+
+		kubernetes_ensure_resource secret/nova-api-mysql
+		NOVA_API_DATABASE_USER=$(get_data_from_secret nova-api-mysql openstack USER)
+		NOVA_API_DATABASE_PASSWORD=$(get_data_from_secret nova-api-mysql openstack PASSWORD)
+		NOVA_API_DATABASE_NAME=$(get_data_from_secret nova-api-mysql openstack DATABASE)
+		iniset $NOVA_CONF api_database connection "mysql+pymysql://$NOVA_API_DATABASE_USER:$NOVA_API_DATABASE_PASSWORD@nova-api-mysql-master.openstack.svc/$NOVA_API_DATABASE_NAME?charset=utf8"
 
 		# Cache related settings
 		# Those settings aren't really needed in n-cpu thus it is configured
@@ -161,7 +170,11 @@ function create_nova_conf {
 			vhost="nova_cell${i}"
 			# clean old conductor conf
 			rm -f $conf
-			iniset $conf database connection `database_connection_url nova_cell${i}`
+			NOVA_CELL_DATABASE_USER=$(get_data_from_secret nova-cell${i}-mysql openstack USER)
+			NOVA_CELL_DATABASE_PASSWORD=$(get_data_from_secret nova-cell${i}-mysql openstack PASSWORD)
+			NOVA_CELL_DATABASE_NAME=$(get_data_from_secret nova-cell${i}-mysql openstack DATABASE)
+			iniset $conf database connection "mysql+pymysql://$NOVA_CELL_DATABASE_USER:$NOVA_CELL_DATABASE_PASSWORD@nova-cell${i}-mysql-master.openstack.svc/$NOVA_CELL_DATABASE_NAME?charset=utf8"
+
 			iniset $conf conductor workers "$API_WORKERS"
 			iniset $conf DEFAULT debug "$ENABLE_DEBUG_LOG_LEVEL"
 			# if we have a singleconductor, we don't have per host message queues.
@@ -194,3 +207,51 @@ function create_nova_conf {
 		done
 	fi
 }
+
+function init_nova {
+    # All nova components talk to a central database.
+    # Only do this step once on the API node for an entire cluster.
+    if is_service_enabled $DATABASE_BACKENDS && is_service_enabled n-api; then
+		kubernetes_ensure_resource service/nova-api-mysql-master
+		kubernetes_wait_pod_ready nova-api-mysql-0
+        $NOVA_BIN_DIR/nova-manage --config-file $NOVA_CONF api_db sync
+
+		kubernetes_ensure_resource secret/nova-cell0-mysql
+		kubernetes_wait_pod_ready nova-cell0-mysql-0
+		NOVA_CELL0_DATABASE_USER=$(get_data_from_secret nova-cell0-mysql openstack USER)
+		NOVA_CELL0_DATABASE_PASSWORD=$(get_data_from_secret nova-cell0-mysql openstack PASSWORD)
+		NOVA_CELL0_DATABASE_NAME=$(get_data_from_secret nova-cell0-mysql openstack DATABASE)
+		kubernetes_ensure_resource service/nova-cell0-mysql-master
+		$NOVA_BIN_DIR/nova-manage cell_v2 map_cell0 --database_connection "mysql+pymysql://$NOVA_CELL0_DATABASE_USER:$NOVA_CELL0_DATABASE_PASSWORD@nova-cell0-mysql-master.openstack.svc/$NOVA_CELL0_DATABASE_NAME?charset=utf8"
+
+        # (Re)create nova databases
+        for i in $(seq 1 $NOVA_NUM_CELLS); do
+            $NOVA_BIN_DIR/nova-manage --config-file $(conductor_conf $i) db sync --local_cell
+        done
+
+        # Migrate nova and nova_cell0 databases.
+        $NOVA_BIN_DIR/nova-manage --config-file $NOVA_CONF db sync
+
+        # Run online migrations on the new databases
+        # Needed for flavor conversion
+        $NOVA_BIN_DIR/nova-manage --config-file $NOVA_CONF db online_data_migrations
+
+        # create the cell1 cell for the main nova db where the hosts live
+        for i in $(seq 1 $NOVA_NUM_CELLS); do
+            $NOVA_BIN_DIR/nova-manage --config-file $NOVA_CONF --config-file $(conductor_conf $i) cell_v2 create_cell --name "cell$i"
+        done
+    fi
+
+    create_nova_keys_dir
+
+    if [[ "$NOVA_BACKEND" == "LVM" ]]; then
+        init_default_lvm_volume_group
+    fi
+}
+
+
+# Helper to clean iptables rules
+function clean_iptables {
+	echo noop
+}
+export -f clean_iptables

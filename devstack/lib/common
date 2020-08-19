@@ -34,6 +34,14 @@ function kubernetes_rollout_status {
 	kubectl rollout status --timeout=300s $resource
 }
 
+function kubernetes_wait_pod_ready {
+	while
+		[[ $(kubectl get pods $1 -o 'jsonpath={..status.conditions[?(@.type=="Ready")].status}') != "True" ]];
+	do
+		echo "waiting for pod" && sleep 1;
+	done
+}
+
 function kubernetes_rollout_restart {
 	local resource="$1"
 
