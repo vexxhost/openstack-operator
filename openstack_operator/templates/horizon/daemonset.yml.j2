@@ -59,10 +59,12 @@ spec:
           protocol: TCP
           containerPort: 8000
         livenessProbe:
-          tcpSocket:
+          httpGet:
+            path: /
             port: horizon
         readinessProbe:
-          tcpSocket:
+          httpGet:
+            path: /
             port: horizon
         lifecycle:
           preStop:

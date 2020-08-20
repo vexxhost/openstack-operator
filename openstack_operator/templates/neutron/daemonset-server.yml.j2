@@ -76,10 +76,12 @@ spec:
           protocol: TCP
           containerPort: 9696
         livenessProbe:
-          tcpSocket:
+          httpGet:
+            path: /
             port: neutron
         readinessProbe:
-          tcpSocket:
+          httpGet:
+            path: /
             port: neutron
         securityContext:
           runAsUser: 1001

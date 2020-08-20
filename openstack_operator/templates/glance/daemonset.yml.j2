@@ -74,10 +74,12 @@ spec:
           protocol: TCP
           containerPort: 9292
         livenessProbe:
-          tcpSocket:
+          httpGet:
+            path: /
             port: glance
         readinessProbe:
-          tcpSocket:
+          httpGet:
+            path: /
             port: glance
         securityContext:
           runAsUser: 1001

@@ -59,10 +59,12 @@ spec:
           protocol: TCP
           containerPort: 8780
         livenessProbe:
-          tcpSocket:
+          httpGet:
+            path: /
             port: placement
         readinessProbe:
-          tcpSocket:
+          httpGet:
+            path: /
             port: placement
         securityContext:
           runAsUser: 1001

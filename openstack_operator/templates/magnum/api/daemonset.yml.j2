@@ -56,10 +56,12 @@ spec:
           protocol: TCP
           containerPort: 9511
         livenessProbe:
-          tcpSocket:
+          httpGet:
+            path: /
             port: magnum-api
         readinessProbe:
-          tcpSocket:
+          httpGet:
+            path: /
             port: magnum-api
         lifecycle:
           preStop:

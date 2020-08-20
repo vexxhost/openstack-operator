@@ -67,10 +67,12 @@ spec:
           protocol: TCP
           containerPort: 9311
         livenessProbe:
-          tcpSocket:
+          httpGet:
+            path: /
             port: barbican
         readinessProbe:
-          tcpSocket:
+          httpGet:
+            path: /
             port: barbican
         securityContext:
           runAsUser: 1001
