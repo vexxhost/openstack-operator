@@ -39,19 +39,19 @@ def create_or_resume(name, spec, **_):
                                password=utils.generate_password())
     utils.create_or_update('heat/rabbitmq.yml.j2', spec=spec)
 
-    # deploy heat
     config_hash = utils.generate_hash(spec)
-    for component in ("api", "api-cfn"):
-        utils.create_or_update('heat/daemonset.yml.j2',
-                               name=name, spec=spec,
-                               component=component,
-                               config_hash=config_hash)
+    # deploy heat api
+    utils.create_or_update('heat/api/daemonset.yml.j2', spec=spec,
+                           config_hash=config_hash)
+    utils.create_or_update('heat/api/service.yml.j2')
 
-        utils.create_or_update('heat/service.yml.j2',
-                               name=name, component=component)
+    # deploy heat cfn api
+    utils.create_or_update('heat/api-cfn/daemonset.yml.j2', spec=spec,
+                           config_hash=config_hash)
+    utils.create_or_update('heat/api-cfn/service.yml.j2')
 
-    utils.create_or_update('heat/daemonset.yml.j2',
-                           name=name, spec=spec, component='engine',
+    # deploy heat cfn engine
+    utils.create_or_update('heat/engine/daemonset.yml.j2', spec=spec,
                            config_hash=config_hash)
 
     # deploy clean jobs

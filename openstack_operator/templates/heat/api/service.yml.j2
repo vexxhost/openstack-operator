@@ -16,13 +16,13 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: heat-{{ component }}
+  name: heat-api
   namespace: openstack
 spec:
   ports:
-  - name: heat-{{ component }}
+  - name: heat-api
     protocol: TCP
     port: 80
-    targetPort: heat-{{ component }}
+    targetPort: heat-api
   selector:
-    {{ labels("heat", name, component) | indent(4) }}
+    {{ labels("heat", component="api") | indent(4) }}

@@ -13,19 +13,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-{% if component is defined %}
-{% set component = component %}
-{% else %}
-{% set component = "api" %}
-{% endif %}
-
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
-  name: heat-{{ component }}
+  name: heat-api-cfn
   namespace: openstack
   labels:
-    {{ labels("heat", name, component) | indent(4) }}
+    {{ labels("heat", component="api-cfn") | indent(4) }}
 spec:
   updateStrategy:
     rollingUpdate:
@@ -33,41 +27,18 @@ spec:
     type: RollingUpdate
   selector:
     matchLabels:
-      {{ labels("heat", name, component) | indent(6) }}
+      {{ labels("heat", component="api-cfn") | indent(6) }}
   template:
     metadata:
       labels:
-        {{ labels("heat", name, component) | indent(8) }}
+        {{ labels("heat", component="api-cfn") | indent(8) }}
       annotations:
         checksum/config: "{{ config_hash }}"
     spec:
       automountServiceAccountToken: false
-      {% if 'engine' in component %}
-      terminationGracePeriodSeconds: 300
-      initContainers:
-      - name: db-sync
-        image: vexxhost/heat-{{ component }}:latest
-        imagePullPolicy: Always
-        command:
-        - heat-manage
-        - db_sync
-        volumeMounts:
-        - mountPath: /etc/heat
-          name: config
-      - name: service-clean
-        image: vexxhost/heat-{{ component }}:latest
-        imagePullPolicy: Always
-        command:
-        - heat-manage
-        - service
-        - clean
-        volumeMounts:
-        - mountPath: /etc/heat
-          name: config
-      {% endif %}
       containers:
-      - name: heat-{{ component }}
-        image: vexxhost/heat-{{ component }}:latest
+      - name: heat-api-cfn
+        image: vexxhost/heat-api-cfn:latest
         imagePullPolicy: Always
         env:
         {% if 'sentryDSN' in spec %}
@@ -84,22 +55,20 @@ spec:
           value: "{{ v.value }}"
         {% endfor %}
         {% endif %}
-        {% if 'api' in component %}
         ports:
-        - name: heat-{{ component }}
+        - name: heat-api-cfn
           protocol: TCP
-          containerPort: {% if component == 'api' %}8004{% else %}8000{% endif%}
+          containerPort: 8000
         livenessProbe:
           tcpSocket:
-            port: heat-{{ component }}
+            port: heat-api-cfn
         readinessProbe:
           tcpSocket:
-            port: heat-{{ component }}
+            port: heat-api-cfn
         lifecycle:
           preStop:
             exec:
               command: ["/bin/sleep", "5"]
-        {% endif %}
         securityContext:
           runAsUser: 65534
           runAsGroup: 65534
