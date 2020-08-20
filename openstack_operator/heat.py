@@ -34,10 +34,7 @@ def create_or_resume(name, spec, **_):
     database.ensure_mysql_cluster("heat", spec=spec["mysql"])
 
     # deploy rabbitmq
-    if not utils.ensure_secret("openstack", "heat-rabbitmq"):
-        utils.create_or_update('heat/secret-rabbitmq.yml.j2',
-                               password=utils.generate_password())
-    utils.create_or_update('heat/rabbitmq.yml.j2', spec=spec)
+    utils.deploy_rabbitmq("heat")
 
     # deploy heat
     config_hash = utils.generate_hash(spec)

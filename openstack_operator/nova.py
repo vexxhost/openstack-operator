@@ -55,11 +55,7 @@ def create_or_resume(spec, **_):
 
         # NOTE(mnaser): cell0 does not need a message queue
         if cell != 'cell0':
-            if not utils.ensure_secret("openstack", "nova-%s-rabbitmq" % cell):
-                utils.create_or_update('nova/secret-rabbitmq.yml.j2',
-                                       component=cell,
-                                       password=utils.generate_password())
-            utils.create_or_update('nova/rabbitmq.yml.j2', component=cell)
+            utils.deploy_rabbitmq("nova-%s" % cell)
 
     utils.create_or_update('nova/conductor/daemonset.yml.j2', spec=spec)
     utils.create_or_update('nova/scheduler/daemonset.yml.j2', spec=spec)

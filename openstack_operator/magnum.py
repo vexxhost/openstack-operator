@@ -36,10 +36,7 @@ def create_or_resume(name, spec, **_):
     database.ensure_mysql_cluster("magnum", spec=spec["mysql"])
 
     # deploy rabbitmq
-    if not utils.ensure_secret("openstack", "magnum-rabbitmq"):
-        utils.create_or_update('magnum/secret-rabbitmq.yml.j2',
-                               password=utils.generate_password())
-    utils.create_or_update('magnum/rabbitmq.yml.j2', spec=spec)
+    utils.deploy_rabbitmq("magnum")
 
     # deploy magnum
     config_hash = utils.generate_hash(spec)

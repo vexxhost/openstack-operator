@@ -35,10 +35,7 @@ def create_or_resume(name, spec, **_):
     database.ensure_mysql_cluster("cinder", spec=spec["mysql"])
 
     # deploy rabbitmq
-    if not utils.ensure_secret("openstack", "cinder-rabbitmq"):
-        utils.create_or_update('cinder/secret-rabbitmq.yml.j2',
-                               password=utils.generate_password())
-    utils.create_or_update('cinder/rabbitmq.yml.j2', spec=spec)
+    utils.deploy_rabbitmq("cinder")
 
     # deploy cinder
     config_hash = utils.generate_hash(spec)

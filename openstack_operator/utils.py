@@ -292,7 +292,7 @@ def deploy_memcached(name, **_):
     Deploy a generic instance of Memcached
 
     This function deploys a generic instance of Memcached with sane defaults,
-    it's meant to be here to be consumed/called by the serices.
+    it's meant to be here to be consumed/called by the services.
     """
     create_or_update('operator/memcached.yml.j2', name=name)
 
@@ -303,3 +303,18 @@ def deploy_uwsgi_config():
     This function deploys a default configmap for uwsgi apps."""
 
     create_or_update('operator/uwsgidefaultconfig.yml.j2')
+
+
+def deploy_rabbitmq(name, **_):
+    """
+    Deploy a generic instance of rabbitmq
+
+    This function deploys a generic instance of Rabbitmq with a secret,
+    it's meant to be here to be consumed/called by the services.
+    The secret should include user and password.
+    """
+
+    if not ensure_secret("openstack", name + "-rabbitmq"):
+        create_or_update('operator/secret-rabbitmq.yml.j2',
+                         name=name, password=generate_password())
+    create_or_update('operator/rabbitmq.yml.j2', name=name)

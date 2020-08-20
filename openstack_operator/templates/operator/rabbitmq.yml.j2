@@ -16,15 +16,14 @@
 apiVersion: infrastructure.vexxhost.cloud/v1alpha1
 kind: Rabbitmq
 metadata:
-  name: magnum
+  name: {{ name }}
   namespace: openstack
+  labels:
+    {{ labels(name) | indent(4) }}
 spec:
-  authSecret: magnum-rabbitmq
-{% if 'nodeSelector' in spec %}
+  authSecret: {{ name }}-rabbitmq
   nodeSelector:
-    {{ spec.nodeSelector | to_yaml | indent(4) }}
-{% endif %}
-{% if 'tolerations' in spec %}
+    node-role.kubernetes.io/master: ""
   tolerations:
-    {{ spec.tolerations | to_yaml | indent(4) }}
-{% endif %}
+  - key: node-role.kubernetes.io/master
+    effect: NoSchedule
