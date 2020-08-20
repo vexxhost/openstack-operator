@@ -19,7 +19,6 @@ This code takes care of doing the operations of the OpenStack Neutron API
 service.
 """
 
-from openstack_operator import database
 from openstack_operator import identity
 from openstack_operator import utils
 
@@ -32,9 +31,7 @@ def create_or_resume(spec, **_):
     This function is called when a new resource is created but also when we
     start the service up for the first time.
     """
-
-    database.ensure_mysql_cluster("neutron", spec=spec["mysql"])
-
+    utils.ensure_mysql_cluster("neutron", spec["mysql"])
     utils.deploy_rabbitmq("neutron")
     utils.create_or_update('neutron/daemonset-server.yml.j2', spec=spec)
     utils.create_or_update('neutron/daemonset-openvswitch-agent.yml.j2',

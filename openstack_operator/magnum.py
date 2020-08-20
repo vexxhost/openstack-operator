@@ -19,7 +19,6 @@ the appropriate deployments, an instance of Memcache, RabbitMQ and a database
 server for the installation.
 """
 
-from openstack_operator import database
 from openstack_operator import identity
 from openstack_operator import utils
 
@@ -33,7 +32,7 @@ def create_or_resume(name, spec, **_):
     start the service up for the first time.
     """
 
-    database.ensure_mysql_cluster("magnum", spec=spec["mysql"])
+    utils.ensure_mysql_cluster("magnum", spec["mysql"])
 
     # deploy rabbitmq
     utils.deploy_rabbitmq("magnum")

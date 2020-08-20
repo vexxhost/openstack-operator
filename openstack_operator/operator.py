@@ -144,7 +144,11 @@ def set_service_config(all_config, service_name):
 
     # Inject the operator level config to service level
     # Backup config for mysql
-    all_config["backup"]["schedule"] = utils.get_backup_schedule(service_name)
+    if "backup" in all_config:
+        all_config["backup"]["schedule"] = \
+            utils.get_backup_schedule(service_name)
+    else:
+        all_config["backup"] = {}
     if "mysql" in spec:
         spec["mysql"].update(all_config["backup"])
     else:

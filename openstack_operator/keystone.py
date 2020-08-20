@@ -23,7 +23,6 @@ import kopf
 
 from cryptography import fernet
 
-from openstack_operator import database
 from openstack_operator import filters
 from openstack_operator import utils
 
@@ -110,7 +109,7 @@ def create_or_resume(name, spec, **_):
     # (TODO)Replace the current admin url
 
     # deploy mysql
-    db_config = database.ensure_mysql_cluster("keystone", spec=spec["mysql"])
+    db_config = utils.ensure_mysql_cluster("keystone", spec["mysql"])
 
     # deploy memcached
 

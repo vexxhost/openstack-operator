@@ -19,7 +19,6 @@ the appropriate deployments, Mcrouter, pod monitors and Prometheus rules.
 """
 
 
-from openstack_operator import database
 from openstack_operator import identity
 from openstack_operator import utils
 
@@ -31,7 +30,7 @@ def create_or_resume(name, spec, **_):
     """
 
     # deploy mysql for barbican
-    database.ensure_mysql_cluster("barbican", spec=spec["mysql"])
+    utils.ensure_mysql_cluster("barbican", spec["mysql"])
 
     # deploy barbican api
     utils.create_or_update('barbican/daemonset.yml.j2',

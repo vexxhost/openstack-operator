@@ -17,7 +17,6 @@
 This module maintains the operator for Cinder.
 """
 
-from openstack_operator import database
 from openstack_operator import identity
 from openstack_operator import utils
 
@@ -32,7 +31,7 @@ def create_or_resume(name, spec, **_):
     """
 
     # deploy mysql for cinder
-    database.ensure_mysql_cluster("cinder", spec=spec["mysql"])
+    utils.ensure_mysql_cluster("cinder", spec=spec["mysql"])
 
     # deploy rabbitmq
     utils.deploy_rabbitmq("cinder")

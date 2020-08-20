@@ -20,7 +20,6 @@ server for the installation.
 """
 
 
-from openstack_operator import database
 from openstack_operator import identity
 from openstack_operator import utils
 
@@ -31,7 +30,7 @@ def create_or_resume(name, spec, **_):
     """Create and re-sync any Heat instances
     """
 
-    database.ensure_mysql_cluster("heat", spec=spec["mysql"])
+    utils.ensure_mysql_cluster("heat", spec["mysql"])
 
     # deploy rabbitmq
     utils.deploy_rabbitmq("heat")
