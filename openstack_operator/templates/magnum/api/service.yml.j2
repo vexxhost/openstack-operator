@@ -25,4 +25,4 @@ spec:
     port: 80
     targetPort: magnum-api
   selector:
-    {{ labels("magnum", name, "api") | indent(4) }}
+    {{ labels("magnum", component="api") | indent(4) }}
