@@ -29,6 +29,7 @@ from pykube.objects import DaemonSet
 from pykube.objects import Deployment
 from pykube.objects import HorizontalPodAutoscaler
 from pykube.objects import Ingress
+from pykube.objects import Job
 from pykube.objects import Namespace
 from pykube.objects import NamespacedAPIObject
 from pykube.objects import Pod
@@ -127,6 +128,9 @@ MAPPING = {
     },
     "batch/v1beta1": {
         "CronJob": CronJob,
+    },
+    "batch/v1": {
+        "Job": Job,
     },
     "extensions/v1beta1": {
         "Ingress": Ingress

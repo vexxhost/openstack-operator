@@ -93,6 +93,10 @@
   pre_tasks:
     - name: Set the context with openstack namespace
       command: kubectl config set-context --current --namespace=openstack
+    - name: Set the node selector for compute node
+      shell: |
+        node=$(kubectl get nodes --no-headers=true -o=custom-columns='name:metadata.name' | head -1)
+        kubectl label node $node node-role.openstack.org=compute
     - name: Update resolv.conf to point to the coredns
       become: true
       shell: |

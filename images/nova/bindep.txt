@@ -1,0 +1,15 @@
+gcc [compile]
+libc-dev [compile]
+pkg-config [compile]
+libvirt-dev [compile]
+librados-dev [compile]
+librbd-dev [compile]
+librados2
+librbd1
+libvirt0
+ceph-common
+genisoimage
+open-iscsi
+sudo
+qemu-utils
+openvswitch-common

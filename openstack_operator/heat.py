@@ -31,10 +31,7 @@ def create_or_resume(name, spec, **_):
     """Create and re-sync any Heat instances
     """
 
-    if "mysql" not in spec:
-        database.ensure_mysql_cluster("heat", {})
-    else:
-        database.ensure_mysql_cluster("heat", spec["mysql"])
+    database.ensure_mysql_cluster("heat", spec=spec["mysql"])
 
     # deploy rabbitmq
     if not utils.ensure_secret("openstack", "heat-rabbitmq"):

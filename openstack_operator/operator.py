@@ -103,7 +103,7 @@ def deploy(name, namespace, new, **_):
         neutron.create_or_resume(spec)
     if "nova" in config:
         spec = set_service_config(config, "nova")
-        nova.create_or_resume()
+        nova.create_or_resume(spec)
     if "horizon" in config:
         spec = set_service_config(config, "horizon")
         horizon.create_or_resume("horizon", spec)
@@ -120,7 +120,7 @@ def deploy(name, namespace, new, **_):
         spec = set_service_config(config, "magnum")
         magnum.create_or_resume("magnum", spec)
     if "barbican" in config:
-        spec = config["barbican"]
+        spec = set_service_config(config, "barbican")
         barbican.create_or_resume("barbican", spec)
     if "ceilometer" in config:
         spec = config["ceilometer"]

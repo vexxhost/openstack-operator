@@ -20,23 +20,34 @@ This module contains a few common functions for database management
 from openstack_operator import utils
 
 
-def ensure_mysql_cluster(name, spec=None):
+def ensure_mysql_cluster(name, user=None, database=None, spec=None):
     """Create or update mysql cluster"""
 
     if spec is None:
         spec = {}
 
+    if database is None:
+        database = name
+    if user is None:
+        user = database
+
     config = utils.get_secret("openstack", name + "-mysql")
     if config is None:
         root_password = utils.generate_password()
         password = utils.generate_password()
-        user = name
-        database = name
         utils.create_or_update('mysqlcluster/secret-mysqlcluster.yml.j2',
                                name=name, user=user,
                                database=database, password=password,
                                rootPassword=root_password)
         config = utils.get_secret("openstack", name + "-mysql")
+
+    config['connection'] = \
+        "mysql+pymysql://%s:%s@%s-mysql-master/%s?charset=utf8" % (
+            config["USER"],
+            config["PASSWORD"],
+            name,
+            config["DATABASE"]
+        )
 
     utils.create_or_update('mysqlcluster/mysqlcluster.yml.j2',
                            server_side=False, name=name, spec=spec)

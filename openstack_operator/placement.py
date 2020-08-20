@@ -34,10 +34,7 @@ def create_or_resume(name, spec, **_):
     """
 
     # deploy mysql for placement
-    if "mysql" not in spec:
-        database.ensure_mysql_cluster("placement", {})
-    else:
-        database.ensure_mysql_cluster("placement", spec["mysql"])
+    database.ensure_mysql_cluster("placement", spec=spec["mysql"])
 
     # deploy placement api
     utils.create_or_update('placement/daemonset.yml.j2', spec=spec)

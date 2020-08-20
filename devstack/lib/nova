@@ -14,6 +14,10 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+NOVA_STATE_PATH=/var/lib/nova
+# INSTANCES_PATH is the previous name for this
+NOVA_INSTANCES_PATH=$NOVA_STATE_PATH/instances
+
 function create_nova_conf {
 	# Remove legacy ``nova.conf``
 	rm -f $NOVA_DIR/bin/nova.conf
@@ -25,7 +29,6 @@ function create_nova_conf {
 		iniset $NOVA_CONF DEFAULT allow_resize_to_same_host "True"
 	fi
 	iniset $NOVA_CONF wsgi api_paste_config "$NOVA_API_PASTE_INI"
-	iniset $NOVA_CONF DEFAULT rootwrap_config "$NOVA_CONF_DIR/rootwrap.conf"
 	iniset $NOVA_CONF filter_scheduler enabled_filters "$NOVA_FILTERS"
 	iniset $NOVA_CONF scheduler workers "$API_WORKERS"
 	iniset $NOVA_CONF neutron default_floating_pool "$PUBLIC_NETWORK_NAME"
@@ -47,56 +50,29 @@ function create_nova_conf {
 		iniset $NOVA_CONF DEFAULT bindir "/usr/bin"
 	fi
 
-	# only setup database connections and cache backend if there are services
-	# that require them running on the host. The ensures that n-cpu doesn't
-	# leak a need to use the db in a multinode scenario.
-	if is_service_enabled n-api n-cond n-sched; then
-		# If we're in multi-tier cells mode, we want our control services pointing
-		# at cell0 instead of cell1 to ensure isolation. If not, we point everything
-		# at the main database like normal.
-		if [[ "$CELLSV2_SETUP" == "singleconductor" ]]; then
-			local db="nova_cell1"
-		else
-			local db="nova_cell0"
-			# When in superconductor mode, nova-compute can't send instance
-			# info updates to the scheduler, so just disable it.
-			iniset $NOVA_CONF filter_scheduler track_instance_changes False
-		fi
+	kubernetes_ensure_resource secret/nova-cell1-mysql
+	NOVA_CELL1_DATABASE_USER=$(get_data_from_secret nova-cell1-mysql openstack USER)
+	NOVA_CELL1_DATABASE_PASSWORD=$(get_data_from_secret nova-cell1-mysql openstack PASSWORD)
+	NOVA_CELL1_DATABASE_NAME=$(get_data_from_secret nova-cell1-mysql openstack DATABASE)
+	iniset $NOVA_CONF database connection "mysql+pymysql://$NOVA_CELL1_DATABASE_USER:$NOVA_CELL1_DATABASE_PASSWORD@nova-cell1-mysql-master.openstack.svc/$NOVA_CELL1_DATABASE_NAME?charset=utf8"
 
-		kubernetes_ensure_resource secret/nova-cell1-mysql
-		NOVA_CELL1_DATABASE_USER=$(get_data_from_secret nova-cell1-mysql openstack USER)
-		NOVA_CELL1_DATABASE_PASSWORD=$(get_data_from_secret nova-cell1-mysql openstack PASSWORD)
-		NOVA_CELL1_DATABASE_NAME=$(get_data_from_secret nova-cell1-mysql openstack DATABASE)
-		iniset $NOVA_CONF database connection "mysql+pymysql://$NOVA_CELL1_DATABASE_USER:$NOVA_CELL1_DATABASE_PASSWORD@nova-cell1-mysql-master.openstack.svc/$NOVA_CELL1_DATABASE_NAME?charset=utf8"
+	kubernetes_ensure_resource secret/nova-api-mysql
+	NOVA_API_DATABASE_USER=$(get_data_from_secret nova-api-mysql openstack USER)
+	NOVA_API_DATABASE_PASSWORD=$(get_data_from_secret nova-api-mysql openstack PASSWORD)
+	NOVA_API_DATABASE_NAME=$(get_data_from_secret nova-api-mysql openstack DATABASE)
+	iniset $NOVA_CONF api_database connection "mysql+pymysql://$NOVA_API_DATABASE_USER:$NOVA_API_DATABASE_PASSWORD@nova-api-mysql-master.openstack.svc/$NOVA_API_DATABASE_NAME?charset=utf8"
 
-		kubernetes_ensure_resource secret/nova-api-mysql
-		NOVA_API_DATABASE_USER=$(get_data_from_secret nova-api-mysql openstack USER)
-		NOVA_API_DATABASE_PASSWORD=$(get_data_from_secret nova-api-mysql openstack PASSWORD)
-		NOVA_API_DATABASE_NAME=$(get_data_from_secret nova-api-mysql openstack DATABASE)
-		iniset $NOVA_CONF api_database connection "mysql+pymysql://$NOVA_API_DATABASE_USER:$NOVA_API_DATABASE_PASSWORD@nova-api-mysql-master.openstack.svc/$NOVA_API_DATABASE_NAME?charset=utf8"
+	# Cache related settings
+	# Those settings aren't really needed in n-cpu thus it is configured
+	# only on nodes which runs controller services
+	iniset $NOVA_CONF cache enabled $NOVA_ENABLE_CACHE
+	iniset $NOVA_CONF cache backend $CACHE_BACKEND
+	iniset $NOVA_CONF cache memcache_servers mcrouter-memcached-nova.openstack.svc.cluster.local
 
-		# Cache related settings
-		# Those settings aren't really needed in n-cpu thus it is configured
-		# only on nodes which runs controller services
-		iniset $NOVA_CONF cache enabled $NOVA_ENABLE_CACHE
-		iniset $NOVA_CONF cache backend $CACHE_BACKEND
-		iniset $NOVA_CONF cache memcache_servers mcrouter-memcached-nova.openstack.svc.cluster.local
-	fi
+	NOVA_ENABLED_APIS=$(echo $NOVA_ENABLED_APIS | sed "s/,metadata//")
+	iniset $NOVA_CONF DEFAULT enabled_apis "$NOVA_ENABLED_APIS"
 
-	if is_service_enabled n-api; then
-		if is_service_enabled n-api-meta; then
-			# If running n-api-meta as a separate service
-			NOVA_ENABLED_APIS=$(echo $NOVA_ENABLED_APIS | sed "s/,metadata//")
-		fi
-		iniset $NOVA_CONF DEFAULT enabled_apis "$NOVA_ENABLED_APIS"
-		if is_service_enabled tls-proxy && [ "$NOVA_USE_MOD_WSGI" == "False" ]; then
-			# Set the service port for a proxy to take the original
-			iniset $NOVA_CONF DEFAULT osapi_compute_listen_port "$NOVA_SERVICE_PORT_INT"
-			iniset $NOVA_CONF DEFAULT osapi_compute_link_prefix $NOVA_SERVICE_PROTOCOL://$NOVA_SERVICE_HOST:$NOVA_SERVICE_PORT
-		fi
-
-		configure_keystone_authtoken_middleware $NOVA_CONF nova
-	fi
+	configure_keystone_authtoken_middleware $NOVA_CONF nova
 
 	if is_service_enabled cinder; then
 		configure_cinder_access
@@ -121,12 +97,9 @@ function create_nova_conf {
 		iniset $NOVA_CONF DEFAULT mkisofs_cmd /usr/bin/mkisofs
 	fi
 
-	# Format logging
-	setup_logging $NOVA_CONF
-
 	iniset $NOVA_CONF upgrade_levels compute "auto"
 
-	write_uwsgi_config "$NOVA_UWSGI_CONF" "$NOVA_UWSGI" "/compute"
+    proxy_pass_to_kubernetes /compute nova nova-api-wsgi
 	write_uwsgi_config "$NOVA_METADATA_UWSGI_CONF" "$NOVA_METADATA_UWSGI" "" "$SERVICE_LISTEN_ADDRESS:${METADATA_SERVICE_PORT}"
 
 	if is_service_enabled ceilometer; then
@@ -138,8 +111,6 @@ function create_nova_conf {
 	# Set the oslo messaging driver to the typical default. This does not
 	# enable notifications, but it will allow them to function when enabled.
 	iniset $NOVA_CONF oslo_messaging_notifications driver "messagingv2"
-	iniset $NOVA_CONF oslo_messaging_notifications transport_url $(get_notification_url)
-	iniset $NOVA_CONF notifications notification_format "$NOVA_NOTIFICATION_FORMAT"
 
 	kubernetes_ensure_resource secret/nova-cell1-rabbitmq
 	NOVA_RABBITMQ_USERNAME=$(get_data_from_secret nova-cell1-rabbitmq openstack username)
@@ -150,11 +121,6 @@ function create_nova_conf {
 	iniset $NOVA_CONF DEFAULT metadata_workers "$API_WORKERS"
 	# don't let the conductor get out of control now that we're using a pure python db driver
 	iniset $NOVA_CONF conductor workers "$API_WORKERS"
-
-	if is_service_enabled tls-proxy; then
-		iniset $NOVA_CONF DEFAULT glance_protocol https
-		iniset $NOVA_CONF oslo_middleware enable_proxy_headers_parsing True
-	fi
 
 	iniset $NOVA_CONF DEFAULT graceful_shutdown_timeout "$SERVICE_GRACEFUL_SHUTDOWN_TIMEOUT"
 
@@ -195,58 +161,51 @@ function create_nova_conf {
 	# Console proxy configuration has to go after conductor configuration
 	# because the per cell config file nova_cellN.conf is cleared out as part
 	# of conductor configuration.
-	if [[ "${CELLSV2_SETUP}" == "singleconductor" ]]; then
-		configure_console_proxies
-	else
-		for i in $(seq 1 $NOVA_NUM_CELLS); do
-			local conf
-			local offset
-			conf=$(conductor_conf $i)
-			offset=$((i - 1))
-			configure_console_proxies $conf $offset
-		done
-	fi
+
+	configure_console_proxies
+
+	# NOTE(Alex): Disable rootwrap and use sudo only
+	iniset $NOVA_CONF workarounds disable_rootwrap True
 }
 
+function create_nova_compute_conf {
+
+    # Bug #1802143: $NOVA_CPU_CONF is constructed by first copying $NOVA_CONF...
+    cp $NOVA_CONF $NOVA_CPU_CONF
+    # ...and then adding/overriding anything explicitly set in $NOVA_CPU_CONF
+    merge_config_file $TOP_DIR/local.conf post-config '$NOVA_CPU_CONF'
+
+    if [[ "${CELLSV2_SETUP}" == "singleconductor" ]]; then
+        # NOTE(danms): Grenade doesn't setup multi-cell rabbit, so
+        # skip these bits and use the normal config.
+        echo "Skipping multi-cell conductor fleet setup"
+    else
+        # "${CELLSV2_SETUP}" is "superconductor"
+        # FIXME(danms): Should this be configurable?
+        iniset $NOVA_CPU_CONF workarounds disable_group_policy_check_upcall True
+        # Since the nova-compute service cannot reach nova-scheduler over
+        # RPC, we also disable track_instance_changes.
+        iniset $NOVA_CPU_CONF filter_scheduler track_instance_changes False
+        iniset_rpc_backend nova $NOVA_CPU_CONF DEFAULT "nova_cell${NOVA_CPU_CELL}"
+    fi
+
+    # Make sure we nuke any database config
+    inidelete $NOVA_CPU_CONF database connection
+    inidelete $NOVA_CPU_CONF api_database connection
+
+    # Console proxies were configured earlier in create_nova_conf. Now that the
+    # nova-cpu.conf has been created, configure the console settings required
+    # by the compute process.
+    configure_console_compute
+}
+export -f create_nova_compute_conf
+
 function init_nova {
+
     # All nova components talk to a central database.
     # Only do this step once on the API node for an entire cluster.
-    if is_service_enabled $DATABASE_BACKENDS && is_service_enabled n-api; then
-		kubernetes_ensure_resource service/nova-api-mysql-master
-		kubernetes_wait_pod_ready nova-api-mysql-0
-        $NOVA_BIN_DIR/nova-manage --config-file $NOVA_CONF api_db sync
-
-		kubernetes_ensure_resource secret/nova-cell0-mysql
-		kubernetes_wait_pod_ready nova-cell0-mysql-0
-		NOVA_CELL0_DATABASE_USER=$(get_data_from_secret nova-cell0-mysql openstack USER)
-		NOVA_CELL0_DATABASE_PASSWORD=$(get_data_from_secret nova-cell0-mysql openstack PASSWORD)
-		NOVA_CELL0_DATABASE_NAME=$(get_data_from_secret nova-cell0-mysql openstack DATABASE)
-		kubernetes_ensure_resource service/nova-cell0-mysql-master
-		$NOVA_BIN_DIR/nova-manage cell_v2 map_cell0 --database_connection "mysql+pymysql://$NOVA_CELL0_DATABASE_USER:$NOVA_CELL0_DATABASE_PASSWORD@nova-cell0-mysql-master.openstack.svc/$NOVA_CELL0_DATABASE_NAME?charset=utf8"
-
-        # (Re)create nova databases
-        for i in $(seq 1 $NOVA_NUM_CELLS); do
-            $NOVA_BIN_DIR/nova-manage --config-file $(conductor_conf $i) db sync --local_cell
-        done
-
-        # Migrate nova and nova_cell0 databases.
-        $NOVA_BIN_DIR/nova-manage --config-file $NOVA_CONF db sync
-
-        # Run online migrations on the new databases
-        # Needed for flavor conversion
-        $NOVA_BIN_DIR/nova-manage --config-file $NOVA_CONF db online_data_migrations
-
-        # create the cell1 cell for the main nova db where the hosts live
-        for i in $(seq 1 $NOVA_NUM_CELLS); do
-            $NOVA_BIN_DIR/nova-manage --config-file $NOVA_CONF --config-file $(conductor_conf $i) cell_v2 create_cell --name "cell$i"
-        done
-    fi
 
     create_nova_keys_dir
-
-    if [[ "$NOVA_BACKEND" == "LVM" ]]; then
-        init_default_lvm_volume_group
-    fi
 }
 
 
@@ -255,3 +214,142 @@ function clean_iptables {
 	echo noop
 }
 export -f clean_iptables
+
+# Configure access to placement from a nova service, usually
+# compute, but sometimes conductor.
+function configure_placement_nova_compute {
+    # Use the provided config file path or default to $NOVA_CONF.
+
+    local conf=${1:-$NOVA_CONF}
+	kubernetes_ensure_resource secret/placement-application-credential
+	PLACEMENT_APPLICATION_CREDENTIAL_SECRET=$(get_data_from_secret placement-application-credential openstack secret)
+	PLACEMENT_APPLICATION_CREDENTIAL_ID=$(get_data_from_secret placement-application-credential openstack id)
+	iniset $conf placement auth_url $KEYSTONE_AUTH_URI_V3
+	iniset $conf placement auth_type v3applicationcredential
+	iniset $conf placement application_credential_id $PLACEMENT_APPLICATION_CREDENTIAL_ID
+	iniset $conf placement application_credential_secret $PLACEMENT_APPLICATION_CREDENTIAL_SECRET
+}
+
+
+# Configure access to cinder.
+function configure_cinder_access {
+    kubernetes_ensure_resource secret/cinder-application-credential
+    CINDER_APPLICATION_CREDENTIAL_SECRET=$(get_data_from_secret cinder-application-credential openstack secret)
+    CINDER_APPLICATION_CREDENTIAL_ID=$(get_data_from_secret cinder-application-credential openstack id)
+    iniset $NOVA_CONF cinder auth_url $KEYSTONE_AUTH_URI_V3
+    iniset $NOVA_CONF cinder auth_type v3applicationcredential
+    iniset $NOVA_CONF cinder application_credential_id $CINDER_APPLICATION_CREDENTIAL_ID
+    iniset $NOVA_CONF cinder application_credential_secret $CINDER_APPLICATION_CREDENTIAL_SECRET
+}
+
+# start_nova() - Start running processes
+function start_nova_rest {
+    # Hack to set the path for rootwrap
+    local old_path=$PATH
+    export PATH=$NOVA_BIN_DIR:$PATH
+
+	# nova-scheduler
+    kubernetes_ensure_resource ds/nova-scheduler
+	kubernetes_rollout_restart ds/nova-scheduler
+	kubernetes_rollout_status ds/nova-scheduler
+
+	# nova-scheduler
+    kubernetes_ensure_resource ds/nova-metadata-api
+	kubernetes_rollout_restart ds/nova-metadata-api
+	kubernetes_rollout_status ds/nova-metadata-api
+
+    export PATH=$old_path
+}
+
+function start_nova_conductor {
+    kubernetes_ensure_resource ds/nova-conductor
+	kubernetes_rollout_restart ds/nova-conductor
+	kubernetes_rollout_status ds/nova-conductor
+}
+
+
+function start_nova_console_proxies {
+    # Hack to set the path for rootwrap
+    local old_path=$PATH
+    # This is needed to find the nova conf
+    export PATH=$NOVA_BIN_DIR:$PATH
+
+    local api_cell_conf=$NOVA_CONF
+
+	# novncproxy
+	kubernetes_ensure_resource ds/nova-novncproxy
+	kubernetes_rollout_restart ds/nova-novncproxy
+	kubernetes_rollout_status ds/nova-novncproxy
+	run_process n-xvnc "$NOVA_BIN_DIR/nova-xvpvncproxy --config-file $api_cell_conf"
+	run_process n-spice "$NOVA_BIN_DIR/nova-spicehtml5proxy --config-file $api_cell_conf --web $SPICE_WEB_DIR"
+	run_process n-sproxy "$NOVA_BIN_DIR/nova-serialproxy --config-file $api_cell_conf"
+
+    export PATH=$old_path
+}
+
+function configure_console_compute {
+
+	# NOTE(Alex): Now imagine using one cell and novnc only,
+	# so no need to offset the proxy port.
+
+    # Use the host IP instead of the service host because for multi-node, the
+    # service host will be the controller only.
+    local default_proxyclient_addr
+    default_proxyclient_addr=$(iniget $NOVA_CPU_CONF DEFAULT my_ip)
+
+	NOVNCPROXY_URL=${NOVNCPROXY_URL:-"http://nova-novncproxy.openstack.svc/vnc_auto.html"}
+	iniset $NOVA_CPU_CONF vnc novncproxy_base_url "$NOVNCPROXY_URL"
+
+	# Address on which instance vncservers will listen on compute hosts.
+	# For multi-host, this should be the management ip of the compute host.
+	VNCSERVER_LISTEN=${VNCSERVER_LISTEN:-$NOVA_SERVICE_LISTEN_ADDRESS}
+	VNCSERVER_PROXYCLIENT_ADDRESS=${VNCSERVER_PROXYCLIENT_ADDRESS:-$default_proxyclient_addr}
+	iniset $NOVA_CPU_CONF vnc server_listen "$VNCSERVER_LISTEN"
+	iniset $NOVA_CPU_CONF vnc server_proxyclient_address "$VNCSERVER_PROXYCLIENT_ADDRESS"
+}
+
+function configure_console_proxies {
+    # Use the provided config file path or default to $NOVA_CONF.
+    local conf=${1:-$NOVA_CONF}
+
+	# NOTE(Alex): Now imagine using one cell and novnc only,
+	# so no need to offset the proxy port.
+	iniset $conf vnc novncproxy_host "$NOVA_SERVICE_LISTEN_ADDRESS"
+	iniset $conf vnc novncproxy_port 6080
+}
+
+# start_nova_api() - Start the API process ahead of other things
+function start_nova_api {
+	# Hack to set the path for rootwrap
+    local old_path=$PATH
+    export PATH=$NOVA_BIN_DIR:$PATH
+	kubernetes_ensure_resource ds/nova-compute-api
+	kubernetes_rollout_restart ds/nova-compute-api
+	kubernetes_rollout_status ds/nova-compute-api
+    export PATH=$old_path
+}
+
+# start_nova_compute() - Start the compute process
+function start_nova_compute {
+    # Hack to set the path for rootwrap
+    local old_path=$PATH
+    export PATH=$NOVA_BIN_DIR:$PATH
+
+	# libvirt
+	kubernetes_ensure_resource ds/nova-compute
+	kubernetes_rollout_restart ds/nova-compute
+	kubernetes_rollout_status ds/nova-compute
+
+    export PATH=$old_path
+}
+
+# install_nova() - Collect source and prepare
+# NOTE(Alex): Because, the nova stuff is in the stach.sh,
+# keep nova installation on host.(kinda status check)
+
+function start_nova {
+    start_nova_rest
+    start_nova_console_proxies
+    start_nova_conductor
+    start_nova_compute
+}

@@ -20,6 +20,15 @@
       - context: images/neutron
         repository: vexxhost/neutron-openvswitch-agent
         target: neutron-openvswitch-agent
+      - context: images/neutron
+        repository: vexxhost/neutron-l3-agent
+        target: neutron-l3-agent
+      - context: images/neutron
+        repository: vexxhost/neutron-dhcp-agent
+        target: neutron-dhcp-agent
+      - context: images/neutron
+        repository: vexxhost/neutron-metadata-agent
+        target: neutron-metadata-agent
     dependencies:
     - openstack-operator:images:build:openstack-operator
     files: &id003

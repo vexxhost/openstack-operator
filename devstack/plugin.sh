@@ -51,8 +51,17 @@ elif [[ "$1" == "stack" && "$2" == "post-config" ]]; then
 	sudo chmod -Rv 777 /etc/ceph
     kubectl create secret generic ceph-config -n openstack \
     --from-file=/etc/ceph/ceph.conf \
-	--from-file=/etc/ceph/ceph.client.glance.keyring \
-	--from-file=/etc/ceph/ceph.client.cinder.keyring
+	--from-file=/etc/ceph/ceph.client.cinder.keyring \
+	--from-file=/etc/ceph/ceph.client.glance.keyring
+
+	# NOTE(Alex): Create nova compute conf to include placement and libvirt config
+	create_nova_compute_conf
+	# NOTE(Alex) To include create_nova_conf_neutron and barbican hack config
+	kubectl create secret generic nova-config -n openstack \
+	--from-file=/etc/nova/nova.conf \
+	--from-file=/etc/nova/nova-cpu.conf \
+	--from-file=/etc/nova/nova_cell1.conf \
+	--from-file=/etc/nova/api-paste.ini
 
 elif [[ "$1" == "stack" && "$2" == "extra" ]]; then
 	:

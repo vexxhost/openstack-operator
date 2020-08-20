@@ -30,6 +30,8 @@
         c-bak: false
         etcd3: false
         horizon: true
+        n-spice: false
+        n-sproxy: false
         rabbit: true
         tls-proxy: false
       devstack_plugins:
@@ -51,6 +53,7 @@
       - tempest-horizon
       devstack_localrc:
         NEUTRON_DEPLOY_MOD_WSGI: true
+        NOVA_BRANCH: stable/ussuri
         Q_USE_ROOTWRAP: false
         TEMPEST_PLUGINS: /opt/stack/barbican-tempest-plugin /opt/stack/heat-tempest-plugin
           /opt/stack/magnum-tempest-plugin /opt/stack/tempest-horizon
@@ -73,11 +76,11 @@
             soft: true
           - name: openstack-operator:images:build:glance
             soft: true
-          - name: openstack-operator:images:build:neutron
-            soft: true
           - name: openstack-operator:images:build:rabbitmq
             soft: true
           - name: openstack-operator:images:build:ceilometer
+            soft: true
+          - name: openstack-operator:images:build:neutron
             soft: true
           - name: openstack-operator:images:build:memcached-exporter
             soft: true
@@ -88,6 +91,8 @@
           - name: openstack-operator:images:build:mcrouter
             soft: true
           - name: openstack-operator:images:build:cinder
+            soft: true
+          - name: openstack-operator:images:build:nova
             soft: true
           - openstack-operator:images:build:openstack-operator
           - name: openstack-operator:images:build:barbican
@@ -108,11 +113,11 @@
             soft: true
           - name: openstack-operator:images:upload:glance
             soft: true
-          - name: openstack-operator:images:upload:neutron
-            soft: true
           - name: openstack-operator:images:upload:rabbitmq
             soft: true
           - name: openstack-operator:images:upload:ceilometer
+            soft: true
+          - name: openstack-operator:images:upload:neutron
             soft: true
           - name: openstack-operator:images:upload:memcached-exporter
             soft: true
@@ -123,6 +128,8 @@
           - name: openstack-operator:images:upload:mcrouter
             soft: true
           - name: openstack-operator:images:upload:cinder
+            soft: true
+          - name: openstack-operator:images:upload:nova
             soft: true
           - openstack-operator:images:upload:openstack-operator
           - name: openstack-operator:images:upload:barbican

@@ -37,7 +37,7 @@ def create_or_resume(spec, **_):
         utils.create_or_update('neutron/secret-rabbitmq.yml.j2',
                                password=utils.generate_password())
 
-    database.ensure_mysql_cluster("neutron")
+    database.ensure_mysql_cluster("neutron", spec=spec["mysql"])
 
     utils.create_or_update('neutron/rabbitmq.yml.j2')
     utils.create_or_update('neutron/daemonset-server.yml.j2', spec=spec)

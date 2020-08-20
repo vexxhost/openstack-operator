@@ -251,3 +251,49 @@ function _neutron_ovs_base_configure_l3_agent {
 	echo noop
 }
 export -f _neutron_ovs_base_configure_l3_agent
+
+function _create_nova_configs_neutron {
+
+    local conf=${1:-$NOVA_CONF}
+	kubernetes_ensure_resource secret/neutron-application-credential
+	NEUTRON_APPLICATION_CREDENTIAL_SECRET=$(get_data_from_secret neutron-application-credential openstack secret)
+	NEUTRON_APPLICATION_CREDENTIAL_ID=$(get_data_from_secret neutron-application-credential openstack id)
+
+	iniset $conf neutron auth_url $KEYSTONE_AUTH_URI_V3
+	iniset $conf neutron auth_type v3applicationcredential
+	iniset $conf neutron application_credential_id $NEUTRON_APPLICATION_CREDENTIAL_ID
+	iniset $conf neutron application_credential_secret $NEUTRON_APPLICATION_CREDENTIAL_SECRET
+    iniset $conf neutron auth_strategy "$Q_AUTH_STRATEGY"
+
+    # optionally set options in nova_conf
+    neutron_plugin_create_nova_conf $conf
+
+    if is_service_enabled q-meta; then
+        iniset $conf neutron service_metadata_proxy "True"
+    fi
+
+    iniset $conf DEFAULT vif_plugging_is_fatal "$VIF_PLUGGING_IS_FATAL"
+    iniset $conf DEFAULT vif_plugging_timeout "$VIF_PLUGGING_TIMEOUT"
+}
+
+function create_nova_conf_neutron {
+	_create_nova_configs_neutron $NOVA_CONF
+	_create_nova_configs_neutron $NOVA_CPU_CONF
+}
+export -f create_nova_conf_neutron
+
+
+# NOTE(Alex): Change the nova metadata host
+function _configure_neutron_metadata_agent {
+    cp $NEUTRON_DIR/etc/metadata_agent.ini.sample $Q_META_CONF_FILE
+
+    iniset $Q_META_CONF_FILE DEFAULT debug $ENABLE_DEBUG_LOG_LEVEL
+    iniset $Q_META_CONF_FILE DEFAULT nova_metadata_host nova-metadata.openstack.svc
+	iniset $Q_META_CONF_FILE DEFAULT nova_metadata_port 80
+    iniset $Q_META_CONF_FILE DEFAULT metadata_workers $API_WORKERS
+    iniset $Q_META_CONF_FILE AGENT root_helper "$Q_RR_COMMAND"
+    if [[ "$Q_USE_ROOTWRAP_DAEMON" == "True" ]]; then
+        iniset $Q_META_CONF_FILE AGENT root_helper_daemon "$Q_RR_DAEMON_COMMAND"
+    fi
+}
+export -f _configure_neutron_metadata_agent
