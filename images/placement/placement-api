@@ -23,10 +23,7 @@ from sentry_sdk.integrations import wsgi
 
 VERSION = pkg_resources.get_distribution("openstack-placement").version
 
-sentry_sdk.init(
-    release="placement@%s" % VERSION,
-    traces_sample_rate=0.1
-)
+sentry_sdk.init(release="placement@%s" % VERSION)
 
 application = init_application()
 application = wsgi.SentryWsgiMiddleware(application)

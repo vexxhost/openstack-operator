@@ -23,10 +23,7 @@ from sentry_sdk.integrations import wsgi
 
 VERSION = pkg_resources.get_distribution("glance").version
 
-sentry_sdk.init(
-    release="glance@%s" % VERSION,
-    traces_sample_rate=0.1
-)
+sentry_sdk.init(release="glance@%s" % VERSION)
 
 application = init_app()
 application = wsgi.SentryWsgiMiddleware(application)

@@ -24,10 +24,7 @@ from sentry_sdk.integrations import wsgi
 
 VERSION = pkg_resources.get_distribution("barbican").version
 
-sentry_sdk.init(
-    release="barbican@%s" % VERSION,
-    traces_sample_rate=0.1
-)
+sentry_sdk.init(release="barbican@%s" % VERSION)
 
 application = get_api_wsgi_script()
 application = wsgi.SentryWsgiMiddleware(application)

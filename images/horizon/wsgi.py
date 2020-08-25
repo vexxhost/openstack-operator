@@ -29,10 +29,7 @@ from sentry_sdk.integrations import wsgi
 
 VERSION = pkg_resources.get_distribution("horizon").version
 
-sentry_sdk.init(
-    release="horizon@%s" % VERSION,
-    traces_sample_rate=0.1
-)
+sentry_sdk.init(release="horizon@%s" % VERSION)
 
 # Add this file path to sys.path in order to import settings
 sys.path.insert(0, os.path.normpath(os.path.join(

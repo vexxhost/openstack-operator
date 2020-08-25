@@ -22,10 +22,7 @@ from heat.cmd.engine import main
 
 VERSION = pkg_resources.get_distribution("openstack-heat").version
 
-sentry_sdk.init(
-    release="openstack-heat@%s" % VERSION,
-    traces_sample_rate=0.1
-)
+sentry_sdk.init(release="openstack-heat@%s" % VERSION)
 
 if __name__ == '__main__':
     sys.argv[0] = re.sub(r'(-script\.pyw|\.exe)?$', '', sys.argv[0])
