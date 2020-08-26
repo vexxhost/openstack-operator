@@ -295,3 +295,11 @@ def deploy_memcached(name, **_):
     it's meant to be here to be consumed/called by the serices.
     """
     create_or_update('operator/memcached.yml.j2', name=name)
+
+
+def deploy_uwsgi_config():
+    """Deploy a default configmap for uwsgi apps
+
+    This function deploys a default configmap for uwsgi apps."""
+
+    create_or_update('operator/uwsgidefaultconfig.yml.j2')
