@@ -163,7 +163,7 @@ function configure_barbican {
     iniset $BARBICAN_PASTE_CONF 'pipeline:barbican_api' pipeline 'barbican-api-keystone'
 
     # Set the keystone parameters
-    configure_auth_token_middleware $BARBICAN_CONF barbican $BARBICAN_AUTH_CACHE_DIR
+    configure_keystone_authtoken_middleware $BARBICAN_CONF barbican
 
     # NOTE(Alex): Operator stuff for memcached
     iniset $BARBICAN_CONF keystone_authtoken memcached_servers "mcrouter-memcached-barbican:11211"
@@ -179,11 +179,6 @@ function init_barbican {
     --from-file=/etc/barbican/barbican.conf \
     --from-file=/etc/barbican/barbican-api-paste.ini \
     --from-file=/etc/barbican/barbican-functional.conf
-
-    # Create cache dir
-    sudo mkdir -p $BARBICAN_AUTH_CACHE_DIR
-    sudo chown $STACK_USER $BARBICAN_AUTH_CACHE_DIR
-    rm -f $BARBICAN_AUTH_CACHE_DIR/*
 
     recreate_database barbican utf8
 }

@@ -53,9 +53,5 @@
         helm_release_name: openstack-operator
         helm_chart: ./chart
         helm_values_file: ./chart/test-values.yaml
-  tasks:
-    # TODO(mnaser): Generate all manifests and ensure git is not dirty
-    - include_tasks: tests/memcached.yaml
-    - include_tasks: tests/rabbitmq.yaml
 
 - import_playbook: devstack.yaml
