@@ -17,6 +17,7 @@ data:
     chronyd: {}
     placement: {}
     neutron: {}
+    nova: {}
     backup:
       secretName: aws-backup
       url: s3://backups/

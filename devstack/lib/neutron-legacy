@@ -14,6 +14,7 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+NEUTRON_STATE_PATH=/var/lib/neutron
 function configure_mutnauq {
 	_configure_neutron_common
 
@@ -61,6 +62,11 @@ function create_mutnauq_accounts {
 	create_service_user "neutron"
 }
 
+function install_mutnauq {
+	echo noop
+}
+export -f install_mutnauq
+
 function init_mutnauq {
 	echo noop
 }
@@ -71,6 +77,9 @@ function start_neutron_service_and_check {
 
 	kubectl -n openstack create secret generic neutron-config \
 		--from-file=/etc/neutron/neutron.conf \
+		--from-file=/etc/neutron/l3_agent.ini \
+		--from-file=/etc/neutron/dhcp_agent.ini \
+		--from-file=/etc/neutron/metadata_agent.ini \
 		--from-file=/etc/neutron/api-paste.ini \
 		--from-file=/etc/neutron/policy.json
 	kubectl -n openstack create secret generic neutron-ml2-config \
@@ -106,6 +115,18 @@ function start_mutnauq_l2_agent {
 	fi
 }
 export -f start_neutron_agents
+
+function start_mutnauq_other_agents {
+	kubernetes_rollout_restart daemonset/neutron-dhcp-agent
+	kubernetes_rollout_status daemonset/neutron-dhcp-agent
+
+	kubernetes_rollout_restart daemonset/neutron-l3-agent
+	kubernetes_rollout_status daemonset/neutron-l3-agent
+
+	kubernetes_rollout_restart daemonset/neutron-metadata-agent
+	kubernetes_rollout_status daemonset/neutron-metadata-agent
+}
+export -f start_mutnauq_other_agents
 
 function _configure_neutron_common {
 	_create_neutron_conf_dir
@@ -151,11 +172,10 @@ function _configure_neutron_common {
 	NEUTRON_DATABASE_NAME=$(get_data_from_secret neutron-mysql openstack DATABASE)
 	iniset $NEUTRON_CONF database connection "mysql+pymysql://$NEUTRON_DATABASE_USER:$NEUTRON_DATABASE_PASSWORD@neutron-mysql-master/$NEUTRON_DATABASE_NAME?charset=utf8"
 
-	iniset $NEUTRON_CONF DEFAULT state_path $DATA_DIR/neutron
+	iniset $NEUTRON_CONF DEFAULT state_path $NEUTRON_STATE_PATH
 	iniset $NEUTRON_CONF DEFAULT use_syslog $SYSLOG
 	iniset $NEUTRON_CONF DEFAULT bind_host $Q_LISTEN_ADDRESS
-	iniset $NEUTRON_CONF oslo_concurrency lock_path $DATA_DIR/neutron/lock
-
+	iniset $NEUTRON_CONF oslo_concurrency lock_path $NEUTRON_STATE_PATH/lock
 	# NOTE(freerunner): Need to adjust Region Name for nova in multiregion installation
 	iniset $NEUTRON_CONF nova region_name $REGION_NAME
 
@@ -216,3 +236,18 @@ function _configure_neutron_service {
 	neutron_plugin_configure_service
 }
 export -f _configure_neutron_service
+
+function _neutron_ovs_base_add_bridge {
+    echo noop
+}
+export -f _neutron_ovs_base_add_bridge
+
+function _neutron_ovs_base_setup_bridge {
+    echo noop
+}
+export -f _neutron_ovs_base_setup_bridge
+
+function _neutron_ovs_base_configure_l3_agent {
+	echo noop
+}
+export -f _neutron_ovs_base_configure_l3_agent

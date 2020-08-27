@@ -8,6 +8,7 @@ configMap:
   glance: {}
   placement: {}
   neutron: {}
+  nova: {}
   horizon:
     hostAliases:
     - hostnames:

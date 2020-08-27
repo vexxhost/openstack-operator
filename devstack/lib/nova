@@ -1,0 +1,196 @@
+#!/bin/bash
+#
+# Copyright 2020 VEXXHOST, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may
+# not use this file except in compliance with the License. You may obtain
+# a copy of the License at
+#
+#	 http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations
+# under the License.
+
+function create_nova_conf {
+	# Remove legacy ``nova.conf``
+	rm -f $NOVA_DIR/bin/nova.conf
+
+	# (Re)create ``nova.conf``
+	rm -f $NOVA_CONF
+	iniset $NOVA_CONF DEFAULT debug "$ENABLE_DEBUG_LOG_LEVEL"
+	if [ "$NOVA_ALLOW_MOVE_TO_SAME_HOST" == "True" ]; then
+		iniset $NOVA_CONF DEFAULT allow_resize_to_same_host "True"
+	fi
+	iniset $NOVA_CONF wsgi api_paste_config "$NOVA_API_PASTE_INI"
+	iniset $NOVA_CONF DEFAULT rootwrap_config "$NOVA_CONF_DIR/rootwrap.conf"
+	iniset $NOVA_CONF filter_scheduler enabled_filters "$NOVA_FILTERS"
+	iniset $NOVA_CONF scheduler workers "$API_WORKERS"
+	iniset $NOVA_CONF neutron default_floating_pool "$PUBLIC_NETWORK_NAME"
+	if [[ $SERVICE_IP_VERSION == 6 ]]; then
+		iniset $NOVA_CONF DEFAULT my_ip "$HOST_IPV6"
+	else
+		iniset $NOVA_CONF DEFAULT my_ip "$HOST_IP"
+	fi
+	iniset $NOVA_CONF DEFAULT instance_name_template "${INSTANCE_NAME_PREFIX}%08x"
+	iniset $NOVA_CONF DEFAULT osapi_compute_listen "$NOVA_SERVICE_LISTEN_ADDRESS"
+	iniset $NOVA_CONF DEFAULT metadata_listen "$NOVA_SERVICE_LISTEN_ADDRESS"
+	iniset $NOVA_CONF DEFAULT shutdown_timeout $NOVA_SHUTDOWN_TIMEOUT
+
+	iniset $NOVA_CONF key_manager backend nova.keymgr.conf_key_mgr.ConfKeyManager
+
+	if is_fedora || is_suse; then
+		# nova defaults to /usr/local/bin, but fedora and suse pip like to
+		# install things in /usr/bin
+		iniset $NOVA_CONF DEFAULT bindir "/usr/bin"
+	fi
+
+	# only setup database connections and cache backend if there are services
+	# that require them running on the host. The ensures that n-cpu doesn't
+	# leak a need to use the db in a multinode scenario.
+	if is_service_enabled n-api n-cond n-sched; then
+		# If we're in multi-tier cells mode, we want our control services pointing
+		# at cell0 instead of cell1 to ensure isolation. If not, we point everything
+		# at the main database like normal.
+		if [[ "$CELLSV2_SETUP" == "singleconductor" ]]; then
+			local db="nova_cell1"
+		else
+			local db="nova_cell0"
+			# When in superconductor mode, nova-compute can't send instance
+			# info updates to the scheduler, so just disable it.
+			iniset $NOVA_CONF filter_scheduler track_instance_changes False
+		fi
+
+		iniset $NOVA_CONF database connection `database_connection_url $db`
+		iniset $NOVA_CONF api_database connection `database_connection_url nova_api`
+
+		# Cache related settings
+		# Those settings aren't really needed in n-cpu thus it is configured
+		# only on nodes which runs controller services
+		iniset $NOVA_CONF cache enabled $NOVA_ENABLE_CACHE
+		iniset $NOVA_CONF cache backend $CACHE_BACKEND
+		iniset $NOVA_CONF cache memcache_servers mcrouter-memcached-nova.openstack.svc.cluster.local
+	fi
+
+	if is_service_enabled n-api; then
+		if is_service_enabled n-api-meta; then
+			# If running n-api-meta as a separate service
+			NOVA_ENABLED_APIS=$(echo $NOVA_ENABLED_APIS | sed "s/,metadata//")
+		fi
+		iniset $NOVA_CONF DEFAULT enabled_apis "$NOVA_ENABLED_APIS"
+		if is_service_enabled tls-proxy && [ "$NOVA_USE_MOD_WSGI" == "False" ]; then
+			# Set the service port for a proxy to take the original
+			iniset $NOVA_CONF DEFAULT osapi_compute_listen_port "$NOVA_SERVICE_PORT_INT"
+			iniset $NOVA_CONF DEFAULT osapi_compute_link_prefix $NOVA_SERVICE_PROTOCOL://$NOVA_SERVICE_HOST:$NOVA_SERVICE_PORT
+		fi
+
+		configure_keystone_authtoken_middleware $NOVA_CONF nova
+	fi
+
+	if is_service_enabled cinder; then
+		configure_cinder_access
+	fi
+
+	if [ -n "$NOVA_STATE_PATH" ]; then
+		iniset $NOVA_CONF DEFAULT state_path "$NOVA_STATE_PATH"
+		iniset $NOVA_CONF oslo_concurrency lock_path "$NOVA_STATE_PATH"
+	fi
+	if [ -n "$NOVA_INSTANCES_PATH" ]; then
+		iniset $NOVA_CONF DEFAULT instances_path "$NOVA_INSTANCES_PATH"
+	fi
+	if [ "$SYSLOG" != "False" ]; then
+		iniset $NOVA_CONF DEFAULT use_syslog "True"
+	fi
+	if [ "$FORCE_CONFIG_DRIVE" != "False" ]; then
+		iniset $NOVA_CONF DEFAULT force_config_drive "$FORCE_CONFIG_DRIVE"
+	fi
+
+	# nova defaults to genisoimage but only mkisofs is available for 15.0+
+	if is_suse; then
+		iniset $NOVA_CONF DEFAULT mkisofs_cmd /usr/bin/mkisofs
+	fi
+
+	# Format logging
+	setup_logging $NOVA_CONF
+
+	iniset $NOVA_CONF upgrade_levels compute "auto"
+
+	write_uwsgi_config "$NOVA_UWSGI_CONF" "$NOVA_UWSGI" "/compute"
+	write_uwsgi_config "$NOVA_METADATA_UWSGI_CONF" "$NOVA_METADATA_UWSGI" "" "$SERVICE_LISTEN_ADDRESS:${METADATA_SERVICE_PORT}"
+
+	if is_service_enabled ceilometer; then
+		iniset $NOVA_CONF DEFAULT instance_usage_audit "True"
+		iniset $NOVA_CONF DEFAULT instance_usage_audit_period "hour"
+		iniset $NOVA_CONF DEFAULT notify_on_state_change "vm_and_task_state"
+	fi
+
+	# Set the oslo messaging driver to the typical default. This does not
+	# enable notifications, but it will allow them to function when enabled.
+	iniset $NOVA_CONF oslo_messaging_notifications driver "messagingv2"
+	iniset $NOVA_CONF oslo_messaging_notifications transport_url $(get_notification_url)
+	iniset $NOVA_CONF notifications notification_format "$NOVA_NOTIFICATION_FORMAT"
+
+	kubernetes_ensure_resource secret/nova-cell1-rabbitmq
+	NOVA_RABBITMQ_USERNAME=$(get_data_from_secret nova-cell1-rabbitmq openstack username)
+	NOVA_RABBITMQ_PASSWORD=$(get_data_from_secret nova-cell1-rabbitmq openstack password)
+	iniset $NOVA_CONF DEFAULT transport_url "rabbit://$NOVA_RABBITMQ_USERNAME:$NOVA_RABBITMQ_PASSWORD@rabbitmq-nova-cell1.openstack.svc.cluster.local:5672/"
+
+	iniset $NOVA_CONF DEFAULT osapi_compute_workers "$API_WORKERS"
+	iniset $NOVA_CONF DEFAULT metadata_workers "$API_WORKERS"
+	# don't let the conductor get out of control now that we're using a pure python db driver
+	iniset $NOVA_CONF conductor workers "$API_WORKERS"
+
+	if is_service_enabled tls-proxy; then
+		iniset $NOVA_CONF DEFAULT glance_protocol https
+		iniset $NOVA_CONF oslo_middleware enable_proxy_headers_parsing True
+	fi
+
+	iniset $NOVA_CONF DEFAULT graceful_shutdown_timeout "$SERVICE_GRACEFUL_SHUTDOWN_TIMEOUT"
+
+	if [ "$NOVA_USE_SERVICE_TOKEN" == "True" ]; then
+		init_nova_service_user_conf
+	fi
+
+	if is_service_enabled n-cond; then
+		for i in $(seq 1 $NOVA_NUM_CELLS); do
+			local conf
+			local vhost
+			conf=$(conductor_conf $i)
+			vhost="nova_cell${i}"
+			# clean old conductor conf
+			rm -f $conf
+			iniset $conf database connection `database_connection_url nova_cell${i}`
+			iniset $conf conductor workers "$API_WORKERS"
+			iniset $conf DEFAULT debug "$ENABLE_DEBUG_LOG_LEVEL"
+			# if we have a singleconductor, we don't have per host message queues.
+			if [[ "${CELLSV2_SETUP}" == "singleconductor" ]]; then
+				kubernetes_ensure_resource secret/nova-cell1-rabbitmq
+				NOVA_RABBITMQ_USERNAME=$(get_data_from_secret nova-cell1-rabbitmq openstack username)
+				NOVA_RABBITMQ_PASSWORD=$(get_data_from_secret nova-cell1-rabbitmq openstack password)
+				iniset $NOVA_CONF DEFAULT transport_url "rabbit://$NOVA_RABBITMQ_USERNAME:$NOVA_RABBITMQ_PASSWORD@rabbitmq-nova-cell1.openstack.svc.cluster.local:5672/"
+			else
+				# NOTE(mnaser): Not supported for now and all this code is going away anyways
+				exit 1
+			fi
+			# Format logging
+			setup_logging $conf
+		done
+	fi
+
+	# Console proxy configuration has to go after conductor configuration
+	# because the per cell config file nova_cellN.conf is cleared out as part
+	# of conductor configuration.
+	if [[ "${CELLSV2_SETUP}" == "singleconductor" ]]; then
+		configure_console_proxies
+	else
+		for i in $(seq 1 $NOVA_NUM_CELLS); do
+			local conf
+			local offset
+			conf=$(conductor_conf $i)
+			offset=$((i - 1))
+			configure_console_proxies $conf $offset
+		done
+	fi
+}
