@@ -17,12 +17,17 @@
 import pkg_resources
 
 import sentry_sdk
+from sentry_sdk.integrations.sqlalchemy import SqlalchemyIntegration
 
 from nova.api.openstack.compute.wsgi import init_application
 from sentry_sdk.integrations import wsgi
 
 VERSION = pkg_resources.get_distribution("nova").version
-sentry_sdk.init(release="nova@%s" % VERSION)
+
+sentry_sdk.init(
+    release="nova@%s" % VERSION,
+    integrations=[SqlalchemyIntegration()]
+)
 
 application = init_application()
 application = wsgi.SentryWsgiMiddleware(application)

@@ -19,11 +19,16 @@ import re
 import sys
 
 import sentry_sdk
+from sentry_sdk.integrations.sqlalchemy import SqlalchemyIntegration
 
 from nova.cmd.novncproxy import main
 
 VERSION = pkg_resources.get_distribution("nova").version
-sentry_sdk.init(release="nova@%s" % VERSION)
+
+sentry_sdk.init(
+    release="nova@%s" % VERSION,
+    integrations=[SqlalchemyIntegration()]
+)
 
 sys.argv[0] = re.sub(r'(-script\.pyw|\.exe)?$', '', sys.argv[0])
 sys.exit(main())

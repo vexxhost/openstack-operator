@@ -67,12 +67,20 @@ function create_nova_conf {
 	# only on nodes which runs controller services
 	iniset $NOVA_CONF cache enabled $NOVA_ENABLE_CACHE
 	iniset $NOVA_CONF cache backend $CACHE_BACKEND
-	iniset $NOVA_CONF cache memcache_servers mcrouter-memcached-nova.openstack.svc.cluster.local
+	iniset $NOVA_CONF cache memcache_servers mcrouter-memcached-nova.openstack.svc.cluster.local:11211
 
 	NOVA_ENABLED_APIS=$(echo $NOVA_ENABLED_APIS | sed "s/,metadata//")
 	iniset $NOVA_CONF DEFAULT enabled_apis "$NOVA_ENABLED_APIS"
 
-	configure_keystone_authtoken_middleware $NOVA_CONF nova
+	# Adop v3applicationcredential instead of password type
+    kubernetes_ensure_resource secret/nova-application-credential
+    NOVA_APPLICATION_CREDENTIAL_SECRET=$(get_data_from_secret nova-application-credential openstack secret)
+    NOVA_APPLICATION_CREDENTIAL_ID=$(get_data_from_secret nova-application-credential openstack id)
+    iniset $NOVA_CONF keystone_authtoken auth_url $KEYSTONE_AUTH_URI_V3
+    iniset $NOVA_CONF keystone_authtoken auth_type v3applicationcredential
+    iniset $NOVA_CONF keystone_authtoken application_credential_id $NOVA_APPLICATION_CREDENTIAL_ID
+    iniset $NOVA_CONF keystone_authtoken application_credential_secret $NOVA_APPLICATION_CREDENTIAL_SECRET
+	iniset $NOVA_CONF keystone_authtoken memcached_servers mcrouter-memcached-nova.openstack.svc.cluster.local:11211
 
 	if is_service_enabled cinder; then
 		configure_cinder_access
@@ -352,4 +360,22 @@ function start_nova {
     start_nova_console_proxies
     start_nova_conductor
     start_nova_compute
+}
+
+function create_nova_accounts {
+	# NOTE(Alex): Ignore ResellerAdmin
+	echo noop
+}
+
+function init_nova_service_user_conf {
+
+    kubernetes_ensure_resource secret/nova-application-credential
+    NOVA_APPLICATION_CREDENTIAL_SECRET=$(get_data_from_secret nova-application-credential openstack secret)
+    NOVA_APPLICATION_CREDENTIAL_ID=$(get_data_from_secret nova-application-credential openstack id)
+    iniset $NOVA_CONF service_user auth_url $KEYSTONE_SERVICE_URI
+    iniset $NOVA_CONF service_user auth_type v3applicationcredential
+    iniset $NOVA_CONF service_user application_credential_id $NOVA_APPLICATION_CREDENTIAL_ID
+    iniset $NOVA_CONF service_user application_credential_secret $NOVA_APPLICATION_CREDENTIAL_SECRET
+    iniset $NOVA_CONF service_user send_service_user_token True
+    iniset $NOVA_CONF service_user auth_strategy keystone
 }
