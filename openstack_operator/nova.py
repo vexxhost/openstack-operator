@@ -19,6 +19,7 @@ This code takes care of doing the operations of the OpenStack Nova API
 service.
 """
 
+from openstack_operator import database
 from openstack_operator import utils
 
 MEMCACHED = True
@@ -37,7 +38,11 @@ def create_or_resume(**_):
     start the service up for the first time.
     """
 
+    database.ensure_mysql_cluster("nova-api")
+
     for cell in CELLS:
+        database.ensure_mysql_cluster("nova-%s" % cell)
+
         # NOTE(mnaser): cell0 does not need a message queue
         if cell != 'cell0':
             if not utils.ensure_secret("openstack", "nova-%s-rabbitmq" % cell):
