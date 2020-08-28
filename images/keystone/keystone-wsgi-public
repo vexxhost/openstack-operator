@@ -17,13 +17,18 @@
 import pkg_resources
 
 import sentry_sdk
+from sentry_sdk.integrations.flask import FlaskIntegration
+from sentry_sdk.integrations.sqlalchemy import SqlalchemyIntegration
 
 from keystone.server.wsgi import initialize_public_application
 from sentry_sdk.integrations import wsgi
 
 VERSION = pkg_resources.get_distribution("keystone").version
 
-sentry_sdk.init(release="keystone@%s" % VERSION)
+sentry_sdk.init(
+    release="keystone@%s" % VERSION,
+    integrations=[FlaskIntegration(), SqlalchemyIntegration()]
+)
 
 application = initialize_public_application()
 application = wsgi.SentryWsgiMiddleware(application)

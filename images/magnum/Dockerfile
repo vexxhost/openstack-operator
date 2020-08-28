@@ -22,4 +22,5 @@ ENV UWSGI_HTTP_SOCKET=:9511 UWSGI_WSGI_FILE=/usr/local/bin/magnum-api-wsgi
 CMD ["/usr/local/bin/uwsgi","--ini","/etc/uwsgi/uwsgi.ini"]
 
 FROM vexxhost/python-base AS magnum-conductor
+COPY magnum-conductor /usr/local/bin/magnum-conductor
 CMD ["/usr/local/bin/magnum-conductor"]

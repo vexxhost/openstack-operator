@@ -2,4 +2,4 @@ uWSGI
 keystone
 PyMySQL
 python-memcached
-sentry-sdk
+sentry-sdk[flask]

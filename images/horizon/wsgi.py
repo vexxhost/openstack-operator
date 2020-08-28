@@ -26,10 +26,14 @@ import sentry_sdk
 
 from django.core.wsgi import get_wsgi_application
 from sentry_sdk.integrations import wsgi
+from sentry_sdk.integrations.django import DjangoIntegration
 
 VERSION = pkg_resources.get_distribution("horizon").version
 
-sentry_sdk.init(release="horizon@%s" % VERSION)
+sentry_sdk.init(
+    release="horizon@%s" % VERSION,
+    integrations=[DjangoIntegration()]
+)
 
 # Add this file path to sys.path in order to import settings
 sys.path.insert(0, os.path.normpath(os.path.join(
