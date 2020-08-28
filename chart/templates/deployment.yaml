@@ -66,3 +66,7 @@ spec:
       nodeSelector:
 {{ toYaml . | indent 8 }}
 {{- end }}
+{{- with .Values.hostAliases }}
+      hostAliases:
+{{ toYaml . | indent 8 }}
+{{- end }}
