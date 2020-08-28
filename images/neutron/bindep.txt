@@ -7,4 +7,5 @@ iptables
 keepalived
 haproxy
 dnsmasq
+dnsmasq-utils
 radvd
