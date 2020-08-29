@@ -19,11 +19,16 @@ import re
 import sys
 
 import sentry_sdk
+from sentry_sdk.integrations.sqlalchemy import SqlalchemyIntegration
 
 from neutron.cmd.eventlet.server import main_rpc_eventlet
 
 VERSION = pkg_resources.get_distribution("neutron").version
-sentry_sdk.init(release="neutron@%s" % VERSION)
+
+sentry_sdk.init(
+    release="neutron@%s" % VERSION,
+    integrations=[SqlalchemyIntegration()]
+)
 
 sys.argv[0] = re.sub(r'(-script\.pyw|\.exe)?$', '', sys.argv[0])
 sys.exit(main_rpc_eventlet())

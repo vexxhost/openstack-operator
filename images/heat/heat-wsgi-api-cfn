@@ -17,13 +17,17 @@
 import pkg_resources
 
 import sentry_sdk
+from sentry_sdk.integrations.sqlalchemy import SqlalchemyIntegration
 
 from heat.httpd.heat_api_cfn import init_application
 from sentry_sdk.integrations import wsgi
 
 VERSION = pkg_resources.get_distribution("openstack-heat").version
 
-sentry_sdk.init(release="openstack-heat@%s" % VERSION)
+sentry_sdk.init(
+    release="heat@%s" % VERSION,
+    integrations=[SqlalchemyIntegration()]
+)
 
 application = init_application()
 application = wsgi.SentryWsgiMiddleware(application)

@@ -1,4 +1,3 @@
-
 #!/usr/local/bin/python
 # Copyright (c) 2020 VEXXHOST, Inc.
 #
@@ -18,13 +17,17 @@
 import pkg_resources
 
 import sentry_sdk
+from sentry_sdk.integrations.sqlalchemy import SqlalchemyIntegration
 
 from barbican.api.app import get_api_wsgi_script
 from sentry_sdk.integrations import wsgi
 
 VERSION = pkg_resources.get_distribution("barbican").version
 
-sentry_sdk.init(release="barbican@%s" % VERSION)
+sentry_sdk.init(
+    release="barbican@%s" % VERSION,
+    integrations=[SqlalchemyIntegration()]
+)
 
 application = get_api_wsgi_script()
 application = wsgi.SentryWsgiMiddleware(application)

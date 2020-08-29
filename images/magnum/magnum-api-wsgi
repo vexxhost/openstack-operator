@@ -17,6 +17,7 @@
 import pkg_resources
 
 import sentry_sdk
+from sentry_sdk.integrations.sqlalchemy import SqlalchemyIntegration
 
 from magnum.api.app import build_wsgi_app
 from sentry_sdk.integrations import wsgi
@@ -24,7 +25,10 @@ from sentry_sdk.integrations import wsgi
 
 VERSION = pkg_resources.get_distribution("magnum").version
 
-sentry_sdk.init(release="magnum@%s" % VERSION)
+sentry_sdk.init(
+    release="magnum@%s" % VERSION,
+    integrations=[SqlalchemyIntegration()]
+)
 
 application = build_wsgi_app()
 application = wsgi.SentryWsgiMiddleware(application)

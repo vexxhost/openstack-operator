@@ -17,13 +17,17 @@
 import pkg_resources
 
 import sentry_sdk
+from sentry_sdk.integrations.sqlalchemy import SqlalchemyIntegration
 
 from cinder.wsgi.wsgi import initialize_application
 from sentry_sdk.integrations import wsgi
 
 VERSION = pkg_resources.get_distribution("cinder").version
 
-sentry_sdk.init(release="cinder@%s" % VERSION)
+sentry_sdk.init(
+    release="cinder@%s" % VERSION,
+    integrations=[SqlalchemyIntegration()]
+)
 
 application = initialize_application()
 application = wsgi.SentryWsgiMiddleware(application)

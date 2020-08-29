@@ -17,13 +17,17 @@
 import pkg_resources
 
 import sentry_sdk
+from sentry_sdk.integrations.sqlalchemy import SqlalchemyIntegration
 
 from glance.common.wsgi_app import init_app
 from sentry_sdk.integrations import wsgi
 
 VERSION = pkg_resources.get_distribution("glance").version
 
-sentry_sdk.init(release="glance@%s" % VERSION)
+sentry_sdk.init(
+    release="glance@%s" % VERSION,
+    integrations=[SqlalchemyIntegration()]
+)
 
 application = init_app()
 application = wsgi.SentryWsgiMiddleware(application)
