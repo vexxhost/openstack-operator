@@ -24,3 +24,7 @@ data:
     route-user-agent = ^kube-probe.* donotlog:
     log-x-forwarded-for = true
     master = true
+    # NOTE(mnaser): https://github.com/getsentry/raven-python/issues/732#issuecomment-176854438
+    ignore-sigpipe = true
+    ignore-write-errors = true
+    disable-write-exception = true
