@@ -32,10 +32,7 @@ def create_or_resume(name, spec, **_):
     """
 
     # deploy mysql for cinder
-    if "mysql" not in spec:
-        database.ensure_mysql_cluster("cinder", {})
-    else:
-        database.ensure_mysql_cluster("cinder", spec["mysql"])
+    database.ensure_mysql_cluster("cinder", spec=spec["mysql"])
 
     # deploy rabbitmq
     if not utils.ensure_secret("openstack", "cinder-rabbitmq"):

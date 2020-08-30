@@ -110,9 +110,7 @@ def create_or_resume(name, spec, **_):
     # (TODO)Replace the current admin url
 
     # deploy mysql
-    if "mysql" not in spec:
-        spec["mysql"] = {}
-    db_config = database.ensure_mysql_cluster("keystone", spec["mysql"])
+    db_config = database.ensure_mysql_cluster("keystone", spec=spec["mysql"])
 
     # deploy memcached
 

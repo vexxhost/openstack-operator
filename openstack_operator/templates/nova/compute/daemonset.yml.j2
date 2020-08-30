@@ -1,0 +1,102 @@
+---
+# Copyright 2020 VEXXHOST, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: nova-compute
+  namespace: openstack
+  labels:
+    {{ labels("nova", component="compute") | indent(4) }}
+spec:
+  updateStrategy:
+    rollingUpdate:
+      maxUnavailable: 1
+    type: RollingUpdate
+  selector:
+    matchLabels:
+      {{ labels("nova", component="compute") | indent(6) }}
+  template:
+    metadata:
+      labels:
+        {{ labels("nova", component="compute") | indent(8) }}
+    spec:
+      automountServiceAccountToken: false
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
+      containers:
+      - name: compute
+        image: vexxhost/nova-compute:latest
+        imagePullPolicy: Always
+        command:
+        - nova-compute
+        - --config-file
+        - /etc/nova/nova-cpu.conf
+        env:
+        {% if 'sentryDSN' in spec %}
+        - name: SENTRY_DSN
+          value: {{ spec.sentryDSN }}
+        {% endif %}
+        - name: OS_DEFAULT__HOST
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.nodeName
+        - name: OS_VNC__SERVER_PROXYCLIENT_ADDRESS
+          valueFrom:
+            fieldRef:
+              fieldPath: status.hostIP
+        securityContext:
+          # NOTE(mnaser): We need to revisit this
+          privileged: true
+        volumeMounts:
+        - name: ceph
+          mountPath: /etc/ceph
+        - name: config
+          mountPath: /etc/nova
+        - name: state
+          mountPath: /var/lib/nova
+        - name: host-dev-pts
+          mountPath: /dev/pts
+        - name: host-run-libvirt
+          mountPath: /run/libvirt
+        - name: host-run-ovs
+          mountPath: /run/openvswitch
+      volumes:
+      - name: ceph
+        secret:
+          secretName: ceph-config
+      - name: config
+        secret:
+          secretName: nova-config
+      - name: state
+        hostPath:
+          path: /var/lib/nova
+          type: DirectoryOrCreate
+      - name: host-dev-pts
+        hostPath:
+          path: /dev/pts
+      - name: host-run-libvirt
+        hostPath:
+          path: /run/libvirt
+      - name: host-run-ovs
+        hostPath:
+          path: /run/openvswitch
+      nodeSelector:
+        node-role.openstack.org: compute
+{% if 'hostAliases' in spec %}
+      hostAliases:
+        {{ spec.hostAliases | to_yaml | indent(8) }}
+{% endif %}
+

@@ -1,0 +1,84 @@
+---
+# Copyright 2020 VEXXHOST, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: nova-metadata-api
+  namespace: openstack
+  labels:
+    {{ labels("nova", component="metadata-api") | indent(4) }}
+spec:
+  updateStrategy:
+    rollingUpdate:
+      maxUnavailable: 1
+    type: RollingUpdate
+  selector:
+    matchLabels:
+      {{ labels("nova", component="metadata-api") | indent(6) }}
+  template:
+    metadata:
+      labels:
+        {{ labels("nova", component="metadata-api") | indent(8) }}
+    spec:
+      automountServiceAccountToken: false
+      containers:
+      - name: metadata-api
+        image: vexxhost/nova-metadata-api:latest
+        imagePullPolicy: Always
+        env:
+        {% if 'sentryDSN' in spec %}
+        - name: SENTRY_DSN
+          value: {{ spec.sentryDSN }}
+        {% endif %}
+        - name: OS_DEFAULT__HOST
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.nodeName
+        ports:
+        - name: nova-metadata
+          protocol: TCP
+          containerPort: 8775
+        livenessProbe:
+          tcpSocket:
+            port: nova-metadata
+        readinessProbe:
+          tcpSocket:
+            port: nova-metadata
+        securityContext:
+          runAsUser: 1001
+        volumeMounts:
+        - name: config
+          mountPath: /etc/nova
+        - name: uwsgi-config
+          mountPath: /etc/uwsgi
+      volumes:
+      - name: config
+        secret:
+          secretName: nova-config
+      - name: uwsgi-config
+        configMap:
+          defaultMode: 420
+          name: uwsgi-default
+      nodeSelector:
+        node-role.kubernetes.io/master: ""
+      tolerations:
+      - key: node-role.kubernetes.io/master
+        effect: NoSchedule
+{% if 'hostAliases' in spec %}
+      hostAliases:
+        {{ spec.hostAliases | to_yaml | indent(8) }}
+{% endif %}
+

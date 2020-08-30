@@ -31,10 +31,7 @@ def create_or_resume(name, spec, **_):
     """
 
     # deploy mysql for barbican
-    if "mysql" not in spec:
-        database.ensure_mysql_cluster("barbican", {})
-    else:
-        database.ensure_mysql_cluster("barbican", spec["mysql"])
+    database.ensure_mysql_cluster("barbican", spec=spec["mysql"])
 
     # deploy barbican api
     utils.create_or_update('barbican/daemonset.yml.j2',

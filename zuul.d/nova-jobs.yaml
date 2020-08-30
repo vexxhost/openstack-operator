@@ -1,0 +1,60 @@
+- job:
+    name: openstack-operator:images:build:nova
+    parent: vexxhost-build-docker-image
+    provides: openstack-operator:image:nova
+    nodeset: &id001
+      nodes:
+      - name: ubuntu-bionic
+        label: ubuntu-bionic-vexxhost
+    vars: &id002
+      docker_images:
+      - context: images/nova
+        repository: vexxhost/nova-base
+        target: nova-base
+      - context: images/nova
+        repository: vexxhost/nova-compute-api
+        target: nova-compute-api
+      - context: images/nova
+        repository: vexxhost/nova-metadata-api
+        target: nova-metadata-api
+      - context: images/nova
+        repository: vexxhost/nova-conductor
+        target: nova-conductor
+      - context: images/nova
+        repository: vexxhost/nova-scheduler
+        target: nova-scheduler
+      - context: images/nova
+        repository: vexxhost/nova-novncproxy
+        target: nova-novncproxy
+      - context: images/nova
+        repository: vexxhost/nova-compute
+        target: nova-compute
+    dependencies:
+    - openstack-operator:images:build:openstack-operator
+    files: &id003
+    - ^images/nova/.*
+- job:
+    name: openstack-operator:images:upload:nova
+    parent: vexxhost-upload-docker-image
+    provides: openstack-operator:image:nova
+    nodeset: *id001
+    vars: *id002
+    dependencies:
+    - openstack-operator:images:upload:openstack-operator
+    files: *id003
+- job:
+    name: openstack-operator:images:promote:nova
+    parent: vexxhost-promote-docker-image
+    nodeset: *id001
+    vars: *id002
+    files: *id003
+- project:
+    check:
+      jobs:
+      - openstack-operator:images:build:nova
+    gate:
+      jobs:
+      - openstack-operator:images:upload:nova
+    promote:
+      jobs:
+      - openstack-operator:images:promote:nova

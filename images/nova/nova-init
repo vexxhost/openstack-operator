@@ -1,0 +1,32 @@
+#!/bin/bash
+# Copyright (c) 2020 VEXXHOST, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+# implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+set -xe
+
+nova-manage api_db sync
+nova-manage cell_v2 map_cell0 --database_connection ${CELL0_DB}
+
+# NOTE(Alex) Use same commands in devstack
+nova-manage --config-file /etc/nova/nova_cell1.conf db sync --local_cell
+nova-manage --config-file /etc/nova/nova.conf db sync
+nova-manage --config-file /etc/nova/nova.conf db online_data_migrations
+nova-manage --config-file /etc/nova/nova.conf \
+--config-file /etc/nova/nova_cell1.conf \
+cell_v2 create_cell --name cell1 || error_code=$?
+
+if [ "${error_code}" -ne 2 ]; then
+    exit ${error_code}
+fi

@@ -33,9 +33,7 @@ def create_or_resume(name, spec, **_):
     start the service up for the first time.
     """
 
-    if "mysql" not in spec:
-        spec["mysql"] = {}
-    database.ensure_mysql_cluster("magnum", spec["mysql"])
+    database.ensure_mysql_cluster("magnum", spec=spec["mysql"])
 
     # deploy rabbitmq
     if not utils.ensure_secret("openstack", "magnum-rabbitmq"):

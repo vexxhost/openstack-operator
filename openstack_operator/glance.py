@@ -34,10 +34,7 @@ def create_or_resume(name, spec, **_):
     """
 
     # deploy mysql for glance
-    if "mysql" not in spec:
-        database.ensure_mysql_cluster("glance", {})
-    else:
-        database.ensure_mysql_cluster("glance", spec["mysql"])
+    database.ensure_mysql_cluster("glance", spec=spec["mysql"])
 
     # deploy glance api
     utils.create_or_update('glance/daemonset.yml.j2',
