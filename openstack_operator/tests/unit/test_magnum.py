@@ -24,14 +24,19 @@ class MagnumAPIDaemonsetTestCase(base.DaemonSetTestCase):
     """Basic tests for the API Daemonset."""
 
     RELEASE_TYPE = 'magnum'
-    TEMPLATE_FILE = 'magnum/daemonset.yml.j2'
-    TEMPLATE_PARAMS = {'component': 'api'}
+    TEMPLATE_FILE = 'magnum/api/daemonset.yml.j2'
 
 
 class MagnumConductorDaemonsetTestCase(base.DaemonSetTestCase):
     """Basic tests for the Conductor Daemonset."""
 
     RELEASE_TYPE = 'magnum'
-    TEMPLATE_FILE = 'magnum/daemonset.yml.j2'
-    TEMPLATE_PARAMS = {'component': 'conductor'}
+    TEMPLATE_FILE = 'magnum/conductor/daemonset.yml.j2'
     PORT_EXPOSED = False
+
+
+class MagnumAPIServiceTestCase(base.ServiceTestCase):
+    """Basic tests for the Service."""
+
+    RELEASE_TYPE = 'magnum'
+    TEMPLATE_FILE = 'magnum/api/service.yml.j2'

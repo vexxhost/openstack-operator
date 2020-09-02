@@ -1,0 +1,91 @@
+---
+# Copyright 2020 VEXXHOST, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: magnum-conductor
+  namespace: openstack
+  labels:
+    {{ labels("magnum", component="conductor") | indent(4) }}
+spec:
+  updateStrategy:
+    rollingUpdate:
+      maxUnavailable: 1
+    type: RollingUpdate
+  selector:
+    matchLabels:
+      {{ labels("magnum", component="conductor") | indent(6) }}
+  template:
+    metadata:
+      labels:
+        {{ labels("magnum", component="conductor") | indent(8) }}
+      annotations:
+        checksum/config: "{{ config_hash }}"
+    spec:
+      automountServiceAccountToken: false
+      initContainers:
+      - name: db-sync
+        image: vexxhost/magnum-conductor:latest
+        imagePullPolicy: Always
+        command:
+        - magnum-db-manage
+        - upgrade
+        volumeMounts:
+        - mountPath: /etc/magnum
+          name: config
+      containers:
+      - name: magnum-conductor
+        image: vexxhost/magnum-conductor:latest
+        imagePullPolicy: Always
+        {% if env is defined and env|length %}
+        env:
+        {% if 'sentryDSN' in spec %}
+        - name: SENTRY_DSN
+          value: {{ spec.sentryDSN }}
+        {% endif %}
+        {% for v in env %}
+        - name: "{{ v.name }}"
+          value: "{{ v.value }}"
+        {% endfor %}
+        {% endif %}
+        securityContext:
+          runAsUser: 65534
+          runAsGroup: 65534
+        volumeMounts:
+        - mountPath: /etc/magnum
+          name: config
+        - name: uwsgi-config
+          mountPath: /etc/uwsgi
+      volumes:
+      - name: config
+        secret:
+          secretName: magnum-config
+      - name: uwsgi-config
+        configMap:
+          defaultMode: 420
+          name: uwsgi-default
+{% if 'nodeSelector' in spec %}
+      nodeSelector:
+        {{ spec.nodeSelector | to_yaml | indent(8) }}
+{% endif %}
+{% if 'tolerations' in spec %}
+      tolerations:
+        {{ spec.tolerations | to_yaml | indent(8) }}
+{% endif %}
+{% if 'hostAliases' in spec %}
+      hostAliases:
+        {{ spec.hostAliases | to_yaml | indent(8) }}
+{% endif %}

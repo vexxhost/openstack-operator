@@ -16,10 +16,10 @@
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
-  name: magnum-{{ component }}
+  name: magnum-api
   namespace: openstack
   labels:
-    {{ labels("magnum", name, component) | indent(4) }}
+    {{ labels("magnum", component="api") | indent(4) }}
 spec:
   updateStrategy:
     rollingUpdate:
@@ -27,30 +27,18 @@ spec:
     type: RollingUpdate
   selector:
     matchLabels:
-      {{ labels("magnum", name, component) | indent(6) }}
+      {{ labels("magnum", component="api") | indent(6) }}
   template:
     metadata:
       labels:
-        {{ labels("magnum", name, component) | indent(8) }}
+        {{ labels("magnum", component="api") | indent(8) }}
       annotations:
         checksum/config: "{{ config_hash }}"
     spec:
       automountServiceAccountToken: false
-      {% if 'conductor' in component %}
-      initContainers:
-      - name: db-sync
-        image: vexxhost/magnum-{{ component }}:latest
-        imagePullPolicy: Always
-        command:
-        - magnum-db-manage
-        - upgrade
-        volumeMounts:
-        - mountPath: /etc/magnum
-          name: config
-      {% endif %}
       containers:
-      - name: magnum-{{ component }}
-        image: vexxhost/magnum-{{ component }}:latest
+      - name: magnum-api
+        image: vexxhost/magnum-api:latest
         imagePullPolicy: Always
         {% if env is defined and env|length %}
         env:
@@ -63,22 +51,20 @@ spec:
           value: "{{ v.value }}"
         {% endfor %}
         {% endif %}
-        {% if 'api' in component %}
         ports:
-        - name: magnum-{{ component }}
+        - name: magnum-api
           protocol: TCP
           containerPort: 9511
         livenessProbe:
           tcpSocket:
-            port: magnum-{{ component }}
+            port: magnum-api
         readinessProbe:
           tcpSocket:
-            port: magnum-{{ component }}
+            port: magnum-api
         lifecycle:
           preStop:
             exec:
               command: ["/bin/sleep", "5"]
-        {% endif %}
         securityContext:
           runAsUser: 65534
           runAsGroup: 65534

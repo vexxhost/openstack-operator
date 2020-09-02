@@ -38,16 +38,15 @@ def create_or_resume(name, spec, **_):
     # deploy rabbitmq
     utils.deploy_rabbitmq("magnum")
 
-    # deploy magnum
     config_hash = utils.generate_hash(spec)
-    for component in ("api", "conductor"):
-        utils.create_or_update('magnum/daemonset.yml.j2',
-                               name=name, spec=spec,
-                               component=component,
-                               config_hash=config_hash)
+    # deploy magnum api
+    utils.create_or_update('magnum/api/daemonset.yml.j2', spec=spec,
+                           config_hash=config_hash)
+    utils.create_or_update('magnum/api/service.yml.j2')
 
-    utils.create_or_update('magnum/service.yml.j2',
-                           name=name)
+    # deploy magnum conductor
+    utils.create_or_update('magnum/conductor/daemonset.yml.j2',
+                           spec=spec, config_hash=config_hash)
 
     url = None
     if "ingress" in spec:
