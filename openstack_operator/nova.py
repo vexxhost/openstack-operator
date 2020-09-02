@@ -21,7 +21,6 @@ service.
 
 import kopf
 
-from openstack_operator import database
 from openstack_operator import identity
 from openstack_operator import utils
 
@@ -45,12 +44,12 @@ def create_or_resume(spec, **_):
 
     identity.ensure_application_credential(name="nova")
 
-    databases['api'] = database.ensure_mysql_cluster(
+    databases['api'] = utils.ensure_mysql_cluster(
         "nova-api", database="nova_api"
     )
 
     for cell in CELLS:
-        databases[cell] = database.ensure_mysql_cluster(
+        databases[cell] = utils.ensure_mysql_cluster(
             "nova-%s" % cell, database="nova_%s" % cell)
 
         # NOTE(mnaser): cell0 does not need a message queue
@@ -97,6 +96,6 @@ def run_database_migrations(**_):
     deployment and triggers a database migrations
     """
 
-    cell0 = database.ensure_mysql_cluster("nova-cell0")
+    cell0 = utils.ensure_mysql_cluster("nova-cell0")
     utils.create_or_update('nova/conductor/job.yml.j2', adopt=True,
                            cell0_db=cell0['connection'])

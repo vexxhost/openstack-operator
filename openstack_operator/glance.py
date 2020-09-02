@@ -19,7 +19,6 @@ the appropriate deployments, Mcrouter, pod monitors and Prometheus rules.
 """
 
 
-from openstack_operator import database
 from openstack_operator import identity
 from openstack_operator import utils
 
@@ -34,7 +33,7 @@ def create_or_resume(name, spec, **_):
     """
 
     # deploy mysql for glance
-    database.ensure_mysql_cluster("glance", spec=spec["mysql"])
+    utils.ensure_mysql_cluster("glance", spec["mysql"])
 
     # deploy glance api
     utils.create_or_update('glance/daemonset.yml.j2',

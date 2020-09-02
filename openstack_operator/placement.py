@@ -19,7 +19,6 @@ This code takes care of doing the operations of the OpenStack Placement API
 service.
 """
 
-from openstack_operator import database
 from openstack_operator import identity
 from openstack_operator import utils
 
@@ -34,7 +33,7 @@ def create_or_resume(name, spec, **_):
     """
 
     # deploy mysql for placement
-    database.ensure_mysql_cluster("placement", spec=spec["mysql"])
+    utils.ensure_mysql_cluster("placement", spec["mysql"])
 
     # deploy placement api
     utils.create_or_update('placement/daemonset.yml.j2', spec=spec)

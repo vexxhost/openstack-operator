@@ -318,3 +318,37 @@ def deploy_rabbitmq(name, **_):
         create_or_update('operator/secret-rabbitmq.yml.j2',
                          name=name, password=generate_password())
     create_or_update('operator/rabbitmq.yml.j2', name=name)
+
+
+def ensure_mysql_cluster(name, spec=None, user=None, database=None):
+    """Create or update mysql cluster"""
+
+    if spec is None:
+        spec = {}
+
+    if database is None:
+        database = name
+    if user is None:
+        user = database
+
+    config = get_secret("openstack", name + "-mysql")
+    if config is None:
+        root_password = generate_password()
+        password = generate_password()
+        create_or_update('mysqlcluster/secret-mysqlcluster.yml.j2',
+                         name=name, user=user,
+                         database=database, password=password,
+                         rootPassword=root_password)
+        config = get_secret("openstack", name + "-mysql")
+
+    config['connection'] = \
+        "mysql+pymysql://%s:%s@%s-mysql-master/%s?charset=utf8" % (
+            config["USER"],
+            config["PASSWORD"],
+            name,
+            config["DATABASE"]
+        )
+
+    create_or_update('mysqlcluster/mysqlcluster.yml.j2',
+                     server_side=False, name=name, spec=spec)
+    return config
