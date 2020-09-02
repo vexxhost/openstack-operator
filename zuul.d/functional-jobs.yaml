@@ -33,6 +33,10 @@
         n-spice: false
         n-sproxy: false
         rabbit: true
+        s-account: false
+        s-container: false
+        s-object: false
+        s-proxy: false
         tls-proxy: false
       devstack_plugins:
         openstack-operator: https://opendev.org/vexxhost/openstack-operator
