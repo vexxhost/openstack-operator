@@ -9,3 +9,4 @@ haproxy
 dnsmasq
 dnsmasq-utils
 radvd
+strongswan
