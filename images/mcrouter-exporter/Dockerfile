@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM golang:1.13 AS builder
+FROM golang:1.26 AS builder
 RUN go get -v -u github.com/Dev25/mcrouter_exporter && \
     cd $GOPATH/src/github.com/Dev25/mcrouter_exporter && \
     CGO_ENABLED=0 go build -a -installsuffix cgo -o /app
