@@ -39,7 +39,7 @@ FROM nova-base AS nova-scheduler
 COPY nova-scheduler /usr/local/bin/nova-scheduler
 CMD ["/usr/local/bin/nova-scheduler"]
 
-FROM debian:10-slim AS novnc-builder
+FROM debian:13-slim AS novnc-builder
 ADD https://github.com/novnc/noVNC/archive/v1.2.0.tar.gz novnc.tgz
 RUN tar -xvzf novnc.tgz
 
